@@ -2,16 +2,16 @@ nextflow.preview.dsl=2
 
 process FASTQC {	
     input:
-	    file query
+	    tuple val(name), path(reads)
 
 
 	output:
-	    file "*html" 
+	    path "*html" 
 
     script:
 	"""
 	module load fastqc
-	fastqc -q ${query}
+	fastqc -q -t 2 ${reads}
 	"""
 
 }
