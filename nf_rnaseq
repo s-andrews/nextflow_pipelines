@@ -1,15 +1,21 @@
 #!/usr/bin/env nextflow
 
-params.outdir = "output"
-
 // Enable modules
 nextflow.preview.dsl=2
 
+params.outdir = "."
+params.genome = ""
+
+
 include './nf_modules/files.mod.nf'
+include './nf_modules/genomes.mod.nf'
 include './nf_modules/fastqc.mod.nf'
 include './nf_modules/fastq_screen.mod.nf'
+include './nf_modules/hisat2.mod.nf' params(genome: getGenome(params.genome))
 
-file_ch = makeFilesChannel(args) 
+file_ch = makeFilesChannel(args)
+
+genome = getGenome(params.genome)
 
 
 workflow {
@@ -17,12 +23,15 @@ workflow {
     main:
         FASTQC(file_ch)
         FASTQ_SCREEN(file_ch)
+        HISAT2(file_ch)
 
 
     publish:
         FASTQC.out to: params.outdir
         FASTQ_SCREEN.out.html to: params.outdir
         FASTQ_SCREEN.out.png to: params.outdir
+        HISAT2.out.bam to:params.outdir
+        HISAT2.out.stats to:params.outdir
 
 }
 
