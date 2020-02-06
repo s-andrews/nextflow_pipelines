@@ -2,9 +2,7 @@
 nextflow.preview.dsl=2
 
 
-def makeFilesChannel(fileList) {
-    println("\n making list from \n"+fileList)
-    
+def makeFilesChannel(fileList) {    
     file_ch = Channel.fromFilePairs(
                 getFileBaseNames(fileList),
                 ,size:-1

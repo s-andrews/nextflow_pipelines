@@ -15,10 +15,10 @@ process HISAT2 {
 	readString = ""
 
 	if (reads instanceof List) {
-		readString = "-1 reads[0] -2 reads[1]"
+		readString = "-1 "+reads[0]+" -2 "+reads[1]
 	}
 	else {
-		readString = "-U reads"
+		readString = "-U "+reads
 	}
 
 	index = params.genome["hisat2"]

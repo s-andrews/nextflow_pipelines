@@ -34,8 +34,3 @@ workflow {
         HISAT2.out.stats to:params.outdir
 
 }
-
-
-file_ch.subscribe{
-    println("Found $it")
-}
