@@ -11,6 +11,7 @@ include './nf_modules/files.mod.nf'
 include './nf_modules/genomes.mod.nf'
 include './nf_modules/fastqc.mod.nf'
 include './nf_modules/fastq_screen.mod.nf'
+include './nf_modules/trim_galore.mod.nf'
 include './nf_modules/hisat2.mod.nf' params(genome: getGenome(params.genome))
 
 file_ch = makeFilesChannel(args)
@@ -23,14 +24,19 @@ workflow {
     main:
         FASTQC(file_ch)
         FASTQ_SCREEN(file_ch)
-        HISAT2(file_ch)
+        TRIM_GALORE(file_ch)
+        HISAT2(TRIM_GALORE.out.reads)
 
 
     publish:
         FASTQC.out to: params.outdir
         FASTQ_SCREEN.out.html to: params.outdir
         FASTQ_SCREEN.out.png to: params.outdir
+        TRIM_GALORE.out.reads to: params.outdir
         HISAT2.out.bam to:params.outdir
         HISAT2.out.stats to:params.outdir
 
+
+
 }
+
