@@ -1,0 +1,4 @@
+name	Drosophila
+species	Drosophila_melanogaster
+gtf	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP5/Drosophila_melanogaster.BDGP5.73.gtf
+hisat2_splices	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP5/Drosophila_melanogaster.BDGP5.73.hisat2_splices.txt

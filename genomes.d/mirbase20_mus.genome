@@ -1,0 +1,5 @@
+name	mirbase20_mus
+species	Mouse
+fasta	/bi/scratch/mirBASE/Mouse/mirbase_v20/
+bismark	/bi/scratch/mirBASE/Mouse/mirbase_v20/
+bowtie	/bi/scratch/mirBASE/Mouse/mirbase_v20/mirbase_v20_mus_musculus_mature

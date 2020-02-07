@@ -1,0 +1,9 @@
+name	WBcel235
+species	C_elegans
+fasta	/bi/scratch/Genomes/Caenorhabditis_elegans/WBcel235/
+bismark	/bi/scratch/Genomes/Caenorhabditis_elegans/WBcel235/
+bowtie	/bi/scratch/Genomes/Caenorhabditis_elegans/WBcel235/Caenorhabditis_elegans.WBcel235
+bowtie2	/bi/scratch/Genomes/Caenorhabditis_elegans/WBcel235/Caenorhabditis_elegans.WBcel235
+hisat2	/bi/scratch/Genomes/Caenorhabditis_elegans/WBcel235/Caenorhabditis_elegans.WBcel235
+gtf	/bi/scratch/Genomes/Caenorhabditis_elegans/WBcel235/Caenorhabditis_elegans.WBcel235.75.gtf
+hisat2_splices	/bi/scratch/Genomes/Caenorhabditis_elegans/WBcel235/Caenorhabditis_elegans.WBcel235.75.hisat2_splices.txt

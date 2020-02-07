@@ -1,0 +1,8 @@
+name	GRCh38_ERCC
+species	Human
+fasta	/bi/scratch/Genomes/Human/GRCh38_ERCC/
+bismark	/bi/scratch/Genomes/Human/GRCh38_ERCC/
+bowtie	/bi/scratch/Genomes/Human/GRCh38_ERCC/Homo_sapiens.GRCh38_ERCC
+bowtie2	/bi/scratch/Genomes/Human/GRCh38_ERCC/Homo_sapiens.GRCh38_ERCC
+hisat2	/bi/scratch/Genomes/Human/GRCh38_ERCC/Homo_sapiens.GRCh38_ERCC
+hisat2_splices	/bi/scratch/Genomes/Human/GRCh38_ERCC/Homo_sapiens.GRCh38.87.hisat2_splices.txt

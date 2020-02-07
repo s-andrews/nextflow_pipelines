@@ -1,0 +1,5 @@
+name	mirbase20_hum
+species	Human
+fasta	/bi/scratch/mirBASE/Human/mirbase_v20/
+bismark	/bi/scratch/mirBASE/Human/mirbase_v20/
+bowtie	/bi/scratch/mirBASE/Human/mirbase_v20/mirbase_v20_homo_sapiens_mature

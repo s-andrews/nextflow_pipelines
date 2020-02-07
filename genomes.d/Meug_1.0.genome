@@ -1,0 +1,7 @@
+name	Meug_1.0
+species	Wallaby
+fasta	/bi/scratch/Genomes/Wallaby/Meug_1.0/
+bismark	/bi/scratch/Genomes/Wallaby/Meug_1.0/
+bowtie	/bi/scratch/Genomes/Wallaby/Meug_1.0/Macropus_eugenii.Meug_1.0
+bowtie2	/bi/scratch/Genomes/Wallaby/Meug_1.0/Macropus_eugenii.Meug_1.0
+hisat2	/bi/scratch/Genomes/Wallaby/Meug_1.0/Macropus_eugenii.Meug_1.0

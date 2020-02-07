@@ -1,0 +1,7 @@
+name	CMV_Brainbow
+species	Brainbow_mouse_ERCC
+fasta	/bi/scratch/wingetts/lina/transgene_and_genome/mm10_ERCC
+hisat2	/bi/scratch/wingetts/lina/transgene_and_genome/mm10_ERCC/Mus_musculus.GRCm38.68.ERCC92.CMV_Brainbow
+bowtie2	/bi/scratch/wingetts/lina/transgene_and_genome/mm10_ERCC/Mus_musculus.GRCm38.68.ERCC92.CMV_Brainbow
+gtf	/bi/scratch/Genomes/Mouse/GRCm38_ERCC/Mus_musculus.GRCm38_ERCC.74.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm38_ERCC/Mus_musculus.GRCm38_ERCC.74.hisat2_splices.txt

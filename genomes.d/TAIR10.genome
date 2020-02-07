@@ -1,0 +1,9 @@
+name	TAIR10
+species	Arabidopsis_thaliana
+fasta	/bi/scratch/Genomes/Arabidopsis/TAIR10
+bismark	/bi/scratch/Genomes/Arabidopsis/TAIR10
+bowtie	/bi/scratch/Genomes/Arabidopsis/TAIR10/Arabidopsis_thaliana.TAIR10
+bowtie2	/bi/scratch/Genomes/Arabidopsis/TAIR10/Arabidopsis_thaliana.TAIR10
+hisat2	/bi/scratch/Genomes/Arabidopsis/TAIR10/Arabidopsis_thaliana.TAIR10
+gtf	/bi/scratch/Genomes/Arabidopsis/TAIR10/Arabidopsis_thaliana.TAIR10.37.gtf
+hisat2_splices	/bi/scratch/Genomes/Arabidopsis/TAIR10/Arabidopsis_thaliana.TAIR10.37.hisat2_splices.txt

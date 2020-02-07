@@ -1,0 +1,9 @@
+name	GRCm38_brainbow
+species	Mouse
+fasta	/bi/scratch/Genomes/Mouse/GRCm38_ERCC_Brainbow/
+bismark	/bi/scratch/Genomes/Mouse/GRCm38_ERCC_Brainbow/
+bowtie	/bi/scratch/Genomes/Mouse/GRCm38_ERCC_Brainbow/Mus_musculus.GRCm38.68.ERCC92.CMV_Brainbow
+bowtie2	/bi/scratch/Genomes/Mouse/GRCm38_ERCC_Brainbow/Mus_musculus.GRCm38.68.ERCC92.CMV_Brainbow
+hisat2	/bi/scratch/Genomes/Mouse/GRCm38_ERCC_Brainbow/Mus_musculus.GRCm38.68.ERCC92.CMV_Brainbow
+gtf	/bi/scratch/Genomes/Mouse/GRCm38_ERCC_Brainbow/Mus_musculus.GRCm38_ERCC_CMV.Brainbow.74.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm38_ERCC_Brainbow/Mus_musculus.GRCm38_ERCC_CMV.Brainbow.74.hisat2_splices.txt

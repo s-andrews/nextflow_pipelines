@@ -1,0 +1,9 @@
+name	GRCz10
+species	Zebrafish
+fasta	/bi/scratch/Genomes/Danio_rerio/GRCz10/
+bismark	/bi/scratch/Genomes/Danio_rerio/GRCz10/
+bowtie	/bi/scratch/Genomes/Danio_rerio/GRCz10/Danio_rerio.GRCz10
+bowtie2	/bi/scratch/Genomes/Danio_rerio/GRCz10/Danio_rerio.GRCz10
+hisat2	/bi/scratch/Genomes/Danio_rerio/GRCz10/Danio_rerio.GRCz10
+gtf	/bi/scratch/Genomes/Danio_rerio/GRCz10/Danio_rerio.GRCz10.86.gtf.gz
+hisat2_splices	/bi/scratch/Genomes/Danio_rerio/GRCz10/Danio_rerio.GRCz10.86.hisat2_splices.txt.gz

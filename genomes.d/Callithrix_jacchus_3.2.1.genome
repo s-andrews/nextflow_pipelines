@@ -1,0 +1,5 @@
+name	Callithrix_jacchus_3.2.1
+species	Marmoset
+fasta	/bi/scratch/Genomes/Callithrix_jacchus/Callithrix_jacchus_3.2.1/
+bowtie2	/bi/scratch/Genomes/Callithrix_jacchus/Callithrix_jacchus_3.2.1/Callithrix_jacchus_3.2.1
+hisat2	/bi/scratch/Genomes/Callithrix_jacchus/Callithrix_jacchus_3.2.1/Callithrix_jacchus_3.2.1

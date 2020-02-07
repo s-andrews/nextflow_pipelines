@@ -1,0 +1,9 @@
+name	GRCm38_ERCC_nonchr
+species	Mouse
+fasta	/bi/scratch/Genomes/Mouse/GRCm38_plus_nonchromosomal/
+bismark	/bi/scratch/Genomes/Mouse/GRCm38_plus_nonchromosomal/
+bowtie	/bi/scratch/Genomes/Mouse/GRCm38_plus_nonchromosomal/Mus_musculus.nonchromosomal.GRCm38_ERCC
+bowtie2	/bi/scratch/Genomes/Mouse/GRCm38_plus_nonchromosomal/Mus_musculus.nonchromosomal.GRCm38_ERCC
+hisat2	/bi/scratch/Genomes/Mouse/GRCm38_plus_nonchromosomal/Mus_musculus.nonchromosomal.GRCm38_ERCC
+gtf	/bi/scratch/Genomes/Mouse/GRCm38_plus_nonchromosomal/Mus_musculus.GRCm38.74.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm38_plus_nonchromosomal/Mus_musculus.GRCm38.74.hisat2_splices.txt

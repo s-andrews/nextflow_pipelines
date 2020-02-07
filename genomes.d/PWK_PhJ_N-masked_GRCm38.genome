@@ -1,0 +1,9 @@
+name	PWK_PhJ_N-masked_GRCm38
+species	Mouse_GRCm38
+fasta	/bi/scratch/Genomes/Mouse/PWK_PhJ_based_on_GRCm38.v5/PWK_PhJ_N-masked/
+bismark	/bi/scratch/Genomes/Mouse/PWK_PhJ_based_on_GRCm38.v5/PWK_PhJ_N-masked/
+bowtie	/bi/scratch/Genomes/Mouse/PWK_PhJ_based_on_GRCm38.v5/PWK_PhJ_N-masked/PWK_PhJ_N-masked
+bowtie2	/bi/scratch/Genomes/Mouse/PWK_PhJ_based_on_GRCm38.v5/PWK_PhJ_N-masked/PWK_PhJ_N-masked
+hisat2	/bi/scratch/Genomes/Mouse/PWK_PhJ_based_on_GRCm38.v5/PWK_PhJ_N-masked/PWK_PhJ_N-masked
+gtf	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.70.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.70.hisat2_splices.txt

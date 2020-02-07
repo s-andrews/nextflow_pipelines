@@ -1,0 +1,7 @@
+name	E_coli
+species	PhiX
+fasta	/bi/scratch/Genomes/E_coli
+bismark	/bi/scratch/Genomes/E_coli
+bowtie	/bi/scratch/Genomes/E_coli/Ecoli
+bowtie2	/bi/scratch/Genomes/E_coli/Ecoli
+hisat2	/bi/scratch/Genomes/E_coli/Ecoli

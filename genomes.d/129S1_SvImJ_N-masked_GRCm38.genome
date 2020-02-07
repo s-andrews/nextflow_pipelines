@@ -1,0 +1,9 @@
+name	129S1_SvImJ_N-masked_GRCm38
+species	Mouse_GRCm38
+fasta	/bi/scratch/Genomes/Mouse/129S1_SvImJ_based_on_GRCm38.v5/129S1_SvImJ_N-masked/
+bismark	/bi/scratch/Genomes/Mouse/129S1_SvImJ_based_on_GRCm38.v5/129S1_SvImJ_N-masked/
+bowtie	/bi/scratch/Genomes/Mouse/129S1_SvImJ_based_on_GRCm38.v5/129S1_SvImJ_N-masked/129S1_SvImJ_N-masked
+bowtie2	/bi/scratch/Genomes/Mouse/129S1_SvImJ_based_on_GRCm38.v5/129S1_SvImJ_N-masked/129S1_SvImJ_N-masked
+hisat2	/bi/scratch/Genomes/Mouse/129S1_SvImJ_based_on_GRCm38.v5/129S1_SvImJ_N-masked/129S1_SvImJ_N-masked
+gtf	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.70.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.70.hisat2_splices.txt
