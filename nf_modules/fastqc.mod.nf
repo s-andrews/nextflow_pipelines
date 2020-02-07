@@ -1,17 +1,22 @@
 nextflow.preview.dsl=2
 
+
+params.fastqc_args = ''
+//println ("ARGS ARE [FASTQC MODULE]: "+ params.fastqc_args + "\n")
+fastqc_args = params.fastqc_args.replaceAll(/'/,"")
+// println ("ARGS ARE [FASTQC MODULE, replaced]: "+ fastqc_args + "\n")
+
 process FASTQC {	
     input:
 	    tuple val(name), path(reads)
 
-
 	output:
 	    path "*html" 
-
-    script:
+	
+	script:
 	"""
 	module load fastqc
-	fastqc -q -t 2 ${reads}
+	fastqc $fastqc_args -q -t 2 ${reads}
 	"""
 
 }
