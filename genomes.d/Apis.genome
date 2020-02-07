@@ -1,0 +1,5 @@
+name	Apis
+species	Apis_mellifera
+fasta	/bi/scratch/Genomes/Apis_mellifera/Amel4.0/
+bismark	/bi/scratch/Genomes/Apis_mellifera/Amel4.0/
+bowtie	/bi/scratch/Genomes/Apis_mellifera/Amel4.0/Apis_mellifera.Amel4.0.20.dna.toplevel

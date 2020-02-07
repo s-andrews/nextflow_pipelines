@@ -1,0 +1,4 @@
+name	GRCm38_inf
+species	Mouse_influenza
+fasta	/bi/scratch/Genomes/Mouse/GRCm38_influenza/
+bismark	/bi/scratch/Genomes/Mouse/GRCm38_influenza/

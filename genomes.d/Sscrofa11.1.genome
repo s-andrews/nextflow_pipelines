@@ -1,0 +1,9 @@
+name	Sscrofa11.1
+species	Sus_scrofa
+fasta	/bi/scratch/Genomes/Sus_scrofa/Sscrofa11.1
+bismark	/bi/scratch/Genomes/Sus_scrofa/Sscrofa11.1
+bowtie	/bi/scratch/Genomes/Sus_scrofa/Sscrofa11.1/Sscrofa11.1
+bowtie2	/bi/scratch/Genomes/Sus_scrofa/Sscrofa11.1/Sscrofa11.1
+hisat2	/bi/scratch/Genomes/Sus_scrofa/Sscrofa11.1/Sscrofa11.1
+gtf	/bi/scratch/Genomes/Sus_scrofa/Sscrofa11.1/Sus_scrofa.Sscrofa11.1.90.gtf
+hisat2_splices	/bi/scratch/Genomes/Sus_scrofa/Sscrofa11.1/Sus_scrofa.Sscrofa11.1.90.hisat2_splices.txt

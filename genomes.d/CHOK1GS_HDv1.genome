@@ -1,0 +1,9 @@
+name	CHOK1GS_HDv1
+species	CHO
+fasta	/bi/scratch/Genomes/CHO/CHOK1GS_HDv1/
+bismark	/bi/scratch/Genomes/CHO/CHOK1GS_HDv1/
+bowtie	/bi/scratch/Genomes/CHO/CHOK1GS_HDv1/CHOK1GS_HDv1
+bowtie2	/bi/scratch/Genomes/CHO/CHOK1GS_HDv1/CHOK1GS_HDv1
+hisat2	/bi/scratch/Genomes/CHO/CHOK1GS_HDv1/CHOK1GS_HDv1
+gtf	/bi/scratch/Genomes/CHO/CHOK1GS_HDv1/Cricetulus_griseus_chok1gshd.CHOK1GS_HDv1.90.gtf
+hisat2_splices	/bi/scratch/Genomes/CHO/CHOK1GS_HDv1/Cricetulus_griseus_chok1gshd.CHOK1GS_HDv1.90.hisat2_splices.txt

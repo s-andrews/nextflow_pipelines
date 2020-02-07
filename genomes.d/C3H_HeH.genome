@@ -1,0 +1,7 @@
+name	C3H_HeH
+species	Mouse
+fasta	/bi/scratch/Genomes/Mouse/C3H_based_on_GRCm38_v5_Nov2017/C3H_HeH_N-masked/
+bismark	/bi/scratch/Genomes/Mouse/C3H_based_on_GRCm38_v5_Nov2017/C3H_HeH_N-masked/
+bowtie	/bi/scratch/Genomes/Mouse/C3H_based_on_GRCm38_v5_Nov2017/C3H_HeH_N-masked/C3H_HeH_N-masked
+bowtie2	/bi/scratch/Genomes/Mouse/C3H_based_on_GRCm38_v5_Nov2017/C3H_HeH_N-masked/C3H_HeH_N-masked
+hisat2	/bi/scratch/Genomes/Mouse/C3H_based_on_GRCm38_v5_Nov2017/C3H_HeH_N-masked/C3H_HeH_N-masked

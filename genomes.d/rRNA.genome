@@ -1,0 +1,5 @@
+name	rRNA
+species	Mouse
+fasta	/bi/scratch/Genomes/Mouse/NCBIM37/Repeatome/ribosomal_repeats/
+bismark	/bi/scratch/Genomes/Mouse/NCBIM37/Repeatome/ribosomal_repeats/
+bowtie	/bi/scratch/Genomes/Mouse/NCBIM37/Repeatome/ribosomal_repeats/ribosomal_DNA

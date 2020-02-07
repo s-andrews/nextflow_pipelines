@@ -1,0 +1,9 @@
+name	GRCh38_NANOGP1
+species	Human
+fasta	/bi/scratch/Genomes/Human/GRCh38/
+bismark	/bi/scratch/Genomes/Human/GRCh38/
+bowtie	/bi/scratch/Genomes/Human/GRCh38/Homo_sapiens.GRCh38
+bowtie2	/bi/scratch/Genomes/Human/GRCh38/Homo_sapiens.GRCh38
+hisat2	/bi/scratch/Genomes/Human/GRCh38/Homo_sapiens.GRCh38
+gtf	/bi/scratch/Genomes/Human/GRCh38/Homo_sapiens.GRCh38.87.gtf
+hisat2_splices	/bi/home/fkrueger/group/Peter_RG/NANOGP1/new_annotation_including_NANOGP1/Homo_sapiens.GRCh38.94_plus_NANOGP1.hisat2_splices.txt

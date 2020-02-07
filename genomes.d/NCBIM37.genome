@@ -1,0 +1,9 @@
+name	NCBIM37
+species	Mouse
+fasta	/bi/scratch/Genomes/Mouse/NCBIM37/
+bismark	/bi/scratch/Genomes/Mouse/NCBIM37/
+bowtie	/bi/scratch/Genomes/Mouse/NCBIM37/Mus_musculus.NCBIM37
+bowtie2	/bi/scratch/Genomes/Mouse/NCBIM37/Mus_musculus.NCBIM37
+hisat2	/bi/scratch/Genomes/Mouse/NCBIM37/Mus_musculus.NCBIM37
+gtf	/bi/scratch/Genomes/Mouse/NCBIM37/Mus_musculus.NCBIM37.cleaned.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/NCBIM37/Mus_musculus.NCBIM37.cleaned.hisat2_splices.txt

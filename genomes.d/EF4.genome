@@ -1,0 +1,7 @@
+name	EF4
+species	S_cerevisiae
+fasta	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/EF4/
+bismark	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/EF4/
+bowtie	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/EF4/Saccharomyces_cerevisiae.EF4
+gtf	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/EF4/Saccharomyces_cerevisiae.EF4.73.gtf
+hisat2_splices	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/EF4/Saccharomyces_cerevisiae.EF4.73.hisat2_splices.txt

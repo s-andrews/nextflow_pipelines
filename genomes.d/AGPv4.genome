@@ -1,0 +1,9 @@
+name	AGPv4
+species	Maize
+fasta	/bi/scratch/Genomes/Zea_mays/
+bismark	/bi/scratch/Genomes/Zea_mays/
+bowtie	/bi/scratch/Genomes/Zea_mays/Zea_mays.AGPv4
+bowtie2	/bi/scratch/Genomes/Zea_mays/Zea_mays.AGPv4
+hisat2	/bi/scratch/Genomes/Zea_mays/Zea_mays.AGPv4
+gtf	/bi/scratch/Genomes/Zea_mays/Zea_mays.AGPv4.35.chr.gff3
+hisat2_splices	/bi/scratch/Genomes/Zea_mays/Zea_mays.AGPv4.35.chr.gff3

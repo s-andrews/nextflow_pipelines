@@ -1,0 +1,8 @@
+name	FVB_GRCm38
+species	Mouse
+hisat2	/bi/scratch/Genomes/Mouse/FVB_NJ_based_on_GRCm38.v5/FVB_NJ_full_sequence/FVB_NJ_full_sequence.GRCm38
+bowtie2	/bi/scratch/Genomes/Mouse/FVB_NJ_based_on_GRCm38.v5/FVB_NJ_full_sequence/FVB_NJ_full_sequence.GRCm38
+bismark	/bi/scratch/Genomes/Mouse/FVB_NJ_based_on_GRCm38.v5/FVB_NJ_full_sequence/
+fasta	/bi/scratch/Genomes/Mouse/FVB_NJ_based_on_GRCm38.v5/FVB_NJ_full_sequence/
+gtf	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.70.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.70.hisat2_splices.txt

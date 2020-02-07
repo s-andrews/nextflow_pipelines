@@ -1,0 +1,5 @@
+name	mirbase20_rat
+species	Rat
+fasta	/bi/scratch/mirBASE/Rat/mirbase_v20/
+bismark	/bi/scratch/mirBASE/Rat/mirbase_v20/
+bowtie	/bi/scratch/mirBASE/Rat/mirbase_v20/mirbase_v20_rattus_norvegicus_mature

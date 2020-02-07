@@ -1,0 +1,7 @@
+name	Polistes
+species	Polistes_canadensis
+fasta	/bi/scratch/Genomes/Wasp/2013-04-29/
+bismark	/bi/scratch/Genomes/Wasp/2013-04-29/
+bowtie	/bi/scratch/Genomes/Wasp/2013-04-29/wasp
+bowtie2	/bi/scratch/Genomes/Wasp/2013-04-29/wasp
+hisat2	/bi/scratch/Genomes/Wasp/2013-04-29/wasp

@@ -1,0 +1,7 @@
+name	BDGP5
+species	Drosophila_melanogaster
+fasta	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP5/
+bismark	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP5/
+bowtie	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP5/Drosophila_melanogaster.BDGP5.73
+bowtie2	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP5/Drosophila_melanogaster.BDGP5.73
+hisat2	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP5/Drosophila_melanogaster.BDGP5.73

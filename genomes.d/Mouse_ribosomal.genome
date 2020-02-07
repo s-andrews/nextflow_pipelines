@@ -1,0 +1,4 @@
+name	Mouse_ribosomal
+species	Mouse
+fasta	/bi/home/fkrueger/group/Irene_Herraez/190308_ribosomal_single_cell_mapping/ribosomal_genome
+bismark	/bi/home/fkrueger/group/Irene_Herraez/190308_ribosomal_single_cell_mapping/ribosomal_genome

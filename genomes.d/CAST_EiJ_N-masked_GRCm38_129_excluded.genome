@@ -1,0 +1,9 @@
+name	CAST_EiJ_N-masked_GRCm38_129_excluded
+species	Mouse_GRCm38
+fasta	/bi/scratch/Genomes/Mouse/Castaneus_based_on_GRCm38.v5.129_excluded/CAST_EiJ_N-masked/
+bismark	/bi/scratch/Genomes/Mouse/Castaneus_based_on_GRCm38.v5.129_excluded/CAST_EiJ_N-masked/
+bowtie	/bi/scratch/Genomes/Mouse/Castaneus_based_on_GRCm38.v5.129_excluded/CAST_EiJ_N-masked/CAST_EiJ_129excluded_N-masked
+bowtie2	/bi/scratch/Genomes/Mouse/Castaneus_based_on_GRCm38.v5.129_excluded/CAST_EiJ_N-masked/CAST_EiJ_129excluded_N-masked
+hisat2	/bi/scratch/Genomes/Mouse/Castaneus_based_on_GRCm38.v5.129_excluded/CAST_EiJ_N-masked/CAST_EiJ_129excluded_N-masked
+gtf	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.70.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.70.hisat2_splices.txt

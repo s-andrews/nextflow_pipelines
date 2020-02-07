@@ -1,0 +1,7 @@
+name	Lambda
+species	Lambda
+fasta	/bi/scratch/Genomes/Lambda/
+bismark	/bi/scratch/Genomes/Lambda/
+bowtie	/bi/scratch/Genomes/Lambda/Lambda
+bowtie2	/bi/scratch/Genomes/Lambda/Lambda
+hisat2	/bi/scratch/Genomes/Lambda/Lambda

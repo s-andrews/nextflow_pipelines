@@ -1,0 +1,7 @@
+name	PhiX
+species	PhiX
+fasta	/bi/scratch/Genomes/Coliphage_phiX174/phiX174/
+bismark	/bi/scratch/Genomes/Coliphage_phiX174/phiX174/
+bowtie	/bi/scratch/Genomes/Coliphage_phiX174/phiX174/phi_plus_SNPs
+bowtie2	/bi/scratch/Genomes/Coliphage_phiX174/phiX174/phi_plus_SNPs
+hisat2	/bi/scratch/Genomes/Coliphage_phiX174/phiX174/phi_plus_SNPs

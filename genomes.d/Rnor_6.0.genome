@@ -1,0 +1,9 @@
+name	Rnor_6.0
+species	Rat
+fasta	/bi/scratch/Genomes/Rat/Rnor_6.0/
+bismark	/bi/scratch/Genomes/Rat/Rnor_6.0/
+bowtie	/bi/scratch/Genomes/Rat/Rnor_6.0/Rnor_6.0
+bowtie2	/bi/scratch/Genomes/Rat/Rnor_6.0/Rnor_6.0
+hisat2	/bi/scratch/Genomes/Rat/Rnor_6.0/Rnor_6.0
+gtf	/bi/scratch/Genomes/Rat/Rnor_6.0/Rattus_norvegicus.Rnor_6.0.92.gtf
+hisat2_splices	/bi/scratch/Genomes/Rat/Rnor_6.0/Rattus_norvegicus.Rnor_6.0.92.hisat2_splices.txt

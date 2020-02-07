@@ -1,0 +1,7 @@
+name	MMUL_8
+species	Macaque
+fasta	/bi/scratch/Genomes/Macaque/MMUL_8/
+bismark	/bi/scratch/Genomes/Macaque/MMUL_8/
+bowtie	/bi/scratch/Genomes/Macaque/MMUL_8/Mmul_8.0.1
+bowtie2	/bi/scratch/Genomes/Macaque/MMUL_8/Mmul_8.0.1
+hisat2	/bi/scratch/Genomes/Macaque/MMUL_8/Mmul_8.0.1

@@ -1,0 +1,7 @@
+name	BROAD05
+species	Monodelphis_domestica
+fasta	/bi/scratch/Genomes/Opossum/BROAD05/
+bismark	/bi/scratch/Genomes/Opossum/BROAD05/
+bowtie	/bi/scratch/Genomes/Opossum/BROAD05/Opossum_BROAD05
+bowtie2	/bi/scratch/Genomes/Opossum/BROAD05/Opossum_BROAD05
+hisat2	/bi/scratch/Genomes/Opossum/BROAD05/Opossum_BROAD05

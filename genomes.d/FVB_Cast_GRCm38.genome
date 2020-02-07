@@ -1,0 +1,9 @@
+name	FVB_Cast_GRCm38
+species	Mouse
+fasta	/bi/scratch/Genomes/Mouse/Cast_based_on_FVBNJ_based_on_GRCm38.v5/FVB_NJ_CAST_EiJ_dual_hybrid.based_on_GRCm38_N-masked
+bismark	/bi/scratch/Genomes/Mouse/Cast_based_on_FVBNJ_based_on_GRCm38.v5/FVB_NJ_CAST_EiJ_dual_hybrid.based_on_GRCm38_N-masked
+bowtie2	/bi/scratch/Genomes/Mouse/Cast_based_on_FVBNJ_based_on_GRCm38.v5/FVB_NJ_CAST_EiJ_dual_hybrid.based_on_GRCm38_N-masked/FVB_NJ_CAST_EiJ_dual_hybrid_N-masked
+bowtie	/bi/scratch/Genomes/Mouse/Cast_based_on_FVBNJ_based_on_GRCm38.v5/FVB_NJ_CAST_EiJ_dual_hybrid.based_on_GRCm38_N-masked/FVB_NJ_CAST_EiJ_dual_hybrid_N-masked
+hisat2	/bi/scratch/Genomes/Mouse/Cast_based_on_FVBNJ_based_on_GRCm38.v5/FVB_NJ_CAST_EiJ_dual_hybrid.based_on_GRCm38_N-masked/FVB_NJ_CAST_EiJ_dual_hybrid_N-masked
+gtf	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.78.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.78.hisat2_splices.txt

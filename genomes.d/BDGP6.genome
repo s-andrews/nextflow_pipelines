@@ -1,0 +1,7 @@
+name	BDGP6
+species	Drosophila_melanogaster
+fasta	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP6/
+bismark	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP6/
+bowtie	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP6/BDGP6
+bowtie2	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP6/BDGP6
+hisat2	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP6/BDGP6
