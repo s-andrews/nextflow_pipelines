@@ -7,12 +7,9 @@ def getGenome(name) {
     // Find a file with the same name as the genome
     // in our genomes.d directory
 
-    // TODO: Figure out where our script is so we can 
-    // look relative to that. Kludge it for now
+    scriptDir = workflow.projectDir
 
-    scriptDir = "/bi/home/andrewss/nextflow_pipelines"
-
-    genomeFH = new File(scriptDir+"/genomes.d/"+name+".genome").newInputStream()
+    genomeFH = new File(scriptDir.toString()+"/genomes.d/"+name+".genome").newInputStream()
 
     genomeValues = ["name" : name]
 
