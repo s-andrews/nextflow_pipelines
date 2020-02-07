@@ -1,7 +1,10 @@
 nextflow.preview.dsl=2
 
 
-process HISAT2 {	
+process HISAT2 {
+	label 'bigMem'
+	label 'multiCore'
+
     input:
 	    tuple val(name), path(reads)
 
