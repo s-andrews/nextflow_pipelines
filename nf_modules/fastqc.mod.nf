@@ -2,7 +2,7 @@ nextflow.preview.dsl=2
 
 
 params.fastqc_args = ''
-//println ("ARGS ARE [FASTQC MODULE]: "+ params.fastqc_args + "\n")
+// We need to replace single quotes in the arguments so that they are not taken passed in as a single string'
 fastqc_args = params.fastqc_args.replaceAll(/'/,"")
 // println ("ARGS ARE [FASTQC MODULE, replaced]: "+ fastqc_args + "\n")
 
