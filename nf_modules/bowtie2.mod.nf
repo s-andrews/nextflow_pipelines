@@ -1,7 +1,10 @@
 nextflow.preview.dsl=2
 
 
-process BOWTIE2 {	
+process BOWTIE2 {
+	label 'bigMem'
+	label 'multiCore'
+		
     input:
 	    tuple val(name), path(reads)
 
