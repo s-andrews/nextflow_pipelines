@@ -4,7 +4,7 @@ params.bowtie2_args = ''
 
 // We need to replace single quotes in the arguments so that they are not getting passed in as a single string
 bowtie2_args = params.bowtie2_args.replaceAll(/'/,"")
-println ("[BOWTIE2 MODULE, replaced] ARGS ARE: " + bowtie2_args)
+// println ("[BOWTIE2 MODULE, replaced] ARGS ARE: " + bowtie2_args)
 
 process BOWTIE2 {
 	label 'bigMem'
