@@ -4,7 +4,7 @@ params.fastq_screen_args = ''
 
 // We need to replace single quotes in the arguments so that they are not getting passed in as a single string
 fastq_screen_args = params.fastq_screen_args.replaceAll(/'/,"")
-// println ("ARGS ARE [FASTQ SCREEN MODULE, replaced]: "+ fastq_screen_args + "\n")
+// println ("[FASTQ SCREEN MODULE, replaced] ARGS ARE: "+ fastq_screen_args)
 
 process FASTQ_SCREEN {	
     input:
