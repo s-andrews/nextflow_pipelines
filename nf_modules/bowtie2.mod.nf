@@ -23,7 +23,8 @@ process BOWTIE2 {
 
 	// Options we add are
 	bowtie_options = bowtie2_args
-	bowtie_options = bowtie_options + ""
+	bowtie_options = bowtie_options + " --no-unal "
+	
 	if (reads instanceof List) {
 		readString = "-1 "+reads[0]+" -2 "+reads[1]
 	}
