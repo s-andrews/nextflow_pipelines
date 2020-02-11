@@ -44,6 +44,7 @@ workflow {
         FASTQC.out              to: params.outdir, mode: "link", overwrite: true
         FASTQ_SCREEN.out.html   to: params.outdir, mode: "link", overwrite: true
         FASTQ_SCREEN.out.png    to: params.outdir, mode: "link", overwrite: true
+        FASTQ_SCREEN.out.report to: params.outdir, mode: "link", overwrite: true
         FASTQC2.out             to: params.outdir, mode: "link", overwrite: true
         TRIM_GALORE.out.reads   to: params.outdir, mode: "link", overwrite: true
         TRIM_GALORE.out.reports to: params.outdir, mode: 'link', overwrite: true

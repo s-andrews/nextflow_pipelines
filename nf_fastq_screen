@@ -18,9 +18,9 @@ workflow {
         FASTQ_SCREEN(file_ch)
 
     publish:
-        FASTQ_SCREEN.out.html to: params.outdir, mode: 'link'
-        FASTQ_SCREEN.out.png to: params.outdir,  mode: 'link'
-        
+        FASTQ_SCREEN.out.html   to: params.outdir, mode: 'link', overwrite: true
+        FASTQ_SCREEN.out.png    to: params.outdir, mode: 'link', overwrite: true
+        FASTQ_SCREEN.out.report to: params.outdir, mode: 'link', overwrite: true
 }
 
 

@@ -11,8 +11,9 @@ process FASTQ_SCREEN {
 	    tuple val(name), path(reads)
 
 	output:
-	    path "*png", emit: png
+	    path "*png",  emit: png
 	    path "*html", emit: html
+		path "*txt",  emit: report
 
     script:
 	if (reads instanceof List) {

@@ -26,9 +26,10 @@ workflow {
 
 
     publish:
-        FASTQC.out to: params.outdir, mode: 'copy', overwrite: true
-        FASTQ_SCREEN.out.html to: params.outdir, mode: 'copy', overwrite: true
-        FASTQ_SCREEN.out.png to: params.outdir, mode: 'copy', overwrite: true
+        FASTQC.out                 to: params.outdir, mode: 'link', overwrite: true
+        FASTQ_SCREEN.out.html      to: params.outdir, mode: 'link', overwrite: true
+        FASTQ_SCREEN.out.png       to: params.outdir, mode: 'link', overwrite: true
+        FASTQ_SCREEN.out.report    to: params.outdir, mode: 'link', overwrite: true
         
 }
 
