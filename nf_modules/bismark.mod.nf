@@ -15,30 +15,28 @@ process BISMARK {
 
 	output:
 	    path "*bam",        emit: bam
-		path "*stats.txt",  emit: stats 
 		path "*report.txt", emit: report
 
     script:
-	cores = 8
+	cores = 4
 	readString = ""
 
 	// Options we add are
 	bismark_options = bismark_args
-	bismark_options = bismark_options + ""
+	// bismark_options = bismark_options + ""
 	
 	if (reads instanceof List) {
 		readString = "-1 "+reads[0]+" -2 "+reads[1]
 	}
 	else {
-		readString = "-U "+reads
+		readString = reads
 	}
 
 	index = " --genome " + params.genome["bismark"]
-	bismark_name = name + "_" + params.genome["name"]
-
+	
 	"""
 	module load bismark
-	bismark ${index} ${bismark_options} ${readString}  2>${bismark_name}_bismark_stats.txt
+	bismark ${index} ${bismark_options} ${readString}
 	"""
 
 }

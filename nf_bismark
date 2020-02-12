@@ -25,7 +25,6 @@ workflow {
         
     publish:
         BISMARK.out.bam         to: params.outdir, mode: "link", overwrite: true
-        BISMARK.out.stats       to: params.outdir, mode: "link", overwrite: true
         BISMARK.out.report      to: params.outdir, mode: "link", overwrite: true        
 }
 
