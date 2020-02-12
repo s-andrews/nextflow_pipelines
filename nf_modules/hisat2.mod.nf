@@ -24,7 +24,7 @@ process HISAT2 {
 	hisat_options = hisat2_args
 
 	// Options we add are
-	hisat_options = hisat_options + " --no-softclip "
+	hisat_options = hisat_options + " --no-unal --no-softclip "
 
 	if (reads instanceof List) {
 		readString = "-1 "+reads[0]+" -2 "+reads[1]
