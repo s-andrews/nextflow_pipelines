@@ -5,14 +5,16 @@ nextflow.preview.dsl=2
 
 params.outdir = "."
 params.genome = ""
-
+params.verbose = false
 params.hisat2_args = ''
 
-// println ("[WORKFLOW] HISAT2 ARGS ARE: "       + params.hisat2_args)
+if (params.verbose){
+    println ("[WORKFLOW] HISAT2 ARGS ARE: "       + params.hisat2_args)
+}
 
 include './nf_modules/files.mod.nf'
 include './nf_modules/genomes.mod.nf'
-include './nf_modules/hisat2.mod.nf' params(genome: getGenome(params.genome), hisat2_args:  params.hisat2_args)
+include './nf_modules/hisat2.mod.nf' params(genome: getGenome(params.genome), hisat2_args:  params.hisat2_args, verbose: params.verbose)
 
 file_ch = makeFilesChannel(args)
 

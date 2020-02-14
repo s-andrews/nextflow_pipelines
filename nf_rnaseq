@@ -12,10 +12,12 @@ params.fastq_screen_args = ''
 params.trim_galore_args = ''
 params.hisat2_args = ''
 
-// println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
-// println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
-// println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
-// println ("[WORKFLOW] HISAT2 ARGS ARE: "       + params.hisat2_args)
+if (params.verbose){
+    println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
+    println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
+    println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
+    println ("[WORKFLOW] HISAT2 ARGS ARE: "       + params.hisat2_args)
+}
 
 include './nf_modules/files.mod.nf'
 include './nf_modules/genomes.mod.nf'
@@ -51,8 +53,6 @@ workflow {
         TRIM_GALORE.out.reports to: params.outdir, mode: 'link', overwrite: true
         HISAT2.out.bam          to: params.outdir, mode: "link", overwrite: true
         HISAT2.out.stats        to: params.outdir, mode: "link", overwrite: true
-
-
 
 }
 
