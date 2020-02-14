@@ -5,6 +5,7 @@ nextflow.preview.dsl=2
 
 params.outdir = "."
 params.genome = ""
+params.verbose = false
 
 params.fastqc_args = ''
 params.fastq_screen_args = ''
@@ -18,13 +19,13 @@ params.hisat2_args = ''
 
 include './nf_modules/files.mod.nf'
 include './nf_modules/genomes.mod.nf'
-include './nf_modules/fastqc.mod.nf'                         params(fastqc_args: params.fastqc_args)
-include  FASTQC as FASTQC2 from './nf_modules/fastqc.mod.nf' params(fastqc_args: params.fastqc_args)
+include './nf_modules/fastqc.mod.nf'                         params(fastqc_args: params.fastqc_args, verbose: params.verbose)
+include  FASTQC as FASTQC2 from './nf_modules/fastqc.mod.nf' params(fastqc_args: params.fastqc_args, verbose: params.verbose)
 
-include './nf_modules/fastq_screen.mod.nf'                   params(fastq_screen_args: params.fastq_screen_args)
-include './nf_modules/trim_galore.mod.nf'                    params(trim_galore_args:  params.trim_galore_args)
+include './nf_modules/fastq_screen.mod.nf'                   params(fastq_screen_args: params.fastq_screen_args, verbose: params.verbose)
+include './nf_modules/trim_galore.mod.nf'                    params(trim_galore_args:  params.trim_galore_args, verbose: params.verbose)
 
-include './nf_modules/hisat2.mod.nf' params(genome: getGenome(params.genome), hisat2_args:  params.hisat2_args)
+include './nf_modules/hisat2.mod.nf' params(genome: getGenome(params.genome), hisat2_args:  params.hisat2_args, verbose: params.verbose)
 
 file_ch = makeFilesChannel(args)
 
