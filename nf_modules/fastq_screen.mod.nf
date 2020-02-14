@@ -1,10 +1,13 @@
 nextflow.preview.dsl=2
 
 params.fastq_screen_args = ''
+params.verbose = false
 
 // We need to replace single quotes in the arguments so that they are not getting passed in as a single string
 fastq_screen_args = params.fastq_screen_args.replaceAll(/'/,"")
-// println ("[FASTQ SCREEN MODULE, replaced] ARGS ARE: "+ fastq_screen_args)
+if (params.verbose){
+	println ("[MODULE] FASTQ SCREEN ARGS: "+ fastq_screen_args)
+}
 
 process FASTQ_SCREEN {	
     input:

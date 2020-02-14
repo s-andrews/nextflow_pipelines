@@ -1,11 +1,13 @@
 nextflow.preview.dsl=2
 
 params.trim_galore_args = ''
+params.verbose = false
 
 // We need to replace single quotes in the arguments so that they are not getting passed in as a single string
 trim_galore_args = params.trim_galore_args.replaceAll(/'/,"")
-
-// println ("[TRIM GALORE MODULE, replaced] ARGS ARE: "+ trim_galore_args)
+if (params.verbose){
+	println ("[MODULE] TRIM GALORE ARGS: " + trim_galore_args)
+}
 
 process TRIM_GALORE {	
     

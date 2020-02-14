@@ -1,10 +1,13 @@
 nextflow.preview.dsl=2
 
 params.hisat2_args = ''
+params.verbose = false
 
 // We need to replace single quotes in the arguments so that they are not getting passed in as a single string
 hisat2_args = params.hisat2_args.replaceAll(/'/,"")
-// println ("[HISAT2 MODULE, replaced] ARGS ARE: " + hisat2_args)
+if (params.verbose){
+	println ("[MODULE] HISAT2 ARGS: " + hisat2_args)
+}
 
 process HISAT2 {
 	

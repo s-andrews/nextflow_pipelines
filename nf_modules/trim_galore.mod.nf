@@ -4,11 +4,13 @@ params.trim_galore_args = ''
 params.singlecell = ''
 params.rrbs = ''
 params.pbat = ''
+params.verbose = false
 
 // We need to replace single quotes in the arguments so that they are not getting passed in as a single string
 trim_galore_args = params.trim_galore_args.replaceAll(/'/,"")
-
-// println ("[TRIM GALORE MODULE, replaced] ARGS ARE: "+ trim_galore_args)
+if (params.verbose){
+	println ("[MODULE] TRIM GALORE ARGS: " + trim_galore_args)
+}
 
 process TRIM_GALORE {	
     
