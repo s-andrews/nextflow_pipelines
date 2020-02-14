@@ -51,19 +51,25 @@ workflow {
 
     publish:
         FASTQC.out               to: params.outdir, mode: "link", overwrite: true
+        
         FASTQ_SCREEN.out.html    to: params.outdir, mode: "link", overwrite: true
         FASTQ_SCREEN.out.png     to: params.outdir, mode: "link", overwrite: true
         FASTQ_SCREEN.out.report  to: params.outdir, mode: "link", overwrite: true
+        
         FASTQC2.out              to: params.outdir, mode: "link", overwrite: true
+        
         TRIM_GALORE.out.reads    to: params.outdir, mode: "link", overwrite: true
         TRIM_GALORE.out.reports  to: params.outdir, mode: 'link', overwrite: true
+        
         BISMARK.out.bam          to: params.outdir, mode: "link", overwrite: true
         BISMARK.out.report       to: params.outdir, mode: "link", overwrite: true
+        
         BISMARK_DEDUPLICATION.out.bam           to: params.outdir, mode: "link", overwrite: true
         BISMARK_DEDUPLICATION.out.report        to: params.outdir, mode: "link", overwrite: true
+        
         BISMARK_METHYLATION_EXTRACTOR.out.report        to: params.outdir, mode: "link", overwrite: true
         BISMARK_METHYLATION_EXTRACTOR.out.context_files to: params.outdir, mode: "link", overwrite: true
         BISMARK_METHYLATION_EXTRACTOR.out.mbias         to: params.outdir, mode: "link", overwrite: true
-
+        BISMARK_METHYLATION_EXTRACTOR.out.coverage      to: params.outdir, mode: "link", overwrite: true
 }
 

@@ -11,34 +11,51 @@ process BISMARK_METHYLATION_EXTRACTOR {
 	label 'multiCore'
 		
     input:
-	    path(reads)
+	    path(bam)
 
 	output:
 	    path "C*",          emit: context_files
 		path "*report.txt", emit: report
-		path "*M-bias.txt",      emit: mbias
-
+		path "*M-bias.txt", emit: mbias
+		path "*cov.gz",     emit: coverage	
+			
     script:
 	cores = 2
-	// readString = ""
 
 	// Options we add are
-	methXtract_options = bismark_methylation_extractor_args
-	methXtract_options = methXtract_options + " --gzip "
-	// --bedGraph --buffer 10G
+	methXtract_options = bismark_methylation_extractor_args + " --gzip "
 	
-	// if (reads instanceof List) {
-	// 	readString = "-1 "+reads[0]+" -2 "+reads[1]
-	// }
-	// else {
-	// 	readString = reads
-	// }
+	isPE = isPairedEnd(bam)
+	if (isPE){
+		// println ("'isPE' was >" + isPE + "< for file: " + bam)		
+		// default ignore parameters for paired-end libraries
+		methXtract_options = methXtract_options + " --ignore_r2 2 "
+	}
+	else{
+		// println("File seems to be single-end")
+	}
 
-	// index = " --genome " + params.genome["bismark"]
-	
+	// println ("Now running command: bismark_methylation_extractor -parallel ${cores} ${methXtract_options} ${bam}")
 	"""
 	module load bismark
-	bismark_methylation_extractor --gzip -parallel ${cores} ${methXtract_options} ${reads}
+	bismark_methylation_extractor --bedGraph --buffer 10G -parallel ${cores} ${methXtract_options} ${bam}
 	"""
 
+}
+
+
+def isPairedEnd(bamfile) {
+
+	// need to transform the nextflow.processor.TaskPath object to String
+	bamfile = bamfile.toString()
+	println ("Processing file: " + bamfile)
+	
+	if (bamfile =~ /_pe/){
+		println ("File is paired-end!")
+		return true
+	}
+	else{
+	 	println ("File is single-end")
+		return false
+	}
 }
