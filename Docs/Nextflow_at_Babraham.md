@@ -48,7 +48,15 @@ So as an example, you could run specific trimming in Trim Galore like so:
 
 ## In a few more details...
 
-The worklows we are going to use here are based on [DSL2](https://www.nextflow.io/docs/latest/dsl2.html) (see also https://en.wikipedia.org/wiki/Domain-specific_language).
+The worklows we are going to use here are based on the modules system introduced with [DSL2](https://www.nextflow.io/docs/latest/dsl2.html) (see also https://en.wikipedia.org/wiki/Domain-specific_language). In essence, we need a module for each program/tool, and then a separte workflow that defines the different steps that are carried out for given input files. Here is an example of the current RNA-seq workflow, which does the following consecutive steps for each FastQ file (single-end), or file  pair (paired-end):
+
+- run FastQC or raw FastQ(s)
+- run FastQ Screen species screen
+- run Trim Galore to remove adapters and low quality base calls
+- run FastQC again on the trimmed files
+- take the trimmed FastQ files and align them to a genome using HISAT2
+
+All output will be written to the working directory.
 
 #### Example of an RNA-seq workflow
 ```nextflow
