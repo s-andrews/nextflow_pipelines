@@ -9,20 +9,25 @@ These pipelines are curated by the Babraham Bioinformatics Group, but you are of
 
 ## Pipelines:
 
-Pipelines are supposed to work in a stream-lines and reproducible way every time they are run. We try to run them with default settings that are sensible for the specific data type.
+Pipelines are supposed to work in a stream-lined and reproducible way every time they are run, and are designed so that users don't have to worry about specifying any of the plethora of options each tool provides. To this end, we try to run the individual programs of a pipeline with a pre-configured set of parameters that are (we find) sensible for the specific data type.
 
 #### List of current pipelines:
 
-- nf_qc
-- nf_rnaseq
-- nf_chipseq
-- nf_bisulfite_WGBS
-- nf_bisulfite_scBSseq
-- nf_bisulfite_RRBS
+##### nf_qc
+    FastQC, FastQ Screen
+##### nf_rnaseq
+    FastQC, FastQ Screen, Trim Galore, trimmed FastQC, HISAT2
+##### nf_chipseq
+    FastQC, FastQ Screen, Trim Galore, trimmed FastQC, Bowtie2
+##### nf_bisulfite_WGBS
+    FastQC, FastQ Screen, Trim Galore, trimmed FastQC, Bismark, deduplicate, methylation extract, coverage file
+##### nf_bisulfite_scBSseq
+    FastQC, FastQ Screen, Trim Galore (5' clip), trimmed FastQC, Bismark, deduplicate, methylation extract, coverage file
+##### nf_bisulfite_RRBS
+    FastQC, FastQ Screen, Trim Galore, trimmed FastQC, trimmed FastQC, Bismark, methylation extract, coverage file
 
 
-
-## Single Progam Pipelines:
+## Single Prorgam Pipelines:
 
 #### List of current single program pipelines:
 - nf_fastqc
@@ -33,7 +38,7 @@ Pipelines are supposed to work in a stream-lines and reproducible way every time
 - nf_hisat2
 - nf_bismark
 
-
+In addition to the default parameters, each pipeline accepts a tool-specific add
 All pre-configured pipelines take one additional argument, which has to be exactly in the following form to work:
 
 ```
