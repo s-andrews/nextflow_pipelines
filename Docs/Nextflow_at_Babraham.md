@@ -7,7 +7,7 @@
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
 
 
-We are currently transitioning from our previous pipelining system (Clusterflow) to a new one based on [Nextflow](https://www.nextflow.io/docs/latest/index.html). We offer some preconfigured pipelines that generally discriminate between two different modes of operation: 
+We are currently transitioning from our previous pipelining system [Clusterflow](https://clusterflow.io/) to a new one based on [Nextflow](https://www.nextflow.io/docs/latest/index.html). We offer some preconfigured pipelines that generally discriminate between two different modes of operation: 
 
 - data type specific, multi-step pipelines
 - single program pipelines (formerly known as modules)
@@ -21,17 +21,45 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
 #### List of current pipelines:
 
 ##### nf_qc
-    FastQC, FastQ Screen
+    FastQC
+    FastQ Screen
 ##### nf_rnaseq
-    FastQC, FastQ Screen, Trim Galore, trimmed FastQC, HISAT2
+    FastQC
+    FastQ Screen
+    Trim Galore
+    trimmed FastQC
+    HISAT2
 ##### nf_chipseq
-    FastQC, FastQ Screen, Trim Galore, trimmed FastQC, Bowtie2
+    FastQC
+    FastQ Screen
+    Trim Galore
+    trimmed FastQC
+    Bowtie2
 ##### nf_bisulfite_WGBS
-    FastQC, FastQ Screen, Trim Galore, trimmed FastQC, Bismark, deduplicate, methylation extract, coverage file
+    FastQC
+    FastQ Screen
+    Trim Galore
+    trimmed FastQC
+    Bismark
+    deduplicate
+    methylation extract (coverage file)
 ##### nf_bisulfite_scBSseq
-    FastQC, FastQ Screen, Trim Galore (5' clip), trimmed FastQC, Bismark, deduplicate, methylation extract, coverage file
+    FastQC
+    FastQ Screen
+    Trim Galore (5' clip)
+    trimmed FastQC
+    Bismark
+    deduplicate
+    methylation extract (coverage file)
 ##### nf_bisulfite_RRBS
-    FastQC, FastQ Screen, Trim Galore, trimmed FastQC, trimmed FastQC, Bismark, methylation extract, coverage file
+    FastQC
+    FastQ Screen
+    Trim Galore
+    trimmed FastQC
+    trimmed FastQC
+    Bismark
+    methylation extract
+    coverage file
 
 
 ## Single Program Pipelines:
@@ -40,7 +68,7 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
 - nf_fastqc
 - nf_fastq_screen
 - nf_trim_galore
-- nf_trim_galore_speciality
+- nf_trim_galore_speciality (for `--hardrtrim`, `--clock`, `--polyA` etc.)
 - nf_bowtie2
 - nf_hisat2
 - nf_bismark
@@ -60,7 +88,7 @@ So as an example, you could run specific trimming in Trim Galore like so:
 
 ## RNA-seq worklow in more detail
 
-The worklows we are going to use here are based on the modules system introduced with [DSL2](https://www.nextflow.io/docs/latest/dsl2.html). In essence, we need a module for each program/tool, and then a separte workflow that defines the different steps that are carried out for given input files. Here is an example of the current RNA-seq workflow, which does the following consecutive steps for each FastQ file (single-end), or file  pair (paired-end):
+Our implementation of Nextflow pipelines implements the new (and experimental) module system introduced with [DSL2](https://www.nextflow.io/docs/latest/dsl2.html). In essence, processes for different software tools and/or required processing steps are defined as separate **modules**. These modules are then invoked in separate **workflows** that define the different steps that are carried out for a given set of input files. Here is an example of the current RNA-seq workflow, which does the following consecutive steps for each FastQ file (single-end), or file  pair (paired-end):
 
 - run FastQC or raw FastQ(s)
 - run FastQ Screen species screen
