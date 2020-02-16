@@ -2,8 +2,9 @@ nextflow.preview.dsl=2
 
 params.bismark_methylation_extractor_args = ''
 params.singlecell = false
-params.rrbs = false
-params.verbose = false
+params.rrbs       = false
+params.verbose    = false
+params.pbat       = false
 
 // We need to replace single quotes in the arguments so that they are not getting passed in as a single string
 bismark_methylation_extractor_args = params.bismark_methylation_extractor_args.replaceAll(/'/,"")
@@ -37,7 +38,7 @@ process BISMARK_METHYLATION_EXTRACTOR {
 	isPE = isPairedEnd(bam)
 	if (isPE){
 		// not perform any ignoring behaviour for RRBS or single-cell libraries
-		if (!params.rrbs && !params.singlecell){
+		if (!params.rrbs && !params.singlecell && !params.pbat){
 			// default ignore parameters for paired-end libraries
 			methXtract_options = methXtract_options + " --ignore_r2 2 "
 		}

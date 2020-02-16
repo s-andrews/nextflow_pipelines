@@ -21,18 +21,22 @@ if (params.verbose){
     println ("[WORKFLOW] BISMARK DEDUPLICATION ARGS ARE: "         + params.deduplicate_bismark_args)
     println ("[WORKFLOW] BISMARK METHYLATION EXTRACTOR ARGS ARE: " + params.bismark_methylation_extractor_args)
 }
-
 include './nf_modules/files.mod.nf'
 include './nf_modules/genomes.mod.nf'
 include './nf_modules/fastqc.mod.nf'                         params(fastqc_args: params.fastqc_args, verbose: params.verbose)
 include  FASTQC as FASTQC2 from './nf_modules/fastqc.mod.nf' params(fastqc_args: params.fastqc_args, verbose: params.verbose)
 
-include './nf_modules/fastq_screen.mod.nf'                   params(fastq_screen_args: params.fastq_screen_args, bisulfite: '--bisulfite', verbose: params.verbose)
-include './nf_modules/trim_galore.mod.nf'                    params(trim_galore_args:  params.trim_galore_args, verbose: params.verbose)
+include './nf_modules/fastq_screen.mod.nf'                   params(fastq_screen_args: params.fastq_screen_args, verbose: params.verbose)
 
-include './nf_modules/bismark.mod.nf'   params(genome: getGenome(params.genome), bismark_args:  params.bismark_args, verbose: params.verbose)
+// Adding pbat flag for PBAT processing. For Trim Galore we pass on the number of bp that need to be clipped at the 5' end
+include './nf_modules/trim_galore.mod.nf'                    params(trim_galore_args:  params.trim_galore_args, pbat: 9, verbose: params.verbose)
+// Adding pbat flag for PBAT processing
+include './nf_modules/bismark.mod.nf'   params(genome: getGenome(params.genome), bismark_args:  params.bismark_args, , pbat: true, verbose: params.verbose)
+
 include './nf_modules/bismark_deduplication.mod.nf'   params(deduplicate_bismark_args:  params.deduplicate_bismark_args, verbose: params.verbose)
-include './nf_modules/bismark_methylation_extractor.mod.nf'   params(bismark_methylation_extractor_args:  params.bismark_methylation_extractor_args, verbose: params.verbose)
+
+// Adding pbat flag for PBAT processing
+include './nf_modules/bismark_methylation_extractor.mod.nf'   params(bismark_methylation_extractor_args:  params.bismark_methylation_extractor_args, pbat: true, verbose: params.verbose)
 
 file_ch = makeFilesChannel(args)
 

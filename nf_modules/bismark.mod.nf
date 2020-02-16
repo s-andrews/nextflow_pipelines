@@ -2,7 +2,7 @@ nextflow.preview.dsl=2
 
 params.bismark_args = ''
 params.singlecell = ''
-params.pbat = ''
+params.pbat = false
 params.verbose = false
 
 // We need to replace single quotes in the arguments so that they are not getting passed in as a single string
