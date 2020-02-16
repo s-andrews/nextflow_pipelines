@@ -37,29 +37,35 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
     Bowtie2
 ##### nf_bisulfite_WGBS
     FastQC
-    FastQ Screen
+    FastQ Screen [--bisulfite]
     Trim Galore
     trimmed FastQC
     Bismark
-    deduplicate
-    methylation extract (coverage file)
+    deduplicate Bismark
+    methylation extract (coverage file) [--ignore_r2 2 for PE files]
 ##### nf_bisulfite_scBSseq
     FastQC
-    FastQ Screen
-    Trim Galore (5' clip)
+    FastQ Screen [--bisulfite]
+    Trim Galore [--clip_r1 6]
     trimmed FastQC
-    Bismark
-    deduplicate
+    Bismark [--non_directional]
+    deduplicate Bismark
     methylation extract (coverage file)
 ##### nf_bisulfite_RRBS
     FastQC
-    FastQ Screen
-    Trim Galore
-    trimmed FastQC
+    FastQ Screen [--bisulfite]
+    Trim Galore [--rrbs]
     trimmed FastQC
     Bismark
-    methylation extract
-    coverage file
+    methylation extract (coverage file)
+##### nf_bisulfite_PBAT
+    FastQC
+    FastQ Screen [--bisulfite]
+    Trim Galore [--clip_r1 9]
+    trimmed FastQC
+    Bismark [--pbat]
+    deduplicate Bismark
+    methylation extract (coverage file)
 
 
 ## Single Program Pipelines:
@@ -68,13 +74,12 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
 - nf_fastqc
 - nf_fastq_screen
 - nf_trim_galore
-- nf_trim_galore_speciality (for `--hardrtrim`, `--clock`, `--polyA` etc.)
+- nf_trim_galore_speciality (for `--hardtrim`, `--clock`, `--polyA` etc.)
 - nf_bowtie2
 - nf_hisat2
 - nf_bismark
 
-In addition to the default parameters, each pipeline accepts a tool-specific add
-All pre-configured pipelines take one additional argument, which has to be exactly in the following form to work:
+In addition to the pre-configured default parameters, each pipeline accepts a single tool-specific additional argument. For the purpose of constructing this extra agrument, all software tools are `lowercase only` (e.g. `fastqc`, not `FastQC`), followed by `_args`, followed by one or more additional options you would like to supply:
 
 ```
 --toolname_args "'--additional_option value --extra_flag etc.'"
@@ -85,6 +90,22 @@ So as an example, you could run specific trimming in Trim Galore like so:
 ```
 --trim_galore_args "'--clip_r1 10 --clip_r2 10 --nextera'"
 ```
+
+The `--toolname_args "'...'"` argument should enable experienced users to customise most tools to work in more specialised ways. It should however be stressed that it should be perfectly fine to run pre-configured pipelines such as `nf_chipseq` with no need to alter any parameters manually.
+
+
+#### A note on options on Nextflow:
+
+Options in Nextflow have to be supplied **exactly** as they are expected: non-matching options are simply ignored! This means that there is no auto-completion, and typos/omissions/case errors will result in the option not getting used at all. So please take extra care when supplying additional options. As an example:
+
+```
+--fastQC_args "'--nogroup'"
+--fastq_args "'--nogroup'"
+--fastqc "'--nogroup'"
+```
+
+would all result in the same behavior: nothing.
+
 
 ## RNA-seq worklow in more detail
 
