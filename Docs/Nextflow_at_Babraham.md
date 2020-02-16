@@ -1,5 +1,12 @@
 # Nextflow Pipelines at the Babraham Institute
 
+
+#### Table of Contents
+- [Multi-step pipelines](#pipelines)
+- [Single program pipelines](#single-program-pipelines)
+- [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
+
+
 We are currently transitioning from our previous pipelining system (Clusterflow) to a new one based on [Nextflow](https://www.nextflow.io/docs/latest/index.html). We offer some preconfigured pipelines that generally discriminate between two different modes of operation: 
 
 - data type specific, multi-step pipelines
@@ -27,7 +34,7 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
     FastQC, FastQ Screen, Trim Galore, trimmed FastQC, trimmed FastQC, Bismark, methylation extract, coverage file
 
 
-## Single Prorgam Pipelines:
+## Single Program Pipelines:
 
 #### List of current single program pipelines:
 - nf_fastqc
@@ -51,9 +58,9 @@ So as an example, you could run specific trimming in Trim Galore like so:
 --trim_galore_args "'--clip_r1 10 --clip_r2 10 --nextera'"
 ```
 
-## In a few more details...
+## RNA-seq worklow in more detail
 
-The worklows we are going to use here are based on the modules system introduced with [DSL2](https://www.nextflow.io/docs/latest/dsl2.html) (see also https://en.wikipedia.org/wiki/Domain-specific_language). In essence, we need a module for each program/tool, and then a separte workflow that defines the different steps that are carried out for given input files. Here is an example of the current RNA-seq workflow, which does the following consecutive steps for each FastQ file (single-end), or file  pair (paired-end):
+The worklows we are going to use here are based on the modules system introduced with [DSL2](https://www.nextflow.io/docs/latest/dsl2.html). In essence, we need a module for each program/tool, and then a separte workflow that defines the different steps that are carried out for given input files. Here is an example of the current RNA-seq workflow, which does the following consecutive steps for each FastQ file (single-end), or file  pair (paired-end):
 
 - run FastQC or raw FastQ(s)
 - run FastQ Screen species screen
