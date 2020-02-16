@@ -1,0 +1,29 @@
+#!/usr/bin/env nextflow
+
+// Enable modules
+nextflow.preview.dsl=2
+
+params.outdir = "."
+params.fastq_screen_args = ''
+// println ("ARGS ARE [WORKFLOW]: "+ params.fastq_screen_args + "\n")
+
+include './nf_modules/files.mod.nf'
+include './nf_modules/fastq_screen.mod.nf' params(fastq_screen_args: params.fastq_screen_args)
+
+file_ch = makeFilesChannel(args)
+
+workflow {
+
+    main:
+        FASTQ_SCREEN(file_ch)
+
+    publish:
+        FASTQ_SCREEN.out.html   to: params.outdir, mode: 'link', overwrite: true
+        FASTQ_SCREEN.out.png    to: params.outdir, mode: 'link', overwrite: true
+        FASTQ_SCREEN.out.report to: params.outdir, mode: 'link', overwrite: true
+}
+
+
+file_ch.subscribe{
+    println("Found $it")
+}

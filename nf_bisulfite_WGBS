@@ -1,0 +1,76 @@
+#!/usr/bin/env nextflow
+
+// Enable modules
+nextflow.preview.dsl=2
+
+params.outdir = "."
+params.genome = ""
+params.verbose = false
+params.fastqc_args = ''
+params.fastq_screen_args = ''
+params.trim_galore_args = ''
+params.bismark_args = ''
+params.deduplicate_bismark_args = ''
+params.bismark_methylation_extractor_args = ''
+
+if (params.verbose){
+    println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
+    println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
+    println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
+    println ("[WORKFLOW] BISMARK ARGS ARE: "      + params.bismark_args)
+    println ("[WORKFLOW] BISMARK DEDUPLICATION ARGS ARE: "         + params.deduplicate_bismark_args)
+    println ("[WORKFLOW] BISMARK METHYLATION EXTRACTOR ARGS ARE: " + params.bismark_methylation_extractor_args)
+}
+
+include './nf_modules/files.mod.nf'
+include './nf_modules/genomes.mod.nf'
+include './nf_modules/fastqc.mod.nf'                         params(fastqc_args: params.fastqc_args, verbose: params.verbose)
+include  FASTQC as FASTQC2 from './nf_modules/fastqc.mod.nf' params(fastqc_args: params.fastqc_args, verbose: params.verbose)
+
+include './nf_modules/fastq_screen.mod.nf'                   params(fastq_screen_args: params.fastq_screen_args, verbose: params.verbose)
+include './nf_modules/trim_galore.mod.nf'                    params(trim_galore_args:  params.trim_galore_args, verbose: params.verbose)
+
+include './nf_modules/bismark.mod.nf'   params(genome: getGenome(params.genome), bismark_args:  params.bismark_args, verbose: params.verbose)
+include './nf_modules/bismark_deduplication.mod.nf'   params(deduplicate_bismark_args:  params.deduplicate_bismark_args, verbose: params.verbose)
+include './nf_modules/bismark_methylation_extractor.mod.nf'   params(bismark_methylation_extractor_args:  params.bismark_methylation_extractor_args, verbose: params.verbose)
+
+file_ch = makeFilesChannel(args)
+
+genome = getGenome(params.genome)
+
+
+workflow {
+
+    main:
+        FASTQC(file_ch)
+        FASTQ_SCREEN(file_ch)
+        TRIM_GALORE(file_ch)
+        FASTQC2(TRIM_GALORE.out.reads)
+        BISMARK(TRIM_GALORE.out.reads)
+        BISMARK_DEDUPLICATION(BISMARK.out.bam)
+        BISMARK_METHYLATION_EXTRACTOR(BISMARK_DEDUPLICATION.out.bam)
+
+    publish:
+        FASTQC.out               to: params.outdir, mode: "link", overwrite: true
+        
+        FASTQ_SCREEN.out.html    to: params.outdir, mode: "link", overwrite: true
+        FASTQ_SCREEN.out.png     to: params.outdir, mode: "link", overwrite: true
+        FASTQ_SCREEN.out.report  to: params.outdir, mode: "link", overwrite: true
+        
+        FASTQC2.out              to: params.outdir, mode: "link", overwrite: true
+        
+        TRIM_GALORE.out.reads    to: params.outdir, mode: "link", overwrite: true
+        TRIM_GALORE.out.reports  to: params.outdir, mode: 'link', overwrite: true
+        
+        BISMARK.out.bam          to: params.outdir, mode: "link", overwrite: true
+        BISMARK.out.report       to: params.outdir, mode: "link", overwrite: true
+        
+        BISMARK_DEDUPLICATION.out.bam           to: params.outdir, mode: "link", overwrite: true
+        BISMARK_DEDUPLICATION.out.report        to: params.outdir, mode: "link", overwrite: true
+        
+        BISMARK_METHYLATION_EXTRACTOR.out.report        to: params.outdir, mode: "link", overwrite: true
+        BISMARK_METHYLATION_EXTRACTOR.out.context_files to: params.outdir, mode: "link", overwrite: true
+        BISMARK_METHYLATION_EXTRACTOR.out.mbias         to: params.outdir, mode: "link", overwrite: true
+        BISMARK_METHYLATION_EXTRACTOR.out.coverage      to: params.outdir, mode: "link", overwrite: true
+}
+

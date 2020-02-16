@@ -1,0 +1,30 @@
+#!/usr/bin/env nextflow
+
+// Enable modules
+nextflow.preview.dsl=2
+
+params.outdir = "."
+params.genome = ""
+
+params.bismark_args = ''
+println ("[WORKFLOW] BISMARK ARGS ARE: "       + params.bismark_args)
+
+
+include './nf_modules/files.mod.nf'
+include './nf_modules/genomes.mod.nf'
+include './nf_modules/bismark.mod.nf'   params(genome: getGenome(params.genome), bismark_args:  params.bismark_args)
+
+file_ch = makeFilesChannel(args)
+
+genome = getGenome(params.genome)
+
+
+workflow {
+    main:
+        BISMARK(file_ch)
+        
+    publish:
+        BISMARK.out.bam         to: params.outdir, mode: "link", overwrite: true
+        BISMARK.out.report      to: params.outdir, mode: "link", overwrite: true        
+}
+
