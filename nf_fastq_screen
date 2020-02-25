@@ -5,10 +5,11 @@ nextflow.preview.dsl=2
 
 params.outdir = "."
 params.fastq_screen_args = ''
+params.verbose = false
 // println ("ARGS ARE [WORKFLOW]: "+ params.fastq_screen_args + "\n")
 
 include './nf_modules/files.mod.nf'
-include './nf_modules/fastq_screen.mod.nf' params(fastq_screen_args: params.fastq_screen_args)
+include './nf_modules/fastq_screen.mod.nf' params(fastq_screen_args: params.fastq_screen_args, verbose: params.verbose)
 
 file_ch = makeFilesChannel(args)
 

@@ -10,7 +10,10 @@ if (params.verbose){
 	println ("[MODULE] FASTQ SCREEN ARGS: "+ fastq_screen_args)
 }
 
-process FASTQ_SCREEN {	
+process FASTQ_SCREEN {
+	label 'bigMem'
+	label 'multiCore'
+
     input:
 	    tuple val(name), path(reads)
 
@@ -26,7 +29,7 @@ process FASTQ_SCREEN {
 
 	"""
 	module load fastq_screen
-	fastq_screen $params.bisulfite $fastq_screen_args	$reads
+	fastq_screen $params.bisulfite $fastq_screen_args $reads
 	"""
 
 }
