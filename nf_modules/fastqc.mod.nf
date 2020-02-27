@@ -14,7 +14,7 @@ process FASTQC {
 	    tuple val(name), path(reads)
 
 	output:
-	    path "*html" 
+	    path "*fastqc*"
 	
 	script:
 	"""
