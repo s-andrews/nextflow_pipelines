@@ -13,41 +13,33 @@ params.trim_galore_args = ''
 params.bowtie2_args = ''
 
 
+if (params.verbose){
+    println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
+    println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
+    println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
+}
+
 include './nf_modules/files.mod.nf'
 include './nf_modules/genomes.mod.nf'
-include './nf_modules/fastqc.mod.nf'                          params(fastqc_args: params.fastqc_args, verbose: params.verbose)
-include  FASTQC as FASTQC2 from './nf_modules/fastqc.mod.nf'  params(fastqc_args: params.fastqc_args, verbose: params.verbose)
-include './nf_modules/fastq_screen.mod.nf'                    params(fastq_screen_args: params.fastq_screen_args, verbose: params.verbose)
-include './nf_modules/trim_galore.mod.nf'                     params(trim_galore_args:  params.trim_galore_args, verbose: params.verbose)
-
-include './nf_modules/bowtie2.mod.nf'   params(genome: getGenome(params.genome), bowtie2_args:  params.bowtie2_args, verbose: params.verbose)
-
-file_ch = makeFilesChannel(args)
-
 genome = getGenome(params.genome)
 
+include './nf_modules/fastqc.mod.nf'
+include  FASTQC as FASTQC2 from './nf_modules/fastqc.mod.nf'
+include './nf_modules/fastq_screen.mod.nf'
+include './nf_modules/trim_galore.mod.nf'
+
+include './nf_modules/bowtie2.mod.nf'   params(genome: genome)
+
+file_ch = makeFilesChannel(args)
 
 workflow {
 
     main:
-        FASTQC(file_ch)
-        FASTQ_SCREEN(file_ch)
-        TRIM_GALORE(file_ch)
-        FASTQC2(TRIM_GALORE.out.reads)
-        BOWTIE2(TRIM_GALORE.out.reads)
-          
-
-    publish:
-        FASTQC.out              to: params.outdir, mode: "link", overwrite: true
-        FASTQ_SCREEN.out.html   to: params.outdir, mode: "link", overwrite: true
-        FASTQ_SCREEN.out.png    to: params.outdir, mode: "link", overwrite: true
-        FASTQ_SCREEN.out.report to: params.outdir, mode: "link", overwrite: true
-        FASTQC2.out             to: params.outdir, mode: "link", overwrite: true
-        TRIM_GALORE.out.reads   to: params.outdir, mode: "link", overwrite: true
-        TRIM_GALORE.out.reports to: params.outdir, mode: 'link', overwrite: true
-        BOWTIE2.out.bam         to: params.outdir, mode: "link", overwrite: true
-        BOWTIE2.out.stats       to: params.outdir, mode: "link", overwrite: true
-
-
+        FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
+        FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
+        TRIM_GALORE     (file_ch, params.outdir, params.trim_galore_args, params.verbose)
+        FASTQC2         (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        BOWTIE2         (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)
+     
 }
 

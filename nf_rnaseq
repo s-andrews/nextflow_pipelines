@@ -1,6 +1,4 @@
 #!/usr/bin/env nextflow
-
-// Enable modules
 nextflow.preview.dsl=2
 
 params.outdir = "."
@@ -21,38 +19,24 @@ if (params.verbose){
 
 include './nf_modules/files.mod.nf'
 include './nf_modules/genomes.mod.nf'
-include './nf_modules/fastqc.mod.nf'                         params(fastqc_args: params.fastqc_args, verbose: params.verbose)
-include  FASTQC as FASTQC2 from './nf_modules/fastqc.mod.nf' params(fastqc_args: params.fastqc_args, verbose: params.verbose)
-
-include './nf_modules/fastq_screen.mod.nf'                   params(fastq_screen_args: params.fastq_screen_args, verbose: params.verbose)
-include './nf_modules/trim_galore.mod.nf'                    params(trim_galore_args:  params.trim_galore_args, verbose: params.verbose)
-
-include './nf_modules/hisat2.mod.nf' params(genome: getGenome(params.genome), hisat2_args:  params.hisat2_args, verbose: params.verbose)
-
-file_ch = makeFilesChannel(args)
-
 genome = getGenome(params.genome)
 
+include './nf_modules/fastqc.mod.nf'
+include  FASTQC as FASTQC2 from './nf_modules/fastqc.mod.nf'
+include './nf_modules/fastq_screen.mod.nf'
+include './nf_modules/trim_galore.mod.nf'
+include './nf_modules/hisat2.mod.nf' params(genome: genome)
+
+file_ch = makeFilesChannel(args)
 
 workflow {
 
     main:
-        FASTQC(file_ch)
-        FASTQ_SCREEN(file_ch)
-        TRIM_GALORE(file_ch)
-        FASTQC2(TRIM_GALORE.out.reads)
-        HISAT2(TRIM_GALORE.out.reads)
-
-    publish:
-        FASTQC.out              to: params.outdir, mode: "link", overwrite: true
-        FASTQ_SCREEN.out.html   to: params.outdir, mode: "link", overwrite: true
-        FASTQ_SCREEN.out.png    to: params.outdir, mode: "link", overwrite: true
-        FASTQ_SCREEN.out.report to: params.outdir, mode: "link", overwrite: true
-        FASTQC2.out             to: params.outdir, mode: "link", overwrite: true
-        TRIM_GALORE.out.reads   to: params.outdir, mode: "link", overwrite: true
-        TRIM_GALORE.out.reports to: params.outdir, mode: 'link', overwrite: true
-        HISAT2.out.bam          to: params.outdir, mode: "link", overwrite: true
-        HISAT2.out.stats        to: params.outdir, mode: "link", overwrite: true
+        FASTQC         (file_ch, params.outdir, params.fastqc_args, params.verbose)
+        FASTQ_SCREEN   (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
+        TRIM_GALORE    (file_ch, params.outdir, params.trim_galore_args, params.verbose)
+        FASTQC2        (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        HISAT2         (TRIM_GALORE.out.reads, params.outdir, params.hisat2_args, params.verbose)
 
 }
 

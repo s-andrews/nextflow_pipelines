@@ -1,12 +1,9 @@
 #!/usr/bin/env nextflow
-
-// Enable modules
 nextflow.preview.dsl=2
 
 params.outdir = "."
 params.verbose = false
 params.trim_galore_args = ''
-
 
 if (params.verbose){
     println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
@@ -21,10 +18,6 @@ workflow {
 
     main:
         TRIM_GALORE(file_ch, params.outdir, params.trim_galore_args, params.verbose)
-        
-    // publish:
-    //     TRIM_GALORE.out.reads   to: params.outdir, mode: 'link', overwrite: true
-    //     TRIM_GALORE.out.reports to: params.outdir, mode: 'link', overwrite: true
-        
+
 }
 

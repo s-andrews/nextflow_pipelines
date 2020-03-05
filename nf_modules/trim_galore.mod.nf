@@ -6,10 +6,6 @@ params.rrbs = ''
 params.pbat = ''
 
 
-// We need to replace single quotes in the arguments so that they are not getting passed in as a single string
-// trim_galore_args = params.trim_galore_args.replaceAll(/'/,"")
-
-
 process TRIM_GALORE {	
     
 	input:
@@ -27,12 +23,16 @@ process TRIM_GALORE {
 
 
     script:
-	println ("[MODULE] TRIM GALORE ARGS: " + trim_galore_args)	
 		if (verbose){
 			println ("[MODULE] TRIM GALORE ARGS: " + trim_galore_args)
 		}
 		
+		// We need to replace single quotes in the arguments so that they are not getting passed in as a single string
+		// This is only a temporary workaround until Paolo has fixed the Nextflow bug.
+		// https://github.com/nextflow-io/nextflow/issues/1519
+		// trim_galore_args = params.trim_galore_args.replaceAll(/'/,"")
 		trim_galore_args = trim_galore_args.replaceAll(/'/,"")
+
 
 		pairedString = ""
 		if (reads instanceof List) {
