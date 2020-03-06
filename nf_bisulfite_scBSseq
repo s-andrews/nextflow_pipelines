@@ -12,6 +12,9 @@ params.trim_galore_args = ''
 params.bismark_args = ''
 params.deduplicate_bismark_args = ''
 params.bismark_methylation_extractor_args = ''
+params.bismark2summary_args = ''
+params.bismark2report_args= ''
+params.multiqc_args = ''
 
 if (params.verbose){
     println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
@@ -21,6 +24,7 @@ if (params.verbose){
     println ("[WORKFLOW] BISMARK DEDUPLICATION ARGS ARE: "         + params.deduplicate_bismark_args)
     println ("[WORKFLOW] BISMARK METHYLATION EXTRACTOR ARGS ARE: " + params.bismark_methylation_extractor_args)
 }
+
 include './nf_modules/files.mod.nf'
 include './nf_modules/genomes.mod.nf'
 genome = getGenome(params.genome)
@@ -35,6 +39,8 @@ include './nf_modules/trim_galore.mod.nf'                     params(singlecell:
 // Adding singlecell flag for scBS-seq processing
 include './nf_modules/bismark.mod.nf'                         params(genome: genome, singlecell: true)
 include './nf_modules/bismark_deduplication.mod.nf'
+include './nf_modules/bismark2report.mod.nf'
+include './nf_modules/bismark2summary.mod.nf'
 
 // Adding singlecell flag for scBS-seq processing
 include './nf_modules/bismark_methylation_extractor.mod.nf'   params(singlecell: true)
@@ -55,7 +61,7 @@ workflow {
  
         // merging channels for MultiQC
         multiqc_ch = FASTQC.out.report.mix(
-            TRIM_GALORE.out.report.ifEmpty([]),
+            TRIM_GALORE.out.report,
             FASTQ_SCREEN.out.report.ifEmpty([]),
             FASTQC2.out.report.ifEmpty([]),
             BISMARK.out.report.ifEmpty([]),
@@ -64,8 +70,16 @@ workflow {
             BISMARK_METHYLATION_EXTRACTOR.out.mbias.ifEmpty([]),
         ).collect()
 
-        // multiqc_ch.subscribe {  println "Got: $it"  }
+        bismark_report_ch = BISMARK.out.bam.mix(
+            BISMARK.out.report,
+            BISMARK_DEDUPLICATION.out.report.ifEmpty([]),
+            BISMARK_METHYLATION_EXTRACTOR.out.report.ifEmpty([]),
+            BISMARK_METHYLATION_EXTRACTOR.out.mbias.ifEmpty([]),
+        ).collect()
 
-        
-        MULTIQC                          (multiqc_ch, params.outdir, params.deduplicate_bismark_args, params.verbose)
+        // bismark_report_ch.subscribe {  println "Got: $it"  }
+
+        BISMARK2REPORT                   (bismark_report_ch, params.outdir, params.bismark2report_args, params.verbose)
+        BISMARK2SUMMARY                  (bismark_report_ch, params.outdir, params.bismark2summary_args, params.verbose)
+        MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 }
