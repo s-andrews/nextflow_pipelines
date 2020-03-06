@@ -16,7 +16,7 @@ process TRIM_GALORE {
 
 	output:
 	    tuple val(name), path ("*fq.gz"), emit: reads
-		tuple val(name),  optional: true, path ("*trimming_report.txt"), emit: reports
+		path "*trimming_report.txt", optional: true, emit: report
 		
 	publishDir "$outputdir",
 		mode: "link", overwrite: true

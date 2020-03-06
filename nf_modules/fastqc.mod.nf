@@ -8,7 +8,8 @@ process FASTQC {
 		val (verbose)
 
 	output:
-	    path "*fastqc*"
+	    tuple val(name), path ("*fastqc*"), emit: all
+		path "*.zip",  emit: report
 	
 	publishDir "$outputdir",
 		mode: "link", overwrite: true
