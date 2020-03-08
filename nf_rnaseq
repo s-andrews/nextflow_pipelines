@@ -9,12 +9,15 @@ params.fastqc_args = ''
 params.fastq_screen_args = ''
 params.trim_galore_args = ''
 params.hisat2_args = ''
+params.multiqc_args = ''
+
 
 if (params.verbose){
     println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
     println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
     println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
     println ("[WORKFLOW] HISAT2 ARGS ARE: "       + params.hisat2_args)
+    println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
 }
 
 include './nf_modules/files.mod.nf'
@@ -27,6 +30,7 @@ include './nf_modules/fastq_screen.mod.nf'
 include './nf_modules/trim_galore.mod.nf'
 include './nf_modules/hisat2.mod.nf' params(genome: genome)
 
+include './nf_modules/multiqc.mod.nf' 
 file_ch = makeFilesChannel(args)
 
 workflow {
@@ -38,5 +42,16 @@ workflow {
         FASTQC2        (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
         HISAT2         (TRIM_GALORE.out.reads, params.outdir, params.hisat2_args, params.verbose)
 
+        // merging channels for MultiQC
+        multiqc_ch = FASTQC.out.report.mix(
+            TRIM_GALORE.out.report,
+            FASTQ_SCREEN.out.report.ifEmpty([]),
+            FASTQC2.out.report.ifEmpty([]),
+            HISAT2.out.stats.ifEmpty([]),
+        ).collect()
+
+        // multiqc_ch.subscribe {  println "Got: $it"  }
+
+        MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 }
 

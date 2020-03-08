@@ -12,6 +12,9 @@ params.trim_galore_args = ''
 params.bismark_args = ''
 params.deduplicate_bismark_args = ''
 params.bismark_methylation_extractor_args = ''
+params.bismark2summary_args = ''
+params.bismark2report_args= ''
+params.multiqc_args = ''
 
 if (params.verbose){
     println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
@@ -28,7 +31,7 @@ genome = getGenome(params.genome)
 include './nf_modules/fastqc.mod.nf'                         
 include  FASTQC as FASTQC2 from './nf_modules/fastqc.mod.nf' 
 
-include './nf_modules/fastq_screen.mod.nf'
+include './nf_modules/fastq_screen.mod.nf'                   params(bisulfite: '--bisulfite')
 
 // Adding pbat flag for PBAT processing. For Trim Galore we pass on the number of bp that need to be clipped at the 5' end
 include './nf_modules/trim_galore.mod.nf'                    params(pbat: 9)
@@ -39,6 +42,10 @@ include './nf_modules/bismark_deduplication.mod.nf'
 
 // Adding pbat flag for PBAT processing
 include './nf_modules/bismark_methylation_extractor.mod.nf'  params(pbat: true)
+include './nf_modules/bismark2report.mod.nf'
+include './nf_modules/bismark2summary.mod.nf'
+
+include './nf_modules/multiqc.mod.nf' 
 
 file_ch = makeFilesChannel(args)
 
@@ -52,5 +59,29 @@ workflow {
         BISMARK                         (TRIM_GALORE.out.reads, params.outdir, params.bismark_args, params.verbose)
         BISMARK_DEDUPLICATION           (BISMARK.out.bam, params.outdir, params.deduplicate_bismark_args, params.verbose)
         BISMARK_METHYLATION_EXTRACTOR   (BISMARK_DEDUPLICATION.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
+
+        // merging channels for MultiQC
+        multiqc_ch = FASTQC.out.report.mix(
+            TRIM_GALORE.out.report,
+            FASTQ_SCREEN.out.report.ifEmpty([]),
+            FASTQC2.out.report.ifEmpty([]),
+            BISMARK.out.report.ifEmpty([]),
+            BISMARK_DEDUPLICATION.out.report.ifEmpty([]),
+            BISMARK_METHYLATION_EXTRACTOR.out.report.ifEmpty([]),
+            BISMARK_METHYLATION_EXTRACTOR.out.mbias.ifEmpty([]),
+        ).collect()
+        // merging channels for Bismark reports
+        bismark_report_ch = BISMARK.out.bam.mix(
+            BISMARK.out.report,
+            BISMARK_DEDUPLICATION.out.report.ifEmpty([]),
+            BISMARK_METHYLATION_EXTRACTOR.out.report.ifEmpty([]),
+            BISMARK_METHYLATION_EXTRACTOR.out.mbias.ifEmpty([]),
+        ).collect()
+
+        // bismark_report_ch.subscribe {  println "Got: $it"  }
+
+        BISMARK2REPORT                   (bismark_report_ch, params.outdir, params.bismark2report_args, params.verbose)
+        BISMARK2SUMMARY                  (bismark_report_ch, params.outdir, params.bismark2summary_args, params.verbose)
+        MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 }
 
