@@ -51,8 +51,8 @@ workflow {
 
     main:
         FASTQC                 (file_ch, params.outdir, params.fastqc_args, params.verbose)
-        FASTQ_SCREEN           (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
         TRIM_GALORE            (file_ch, params.outdir, params.trim_galore_args, params.verbose)
+        FASTQ_SCREEN           (TRIM_GALORE.out.reads, params.outdir, params.fastq_screen_args, params.verbose)
         FASTQC2                (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
         BISMARK                (TRIM_GALORE.out.reads, params.outdir, params.bismark_args, params.verbose)
         BISMARK_DEDUPLICATION  (BISMARK.out.bam, params.outdir, params.deduplicate_bismark_args, params.verbose)

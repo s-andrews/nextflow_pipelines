@@ -16,17 +16,13 @@ process FASTQC {
 
 	script:
 
-		// We need to replace single quotes in the arguments so that they are not taken passed in as a single string
-		// This will likely be fixed soon
-		fastqc_args = fastqc_args.replaceAll(/'/,"")
 		if (verbose){
 			println ("[MODULE] FASTQC ARGS: "+ fastqc_args)
 		}
 
-
-	"""
-	module load fastqc
-	fastqc $fastqc_args -q -t 2 ${reads}
-	"""
+		"""
+		module load fastqc
+		fastqc $fastqc_args -q -t 2 ${reads}
+		"""
 
 }

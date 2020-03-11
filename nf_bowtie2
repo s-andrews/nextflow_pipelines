@@ -20,11 +20,7 @@ file_ch = makeFilesChannel(args)
 workflow {
 
     main:
-        BOWTIE2(file_ch,, params.outdir, params.bowtie2_args, params.verbose)
+        BOWTIE2(file_ch, params.outdir, params.bowtie2_args, params.verbose)
     
-    // publish:
-    //     BOWTIE2.out.bam         to: params.outdir, mode: "link", overwrite: true
-    //     BOWTIE2.out.stats       to: params.outdir, mode: "link", overwrite: true
-
 }
 

@@ -1,5 +1,6 @@
 nextflow.preview.dsl=2
 params.bisulfite = ''
+params.single_end = false
 
 process FASTQ_SCREEN {
 	label 'bigMem'
@@ -21,18 +22,19 @@ process FASTQ_SCREEN {
 
     script:
 
-		// We need to replace single quotes in the arguments so that they are not getting passed in as a single string
-		// This is only a temporary workaround until Paolo has fixed the Nextflow bug.
-		// https://github.com/nextflow-io/nextflow/issues/1519
-		fastq_screen_args = fastq_screen_args.replaceAll(/'/,"")
-
 		if (verbose){
 			println ("[MODULE] FASTQ SCREEN ARGS: "+ fastq_screen_args)
 		}
 
-		if (reads instanceof List) {
-			reads = reads[0]
+		if (params.single_end){
+			// TODO: Add single-end parameter
 		}
+		else{
+			// for paired-end files we only use Read 1 (as Read 2 tends to show the exact same thing)
+			if (reads instanceof List) {
+				reads = reads[0]
+			}
+		}	
 
 	"""
 	module load fastq_screen

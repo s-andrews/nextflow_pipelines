@@ -17,9 +17,6 @@ process BISMARK_DEDUPLICATION {
 		mode: "link", overwrite: true
 
     script:
-
-		// We need to replace single quotes in the arguments so that they are not getting passed in as a single string
-		deduplicate_bismark_args = deduplicate_bismark_args.replaceAll(/'/,"")
 		if (verbose){
 			println ("[MODULE] BISMARK DEDUPLICATION ARGS: " + deduplicate_bismark_args)
 		}

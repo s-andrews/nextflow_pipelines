@@ -21,6 +21,5 @@ workflow {
 
     main:
         HISAT2(file_ch, params.outdir, params.hisat2_args, params.verbose)
-
 }
 
