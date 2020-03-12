@@ -1,0 +1,98 @@
+#!/usr/bin/env nextflow
+nextflow.preview.dsl=2
+
+params.outdir = "."
+params.genome = ""
+params.verbose = false
+
+params.fastqc_args = ''
+params.fastq_screen_args = ''
+params.trim_galore_args = ''
+params.bismark_args = ''
+params.umibam_args = ''
+params.bismark_methylation_extractor_args = ''
+params.bismark2summary_args = ''
+params.bismark2report_args= ''
+params.multiqc_args = ''
+
+if (params.verbose){
+    println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
+    println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
+    println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
+    println ("[WORKFLOW] BISMARK ARGS ARE: "      + params.bismark_args)
+    println ("[WORKFLOW] UMIBAM ARGS ARE: "       + params.umibam_args)
+    println ("[WORKFLOW] BISMARK METHYLATION EXTRACTOR ARGS ARE: " + params.bismark_methylation_extractor_args)
+}
+
+include './nf_modules/files.mod.nf'
+include './nf_modules/genomes.mod.nf'
+genome = getGenome(params.genome)
+
+include './nf_modules/fastqc.mod.nf' 
+include  FASTQC as FASTQC2 from './nf_modules/fastqc.mod.nf'
+include  FASTQC as FASTQC3 from './nf_modules/fastqc.mod.nf'
+
+// --bisulfite paramater needs to be re-enabled, but MultiQC is currently broken
+include './nf_modules/fastq_screen.mod.nf'                             //  params(bisulfite: '--bisulfite')
+
+// Adding flag for RRBS processing
+// The second trimming step needs to look like this:
+// trim_galore --paired --three_prime_clip_R1 15 --three_prime_clip_R2 15 *.clock_UMI.R1.fq.gz *.clock_UMI.R2.fq.gz
+
+include './nf_modules/trim_galore.mod.nf'                                params(three_prime_clip_R1: 15, three_prime_clip_R2: 15)
+include TRIM_GALORE as TRIM_CLOCK from './nf_modules/trim_galore.mod.nf' params(clock: true)
+include './nf_modules/bismark.mod.nf'                                    params(genome: genome)
+include './nf_modules/umibam.mod.nf'                                     params(dual: true)
+
+// Adding flag for RRBS processing
+include './nf_modules/bismark_methylation_extractor.mod.nf'              params(rrbs: true)
+include './nf_modules/bismark2report.mod.nf'
+include './nf_modules/bismark2summary.mod.nf'
+
+include './nf_modules/multiqc.mod.nf' 
+
+file_ch = makeFilesChannel(args)
+
+workflow {
+
+    main:
+        FASTQC                         (file_ch, params.outdir, params.fastqc_args, params.verbose)
+        TRIM_CLOCK                     (file_ch, params.outdir, params.trim_galore_args, params.verbose)
+        FASTQC2                        (TRIM_CLOCK.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        TRIM_GALORE                    (TRIM_CLOCK.out.reads, params.outdir, params.trim_galore_args, params.verbose)
+        FASTQC3                        (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
+       // FASTQ_SCREEN                   (TRIM_GALORE.out.reads, params.outdir, params.fastq_screen_args, params.verbose)
+        BISMARK                        (TRIM_GALORE.out.reads, params.outdir, params.bismark_args, params.verbose)
+        // Need UmiBam
+        UMIBAM                         (BISMARK.out.bam, params.outdir, params.umibam_args, params.verbose)
+
+        // Skipping deduplication step
+        BISMARK_METHYLATION_EXTRACTOR  (UMIBAM.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
+
+        // merging channels for MultiQC
+        multiqc_ch = FASTQC.out.report.mix(
+            TRIM_GALORE.out.report,
+         //   FASTQ_SCREEN.out.report.ifEmpty([]),
+            FASTQC2.out.report.ifEmpty([]),
+            BISMARK.out.report.ifEmpty([]),
+            UMIBAM.out.report.ifEmpty([]),
+            BISMARK_METHYLATION_EXTRACTOR.out.report.ifEmpty([]),
+            BISMARK_METHYLATION_EXTRACTOR.out.mbias.ifEmpty([]),
+        ).collect()
+
+        // merging channels for Bismark reports
+        bismark_report_ch = BISMARK.out.bam.mix(
+            BISMARK.out.report,
+            UMIBAM.out.report.ifEmpty([]),
+            BISMARK_METHYLATION_EXTRACTOR.out.report.ifEmpty([]),
+            BISMARK_METHYLATION_EXTRACTOR.out.mbias.ifEmpty([]),
+        ).collect()
+
+        // bismark_report_ch.subscribe {  println "Got: $it"  }
+
+        BISMARK2REPORT                   (bismark_report_ch, params.outdir, params.bismark2report_args, params.verbose)
+        BISMARK2SUMMARY                  (bismark_report_ch, params.outdir, params.bismark2summary_args, params.verbose)
+        MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
+
+}
+

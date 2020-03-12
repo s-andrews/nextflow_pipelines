@@ -1,8 +1,13 @@
 nextflow.preview.dsl=2
 
 process BISMARK_DEDUPLICATION {
-	label 'bigMem'
-		
+	label 'hugeMem'
+	// consider dynamic directive to increase memory
+	// memory { 2.GB * task.attempt }
+    // time { 1.hour * task.attempt }
+    // errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
+    // maxRetries 3
+
     input:
 	    path(bam)
 		val (outputdir)
