@@ -6,44 +6,57 @@ params.verbose    = false
 params.pbat       = false
 params.nome       = false
 
+genome = params.genome["bismark"]
+
 process COVERAGE2CYTOSINE {
-	label 'bigMem'
-	label 'multiCore'
+	label 'hugeMem'
 		
     input:
-	    path(bam)
+	    path(coverage_file)
 		val (outputdir)
 		val (coverage2cytosine_args)
 		val (verbose)
 
 	output:
-	    path "C*",          emit: context_files
-		path "*report.txt", emit: report
-		path "*M-bias.txt", emit: mbias
-		path "*cov.gz",     emit: coverage
+	    path "*{report.txt.gz,report.txt}", emit: report
+		path "*{.cov.gz,.cov}",             emit: coverage
 	
 	publishDir "$outputdir",
 		mode: "link", overwrite: true
     
 	script:
 		
+		// removing the file extension from the input file name 
+		// (https://www.nextflow.io/docs/latest/script.html#removing-part-of-a-string)
+		outfile_basename = coverage_file.toString()  // Important to convert nextflow.processor.TaskPath object to String first
+		outfile_basename = (outfile_basename - ~/.bismark.cov.gz$/)
+		outfile_basename = (outfile_basename - ~/.cov.gz$/)
+		outfile_basename = (outfile_basename - ~/.cov$/)
+
 		if (verbose){
 			println ("[MODULE] BISMARK COVERAGE2CYTOSINE ARGS: " + coverage2cytosine_args)
+			println ("Bismark Genome is: " + genome)
 		}
 
 		// Options we add are
 		cov2cyt_options = coverage2cytosine_args + " --gzip "
 		
 		if (params.nome){
-			println ("FLAG NOMe-Seq SPECIFIED: PROCESSING ACCORDINGLY")
+			if (verbose){
+				println ("NOMe-seq outfile basename: $outfile_basename")
+			}
+			cov2cyt_options += " --nome"
 		}
 
 		
-		println ("Now running command: coverage2cytosine ${cov2cyt_options} ${bam}")
+		if (verbose){
+			println ("Now running command: coverage2cytosine --genome $genome $cov2cyt_options --output ${outfile_basename} $coverage_file ")
+		}
+
 		"""
 		module load bismark
-		bismark_methylation_extractor --bedGraph --buffer 10G -parallel ${cores} ${methXtract_options} ${bam}
+		coverage2cytosine --genome $genome $cov2cyt_options --output ${outfile_basename} $coverage_file
 		"""
-		// for i in *cov.gz; do ssub -o log.$i --mem=20G --email coverage2cytosine --genome /bi/scratch/Genomes/Mouse/GRCm38/ --gzip --nome --output $i.NOME $i; done
+		
 		
 }

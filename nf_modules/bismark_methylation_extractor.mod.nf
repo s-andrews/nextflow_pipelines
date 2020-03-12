@@ -41,7 +41,9 @@ process BISMARK_METHYLATION_EXTRACTOR {
 		}
 
 		if (params.nonCG){
-			println ("FLAG nonCG SPECIFIED: PROCESSING ACCORDINGLY")
+			if (verbose){
+				println ("FLAG nonCG specified: adding flag --CX ")
+			}
 			methXtract_options +=  " --CX "
 		}
 
