@@ -1,31 +1,30 @@
 #!/usr/bin/env nextflow
+nextflow.preview.dsl=2
 
 params.outdir = "."
 params.fastqc_args = ''
-// println ("ARGS ARE [WORKFLOW]: "+ params.fastqc_args + "\n")
+params.verbose = false
 
-// Enable modules
-nextflow.preview.dsl=2
+if (params.verbose){
+    println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
+}
 
 // Example command
 // nf_fastqc --fastqc_args "'--nogroup --adapter ~/adapter_list_with_contamination_one_off.txt'" *fastq.gz
 
 include './nf_modules/files.mod.nf'
-include './nf_modules/fastqc.mod.nf' params(fastqc_args: params.fastqc_args)
+include './nf_modules/fastqc.mod.nf'
 
 file_ch = makeFilesChannel(args) 
 
 workflow {
 
     main:
-        FASTQC(file_ch)
-       
-    publish:
-        FASTQC.out to: params.outdir, mode: "link", overwrite: true
+        FASTQC(file_ch, params.outdir, params.fastqc_args, params.verbose)
        
 }
 
 
-file_ch.subscribe{
-    println("Found $it")
-}
+//file_ch.subscribe{
+//    println("Found $it")
+//}

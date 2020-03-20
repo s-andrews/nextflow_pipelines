@@ -1,6 +1,4 @@
 #!/usr/bin/env nextflow
-
-// Enable modules
 nextflow.preview.dsl=2
 
 params.outdir = "."

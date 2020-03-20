@@ -7,7 +7,7 @@
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
 
 
-We are currently transitioning from our previous pipelining system (Clusterflow) to a new one based on [Nextflow](https://www.nextflow.io/docs/latest/index.html). We offer some preconfigured pipelines that generally discriminate between two different modes of operation: 
+We are currently transitioning from our previous pipelining system [Clusterflow](https://clusterflow.io/) to a new one based on [Nextflow](https://www.nextflow.io/docs/latest/index.html). We offer some preconfigured pipelines that generally discriminate between two different modes of operation: 
 
 - data type specific, multi-step pipelines
 - single program pipelines (formerly known as modules)
@@ -21,17 +21,51 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
 #### List of current pipelines:
 
 ##### nf_qc
-    FastQC, FastQ Screen
+    FastQC
+    FastQ Screen
 ##### nf_rnaseq
-    FastQC, FastQ Screen, Trim Galore, trimmed FastQC, HISAT2
+    FastQC
+    FastQ Screen
+    Trim Galore
+    trimmed FastQC
+    HISAT2
 ##### nf_chipseq
-    FastQC, FastQ Screen, Trim Galore, trimmed FastQC, Bowtie2
+    FastQC
+    FastQ Screen
+    Trim Galore
+    trimmed FastQC
+    Bowtie2
 ##### nf_bisulfite_WGBS
-    FastQC, FastQ Screen, Trim Galore, trimmed FastQC, Bismark, deduplicate, methylation extract, coverage file
+    FastQC
+    FastQ Screen [--bisulfite]
+    Trim Galore
+    trimmed FastQC
+    Bismark
+    deduplicate Bismark
+    methylation extract (coverage file) [--ignore_r2 2 for PE files]
 ##### nf_bisulfite_scBSseq
-    FastQC, FastQ Screen, Trim Galore (5' clip), trimmed FastQC, Bismark, deduplicate, methylation extract, coverage file
+    FastQC
+    FastQ Screen [--bisulfite]
+    Trim Galore [--clip_r1 6]
+    trimmed FastQC
+    Bismark [--non_directional]
+    deduplicate Bismark
+    methylation extract (coverage file)
 ##### nf_bisulfite_RRBS
-    FastQC, FastQ Screen, Trim Galore, trimmed FastQC, trimmed FastQC, Bismark, methylation extract, coverage file
+    FastQC
+    FastQ Screen [--bisulfite]
+    Trim Galore [--rrbs]
+    trimmed FastQC
+    Bismark
+    methylation extract (coverage file)
+##### nf_bisulfite_PBAT
+    FastQC
+    FastQ Screen [--bisulfite]
+    Trim Galore [--clip_r1 9]
+    trimmed FastQC
+    Bismark [--pbat]
+    deduplicate Bismark
+    methylation extract (coverage file)
 
 
 ## Single Program Pipelines:
@@ -40,13 +74,12 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
 - nf_fastqc
 - nf_fastq_screen
 - nf_trim_galore
-- nf_trim_galore_speciality
+- nf_trim_galore_speciality (for `--hardtrim`, `--clock`, `--polyA` etc.)
 - nf_bowtie2
 - nf_hisat2
 - nf_bismark
 
-In addition to the default parameters, each pipeline accepts a tool-specific add
-All pre-configured pipelines take one additional argument, which has to be exactly in the following form to work:
+In addition to the pre-configured default parameters, each pipeline accepts a single tool-specific additional argument. For the purpose of constructing this extra agrument, all software tools are `lowercase only` (e.g. `fastqc`, not `FastQC`), followed by `_args`, followed by one or more additional options you would like to supply:
 
 ```
 --toolname_args "'--additional_option value --extra_flag etc.'"
@@ -58,9 +91,25 @@ So as an example, you could run specific trimming in Trim Galore like so:
 --trim_galore_args "'--clip_r1 10 --clip_r2 10 --nextera'"
 ```
 
+The `--toolname_args "'...'"` argument should enable experienced users to customise most tools to work in more specialised ways. It should however be stressed that it should be perfectly fine to run pre-configured pipelines such as `nf_chipseq` with no need to alter any parameters manually.
+
+
+#### A note on options on Nextflow:
+
+Options in Nextflow have to be supplied **exactly** as they are expected: non-matching options are simply ignored! This means that there is no auto-completion, and typos/omissions/case errors will result in the option not getting used at all. So please take extra care when supplying additional options. As an example:
+
+```
+--fastQC_args "'--nogroup'"
+--fastq_args "'--nogroup'"
+--fastqc "'--nogroup'"
+```
+
+would all result in the same behavior: nothing.
+
+
 ## RNA-seq worklow in more detail
 
-The worklows we are going to use here are based on the modules system introduced with [DSL2](https://www.nextflow.io/docs/latest/dsl2.html). In essence, we need a module for each program/tool, and then a separte workflow that defines the different steps that are carried out for given input files. Here is an example of the current RNA-seq workflow, which does the following consecutive steps for each FastQ file (single-end), or file  pair (paired-end):
+Our implementation of Nextflow pipelines implements the new (and experimental) module system introduced with [DSL2](https://www.nextflow.io/docs/latest/dsl2.html). In essence, processes for different software tools and/or required processing steps are defined as separate **modules**. These modules are then invoked in separate **workflows** that define the different steps that are carried out for a given set of input files. Here is an example of the current RNA-seq workflow, which does the following consecutive steps for each FastQ file (single-end), or file  pair (paired-end):
 
 - run FastQC or raw FastQ(s)
 - run FastQ Screen species screen

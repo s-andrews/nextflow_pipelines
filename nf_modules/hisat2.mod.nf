@@ -1,14 +1,5 @@
 nextflow.preview.dsl=2
 
-params.hisat2_args = ''
-params.verbose = false
-
-// We need to replace single quotes in the arguments so that they are not getting passed in as a single string
-hisat2_args = params.hisat2_args.replaceAll(/'/,"")
-if (params.verbose){
-	println ("[MODULE] HISAT2 ARGS: " + hisat2_args)
-}
-
 process HISAT2 {
 	
 	label 'bigMem'
@@ -16,35 +7,46 @@ process HISAT2 {
 
     input:
 	    tuple val(name), path(reads)
+		val (outputdir)
+		val (hisat2_args)
+		val (verbose)
 
 	output:
 	    path "*bam",       emit: bam
 		path "*stats.txt", emit: stats 
 
+	publishDir "$outputdir",
+		mode: "link", overwrite: true
+
     script:
-	cores = 8
-	readString = ""
-	hisat_options = hisat2_args
-
-	// Options we add are
-	hisat_options = hisat_options + " --no-unal --no-softclip "
-
-	if (reads instanceof List) {
-		readString = "-1 "+reads[0]+" -2 "+reads[1]
-		hisat_options = hisat_options + " --no-mixed --no-discordant"
-	}
-	else {
-		readString = "-U "+reads
-	}
-	index = params.genome["hisat2"]
 	
-	splices = " --known-splicesite-infile " + params.genome["hisat2_splices"]
-	hisat_name = name + "_" + params.genome["name"]
+		if (verbose){
+			println ("[MODULE] HISAT2 ARGS: " + hisat2_args)
+		}
+	
+		cores = 8
+		readString = ""
+		hisat_options = hisat2_args
 
-	"""
-	module load hisat2
-	module load samtools
-	hisat2 -p ${cores} ${hisat_options} -x ${index} ${splices} ${readString}  2>${hisat_name}_hisat2_stats.txt | samtools view -bS -F 4 -F 8 -F 256 -> ${hisat_name}_hisat2.bam
-	"""
+		// Options we add are
+		hisat_options = hisat_options + " --no-unal --no-softclip "
+
+		if (reads instanceof List) {
+			readString = "-1 "+reads[0]+" -2 "+reads[1]
+			hisat_options = hisat_options + " --no-mixed --no-discordant"
+		}
+		else {
+			readString = "-U "+reads
+		}
+		index = params.genome["hisat2"]
+		
+		splices = " --known-splicesite-infile " + params.genome["hisat2_splices"]
+		hisat_name = name + "_" + params.genome["name"]
+
+		"""
+		module load hisat2
+		module load samtools
+		hisat2 -p ${cores} ${hisat_options} -x ${index} ${splices} ${readString}  2>${hisat_name}_hisat2_stats.txt | samtools view -bS -F 4 -F 8 -F 256 -> ${hisat_name}_hisat2.bam
+		"""
 
 }

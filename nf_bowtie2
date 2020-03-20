@@ -1,31 +1,26 @@
 #!/usr/bin/env nextflow
-
-// Enable modules
 nextflow.preview.dsl=2
 
 params.outdir = "."
 params.genome = ""
-
 params.bowtie2_args = ''
+params.verbose = false
 
+if (params.verbose){
+    println ("[WORKFLOW] BOWTIE2 ARGS: "      + params.bowtie2_args)
+}
 
 include './nf_modules/files.mod.nf'
 include './nf_modules/genomes.mod.nf'
-include './nf_modules/bowtie2.mod.nf'   params(genome: getGenome(params.genome), bowtie2_args:  params.bowtie2_args)
-
-file_ch = makeFilesChannel(args)
-
 genome = getGenome(params.genome)
 
+include './nf_modules/bowtie2.mod.nf'   params(genome: genome)
+file_ch = makeFilesChannel(args)
 
 workflow {
 
     main:
-        BOWTIE2(file_ch)
-        
-    publish:
-        BOWTIE2.out.bam         to: params.outdir, mode: "link", overwrite: true
-        BOWTIE2.out.stats       to: params.outdir, mode: "link", overwrite: true
-
+        BOWTIE2(file_ch, params.outdir, params.bowtie2_args, params.verbose)
+    
 }
 

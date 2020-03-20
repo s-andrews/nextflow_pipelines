@@ -1,31 +1,44 @@
 nextflow.preview.dsl=2
+params.bisulfite = ''
+params.single_end = false
 
-params.fastq_screen_args = ''
-params.verbose = false
+process FASTQ_SCREEN {
+	label 'hugeMem'
+	label 'multiCore'
 
-// We need to replace single quotes in the arguments so that they are not getting passed in as a single string
-fastq_screen_args = params.fastq_screen_args.replaceAll(/'/,"")
-if (params.verbose){
-	println ("[MODULE] FASTQ SCREEN ARGS: "+ fastq_screen_args)
-}
-
-process FASTQ_SCREEN {	
     input:
 	    tuple val(name), path(reads)
+		val (outputdir)
+		val (fastq_screen_args)
+		val (verbose)
 
 	output:
 	    path "*png",  emit: png
 	    path "*html", emit: html
 		path "*txt",  emit: report
 
+	publishDir "$outputdir",
+		mode: "link", overwrite: true
+
     script:
-	if (reads instanceof List) {
-		reads = reads[0]
-	}
+
+		if (verbose){
+			println ("[MODULE] FASTQ SCREEN ARGS: "+ fastq_screen_args)
+		}
+
+		if (params.single_end){
+			// TODO: Add single-end parameter
+		}
+		else{
+			// for paired-end files we only use Read 1 (as Read 2 tends to show the exact same thing)
+			if (reads instanceof List) {
+				reads = reads[0]
+			}
+		}	
 
 	"""
 	module load fastq_screen
-	fastq_screen $fastq_screen_args	$reads
+	fastq_screen $params.bisulfite $fastq_screen_args $reads
 	"""
 
 }

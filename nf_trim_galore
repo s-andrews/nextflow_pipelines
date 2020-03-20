@@ -1,29 +1,23 @@
 #!/usr/bin/env nextflow
-
-// Enable modules
 nextflow.preview.dsl=2
 
 params.outdir = "."
+params.verbose = false
 params.trim_galore_args = ''
 
-// println ("TRIM GALORE ARGS ARE [WORKFLOW]: "+ params.trim_galore_args)
+if (params.verbose){
+    println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
+}
 
 include './nf_modules/files.mod.nf'
-include './nf_modules/trim_galore.mod.nf'  params(trim_galore_args: params.trim_galore_args)
+include './nf_modules/trim_galore.mod.nf'
 
 file_ch = makeFilesChannel(args)
 
 workflow {
 
     main:
-        TRIM_GALORE(file_ch)
-        
-    publish:
-        TRIM_GALORE.out.reads   to: params.outdir, mode: 'link', overwrite: true
-        TRIM_GALORE.out.reports to: params.outdir, mode: 'link', overwrite: true
-        
+        TRIM_GALORE(file_ch, params.outdir, params.trim_galore_args, params.verbose)
+
 }
 
-file_ch.subscribe{
-    // println("Found $it")
-}

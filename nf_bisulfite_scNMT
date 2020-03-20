@@ -12,6 +12,7 @@ params.trim_galore_args = ''
 params.bismark_args = ''
 params.deduplicate_bismark_args = ''
 params.bismark_methylation_extractor_args = ''
+params.coverage2cytosine_args = ''
 params.bismark2summary_args = ''
 params.bismark2report_args= ''
 params.multiqc_args = ''
@@ -23,6 +24,7 @@ if (params.verbose){
     println ("[WORKFLOW] BISMARK ARGS ARE: "      + params.bismark_args)
     println ("[WORKFLOW] BISMARK DEDUPLICATION ARGS ARE: "         + params.deduplicate_bismark_args)
     println ("[WORKFLOW] BISMARK METHYLATION EXTRACTOR ARGS ARE: " + params.bismark_methylation_extractor_args)
+    println ("[WORKFLOW] BISMARK COVERAGE2CYTOSINE ARGS ARE: "     + params.coverage2cytosine_args)
 }
 
 include './nf_modules/files.mod.nf'
@@ -36,6 +38,7 @@ include './nf_modules/fastq_screen.mod.nf'                    params(bisulfite: 
 
 // Adding singlecell flag for scBS-seq processing
 include './nf_modules/trim_galore.mod.nf'                     params(singlecell: true)
+
 // Adding singlecell flag for scBS-seq processing
 include './nf_modules/bismark.mod.nf'                         params(genome: genome, singlecell: true)
 include './nf_modules/bismark_deduplication.mod.nf'
@@ -43,7 +46,8 @@ include './nf_modules/bismark2report.mod.nf'
 include './nf_modules/bismark2summary.mod.nf'
 
 // Adding singlecell flag for scBS-seq processing
-include './nf_modules/bismark_methylation_extractor.mod.nf'   params(singlecell: true)
+include './nf_modules/bismark_methylation_extractor.mod.nf'   params(singlecell: true, nonCG: true)
+include './nf_modules/coverage2cytosine.mod.nf'               params(nome: true, genome: genome)
 include './nf_modules/multiqc.mod.nf' 
 
 file_ch = makeFilesChannel(args)
@@ -51,14 +55,14 @@ file_ch = makeFilesChannel(args)
 workflow {
 
     main:
-        FASTQC                           (file_ch, params.outdir, params.fastqc_args, params.verbose)
-        TRIM_GALORE                      (file_ch, params.outdir, params.trim_galore_args, params.verbose)
-        FASTQ_SCREEN                     (TRIM_GALORE.out.reads, params.outdir, params.fastq_screen_args, params.verbose)
-        FASTQC2                          (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
-        BISMARK                          (TRIM_GALORE.out.reads, params.outdir, params.bismark_args, params.verbose)
-        BISMARK_DEDUPLICATION            (BISMARK.out.bam, params.outdir, params.deduplicate_bismark_args, params.verbose)
-        BISMARK_METHYLATION_EXTRACTOR    (BISMARK_DEDUPLICATION.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
- 
+        FASTQC                        (file_ch, params.outdir, params.fastqc_args, params.verbose)
+        TRIM_GALORE                   (file_ch, params.outdir, params.trim_galore_args, params.verbose)
+        FASTQ_SCREEN                  (TRIM_GALORE.out.reads, params.outdir, params.fastq_screen_args, params.verbose)
+        FASTQC2                       (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        BISMARK                       (TRIM_GALORE.out.reads, params.outdir, params.bismark_args, params.verbose)
+        BISMARK_DEDUPLICATION         (BISMARK.out.bam, params.outdir, params.deduplicate_bismark_args, params.verbose)
+        BISMARK_METHYLATION_EXTRACTOR (BISMARK_DEDUPLICATION.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
+        COVERAGE2CYTOSINE             (BISMARK_METHYLATION_EXTRACTOR.out.coverage, params.outdir, params.coverage2cytosine_args, params.verbose)  
         // merging channels for MultiQC
         multiqc_ch = FASTQC.out.report.mix(
             TRIM_GALORE.out.report,

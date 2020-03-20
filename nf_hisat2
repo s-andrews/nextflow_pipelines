@@ -1,6 +1,4 @@
 #!/usr/bin/env nextflow
-
-// Enable modules
 nextflow.preview.dsl=2
 
 params.outdir = "."
@@ -14,21 +12,14 @@ if (params.verbose){
 
 include './nf_modules/files.mod.nf'
 include './nf_modules/genomes.mod.nf'
-include './nf_modules/hisat2.mod.nf' params(genome: getGenome(params.genome), hisat2_args:  params.hisat2_args, verbose: params.verbose)
+genome = getGenome(params.genome)
+include './nf_modules/hisat2.mod.nf' params(genome: genome)
 
 file_ch = makeFilesChannel(args)
-
-genome = getGenome(params.genome)
-
 
 workflow {
 
     main:
-        HISAT2(file_ch)
-
-    publish:
-        HISAT2.out.bam          to: params.outdir, mode: "link", overwrite: true
-        HISAT2.out.stats        to: params.outdir, mode: "link", overwrite: true
-
+        HISAT2(file_ch, params.outdir, params.hisat2_args, params.verbose)
 }
 
