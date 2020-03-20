@@ -7,15 +7,18 @@ params.verbose = false
 
 params.fastqc_args = ''
 params.fastq_screen_args = ''
+params.multiqc_args = ''
 
 if (params.verbose){
     println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
     println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
+    println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
 }
 
 include './nf_modules/files.mod.nf'
 include './nf_modules/fastqc.mod.nf'
 include './nf_modules/fastq_screen.mod.nf'
+include './nf_modules/multiqc.mod.nf' 
 
 file_ch = makeFilesChannel(args)
 
@@ -24,6 +27,15 @@ workflow {
     main:
         FASTQC       (file_ch, params.outdir, params.fastqc_args, params.verbose)
         FASTQ_SCREEN (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
+        
+        // merging channels for MultiQC
+        multiqc_ch = FASTQC.out.report.mix(
+            FASTQ_SCREEN.out.report.ifEmpty([]),
+        ).collect()
+
+        // multiqc_ch.subscribe {  println "Got: $it"  }
+
+        MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 
 }
 
