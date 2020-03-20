@@ -26,7 +26,7 @@ process BISMARK {
 
 
     script:
-		cores = 2
+		cores = 1
 		readString = ""
 
 		if (verbose){

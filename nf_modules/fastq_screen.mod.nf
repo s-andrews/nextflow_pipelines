@@ -3,7 +3,7 @@ params.bisulfite = ''
 params.single_end = false
 
 process FASTQ_SCREEN {
-	label 'bigMem'
+	label 'hugeMem'
 	label 'multiCore'
 
     input:
