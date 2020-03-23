@@ -4,13 +4,14 @@ nextflow.preview.dsl=2
 params.outdir = "."
 params.fastq_screen_args = ''
 params.verbose = false
+params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically  
 
 if (params.verbose){
     println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
 }
 
-include './nf_modules/files.mod.nf'
-include './nf_modules/fastq_screen.mod.nf'
+include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include FASTQ_SCREEN                           from './nf_modules/fastq_screen.mod.nf'
 
 file_ch = makeFilesChannel(args)
 

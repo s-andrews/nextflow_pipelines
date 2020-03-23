@@ -5,16 +5,18 @@ params.outdir = "."
 params.genome = ""
 params.bowtie2_args = ''
 params.verbose = false
+params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically 
+
 
 if (params.verbose){
     println ("[WORKFLOW] BOWTIE2 ARGS: "      + params.bowtie2_args)
 }
 
-include './nf_modules/files.mod.nf'
-include './nf_modules/genomes.mod.nf'
+include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include getGenome                              from './nf_modules/genomes.mod.nf'
 genome = getGenome(params.genome)
 
-include './nf_modules/bowtie2.mod.nf'   params(genome: genome)
+include BOWTIE2 from './nf_modules/bowtie2.mod.nf'   params(genome: genome)
 file_ch = makeFilesChannel(args)
 
 workflow {

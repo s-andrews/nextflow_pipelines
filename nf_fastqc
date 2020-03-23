@@ -4,16 +4,17 @@ nextflow.preview.dsl=2
 params.outdir = "."
 params.fastqc_args = ''
 params.verbose = false
+params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically 
 
 if (params.verbose){
     println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
 }
 
 // Example command
-// nf_fastqc --fastqc_args "'--nogroup --adapter ~/adapter_list_with_contamination_one_off.txt'" *fastq.gz
+// nf_fastqc --fastqc_args="--nogroup --adapter ~/adapter_list_with_contamination_one_off.txt" *fastq.gz
 
-include './nf_modules/files.mod.nf'
-include './nf_modules/fastqc.mod.nf'
+include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include FASTQC                                 from './nf_modules/fastqc.mod.nf'
 
 file_ch = makeFilesChannel(args) 
 
@@ -23,8 +24,3 @@ workflow {
         FASTQC(file_ch, params.outdir, params.fastqc_args, params.verbose)
        
 }
-
-
-//file_ch.subscribe{
-//    println("Found $it")
-//}

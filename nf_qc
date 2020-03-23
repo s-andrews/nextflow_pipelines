@@ -4,6 +4,7 @@ nextflow.preview.dsl=2
 params.outdir = "."
 params.genome = ""
 params.verbose = false
+params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically  
 
 params.fastqc_args = ''
 params.fastq_screen_args = ''
@@ -15,10 +16,10 @@ if (params.verbose){
     println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
 }
 
-include './nf_modules/files.mod.nf'
-include './nf_modules/fastqc.mod.nf'
-include './nf_modules/fastq_screen.mod.nf'
-include './nf_modules/multiqc.mod.nf' 
+include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include FASTQC                                 from './nf_modules/fastqc.mod.nf'
+include FASTQ_SCREEN                           from './nf_modules/fastq_screen.mod.nf'
+include MULTIQC                                from './nf_modules/multiqc.mod.nf' 
 
 file_ch = makeFilesChannel(args)
 
@@ -34,11 +35,6 @@ workflow {
         ).collect()
 
         // multiqc_ch.subscribe {  println "Got: $it"  }
-
         MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 
-}
-
-file_ch.subscribe{
-    // println("Found $it")
 }
