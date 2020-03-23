@@ -3,26 +3,23 @@ nextflow.preview.dsl=2
 
 params.outdir = "."
 params.genome = ""
-
+params.verbose = false
 params.bismark_args = ''
-println ("[WORKFLOW] BISMARK ARGS ARE: "       + params.bismark_args)
+params.single_end = false // default mode is auto-detect. NOTE: params are handed over automatically
 
+if (params.verbose){
+    println ("[WORKFLOW] BISMARK ARGS ARE: "       + params.bismark_args)
+}
 
-include './nf_modules/files.mod.nf'
-include './nf_modules/genomes.mod.nf'
-include './nf_modules/bismark.mod.nf'   params(genome: getGenome(params.genome), bismark_args:  params.bismark_args)
+include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include getGenome                              from './nf_modules/genomes.mod.nf'
+genome = getGenome(params.genome)
+include BISMARK                                from './nf_modules/bismark.mod.nf'   params(genome: genome)
 
 file_ch = makeFilesChannel(args)
 
-genome = getGenome(params.genome)
-
-
 workflow {
     main:
-        BISMARK(file_ch)
-        
-    publish:
-        BISMARK.out.bam         to: params.outdir, mode: "link", overwrite: true
-        BISMARK.out.report      to: params.outdir, mode: "link", overwrite: true        
+        BISMARK(file_ch, params.outdir, params.bismark_args, params.verbose)
 }
 

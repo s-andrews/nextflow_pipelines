@@ -6,6 +6,8 @@ nextflow.preview.dsl=2
 params.outdir = "."
 params.genome = ""
 params.verbose = false
+params.single_end = false  // default mode is auto-detect. NOTE: params are automatically handed over 
+
 params.fastqc_args = ''
 params.fastq_screen_args = ''
 params.trim_galore_args = ''
@@ -27,28 +29,28 @@ if (params.verbose){
     println ("[WORKFLOW] BISMARK COVERAGE2CYTOSINE ARGS ARE: "     + params.coverage2cytosine_args)
 }
 
-include './nf_modules/files.mod.nf'
-include './nf_modules/genomes.mod.nf'
+include { makeFilesChannel; getFileBaseNames }      from './nf_modules/files.mod.nf'
+include getGenome                                   from './nf_modules/genomes.mod.nf'
 genome = getGenome(params.genome)
 
-include './nf_modules/fastqc.mod.nf'                        
-include  FASTQC as FASTQC2 from './nf_modules/fastqc.mod.nf'
+include FASTQC                                      from './nf_modules/fastqc.mod.nf'                        
+include FASTQC as FASTQC2                           from './nf_modules/fastqc.mod.nf'
 
-include './nf_modules/fastq_screen.mod.nf'                    params(bisulfite: '--bisulfite')
-
-// Adding singlecell flag for scBS-seq processing
-include './nf_modules/trim_galore.mod.nf'                     params(singlecell: true)
+include FASTQ_SCREEN                                from './nf_modules/fastq_screen.mod.nf' params(bisulfite: '--bisulfite')
 
 // Adding singlecell flag for scBS-seq processing
-include './nf_modules/bismark.mod.nf'                         params(genome: genome, singlecell: true)
-include './nf_modules/bismark_deduplication.mod.nf'
-include './nf_modules/bismark2report.mod.nf'
-include './nf_modules/bismark2summary.mod.nf'
+include TRIM_GALORE                                 from './nf_modules/trim_galore.mod.nf'  params(singlecell: true)
 
 // Adding singlecell flag for scBS-seq processing
-include './nf_modules/bismark_methylation_extractor.mod.nf'   params(singlecell: true, nonCG: true)
-include './nf_modules/coverage2cytosine.mod.nf'               params(nome: true, genome: genome)
-include './nf_modules/multiqc.mod.nf' 
+include BISMARK                                     from './nf_modules/bismark.mod.nf' params(genome: genome, singlecell: true)
+include BISMARK_DEDUPLICATION                       from './nf_modules/bismark_deduplication.mod.nf'
+include BISMARK2REPORT                              from './nf_modules/bismark2report.mod.nf'
+include BISMARK2SUMMARY                             from './nf_modules/bismark2summary.mod.nf'
+
+// Adding singlecell flag for scBS-seq processing
+include BISMARK_METHYLATION_EXTRACTOR               from './nf_modules/bismark_methylation_extractor.mod.nf'   params(singlecell: true, nonCG: true)
+include COVERAGE2CYTOSINE                           from './nf_modules/coverage2cytosine.mod.nf' params(nome: true, genome: genome)
+include MULTIQC                                     from './nf_modules/multiqc.mod.nf' 
 
 file_ch = makeFilesChannel(args)
 
