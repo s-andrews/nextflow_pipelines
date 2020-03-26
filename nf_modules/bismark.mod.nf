@@ -51,10 +51,14 @@ process BISMARK {
 		}
 
 		index = "--genome " + params.genome["bismark"]
-		
+
+		// add Genome build to output name. Currently only using Bowtie 2
+		bismark_name = name + "_" + params.genome["name"] + "_bismark_bt2"
+		// println ("Output basename: $bismark_name")
+
 		"""
 		module load bismark
-		bismark --parallel $cores $index $bismark_options $readString
+		bismark --parallel $cores --basename $bismark_name $index $bismark_options $readString
 		"""
 
 }
