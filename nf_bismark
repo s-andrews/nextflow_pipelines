@@ -17,7 +17,7 @@ genome = getGenome(params.genome)
 include BISMARK                                from './nf_modules/bismark.mod.nf'   params(genome: genome)
 
 file_ch = makeFilesChannel(args)
-
+// file_ch.view()
 workflow {
     main:
         BISMARK(file_ch, params.outdir, params.bismark_args, params.verbose)
