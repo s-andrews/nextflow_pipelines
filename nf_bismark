@@ -7,12 +7,23 @@ params.verbose = false
 params.bismark_args = ''
 params.single_end = false // default mode is auto-detect. NOTE: params are handed over automatically
 
+params.list_genomes = false;
+if (params.list_genomes){
+    println ("[WORKLFOW] List genomes selected")
+}
+
 if (params.verbose){
     println ("[WORKFLOW] BISMARK ARGS ARE: "       + params.bismark_args)
 }
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
 include getGenome                              from './nf_modules/genomes.mod.nf'
+include listGenomes                            from './nf_modules/genomes.mod.nf'
+
+if (params.list_genomes){
+    listGenomes()  // this lists all available genomes, and exits
+}
+
 genome = getGenome(params.genome)
 include BISMARK                                from './nf_modules/bismark.mod.nf'   params(genome: genome)
 

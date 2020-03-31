@@ -9,7 +9,7 @@ params.single_end = false  // default mode is auto-detect. NOTE: params are hand
 
 params.list_genomes = false;
 if (params.list_genomes){
-    println ("List genomes selected [WORKLFOW]")
+    println ("[WORKLFOW] List genomes selected")
 }
 
 if (params.verbose){
