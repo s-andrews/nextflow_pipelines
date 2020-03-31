@@ -12,6 +12,10 @@ params.trim_galore_args = ''
 params.hisat2_args = ''
 params.multiqc_args = ''
 
+params.list_genomes = false;
+if (params.list_genomes){
+    println ("[WORKLFOW] List genomes selected")
+}
 
 if (params.verbose){
     println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
@@ -23,6 +27,11 @@ if (params.verbose){
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
 include getGenome    from './nf_modules/genomes.mod.nf'
+include listGenomes  from './nf_modules/genomes.mod.nf'
+
+if (params.list_genomes){
+    listGenomes()  // this lists all available genomes, and exits
+}
 genome = getGenome(params.genome)
 
 include FASTQC       from './nf_modules/fastqc.mod.nf'

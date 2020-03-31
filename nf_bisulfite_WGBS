@@ -8,6 +8,11 @@ params.genome = ""
 params.verbose = false
 params.single_end = false  // default mode is auto-detect. NOTE: params are automatically handed over 
 
+params.list_genomes = false;
+if (params.list_genomes){
+    println ("[WORKLFOW] List genomes selected")
+}
+
 params.fastqc_args = ''
 params.fastq_screen_args = ''
 params.trim_galore_args = ''
@@ -30,6 +35,12 @@ if (params.verbose){
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
 include getGenome                              from './nf_modules/genomes.mod.nf'
+include listGenomes                            from './nf_modules/genomes.mod.nf'
+
+if (params.list_genomes){
+    listGenomes()  // this lists all available genomes, and exits
+}
+
 genome = getGenome(params.genome)
 
 include FASTQC                                 from './nf_modules/fastqc.mod.nf'                         
