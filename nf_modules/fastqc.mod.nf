@@ -15,7 +15,6 @@ process FASTQC {
 		mode: "link", overwrite: true
 
 	script:
-
 		if (verbose){
 			println ("[MODULE] FASTQC ARGS: "+ fastqc_args)
 		}
@@ -24,5 +23,4 @@ process FASTQC {
 		module load fastqc
 		fastqc $fastqc_args -q -t 2 ${reads}
 		"""
-
 }
