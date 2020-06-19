@@ -32,6 +32,7 @@ process BOWTIE2 {
 		
 		if (reads instanceof List) {
 			readString = "-1 " + reads[0] + " -2 " + reads[1]
+			bowtie_options += " --no-discordant --no-mixed " // just output properly paired reads
 		}
 		else {
 			readString = "-U " + reads
