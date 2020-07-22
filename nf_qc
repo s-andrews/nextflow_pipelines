@@ -1,5 +1,5 @@
 #!/usr/bin/env nextflow
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 params.outdir = "."
 params.genome = ""
@@ -16,10 +16,10 @@ if (params.verbose){
     println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
 }
 
-include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
-include FASTQC                                 from './nf_modules/fastqc.mod.nf'
-include FASTQ_SCREEN                           from './nf_modules/fastq_screen.mod.nf'
-include MULTIQC                                from './nf_modules/multiqc.mod.nf' 
+include { makeFilesChannel; getFileBaseNames }    from './nf_modules/files.mod.nf'
+include { FASTQC }                                from './nf_modules/fastqc.mod.nf'
+include { FASTQ_SCREEN }                          from './nf_modules/fastq_screen.mod.nf'
+include { MULTIQC }                               from './nf_modules/multiqc.mod.nf' 
 
 file_ch = makeFilesChannel(args)
 

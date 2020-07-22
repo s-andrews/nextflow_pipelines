@@ -1,5 +1,5 @@
 #!/usr/bin/env nextflow
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 params.outdir = "."
 params.genome = ""
@@ -14,7 +14,7 @@ if (params.verbose){
 }
 
 //include { makeFilesChannel; getFileBaseNames }  from './nf_modules/files_bam.mod.nf'
-include UMIBAM                                  from './nf_modules/umibam.mod.nf'
+include { UMIBAM }                                  from './nf_modules/umibam.mod.nf'
 
 // file_ch = makeFilesChannel(args)
 file_ch = Channel.fromPath("*bam")     // UmiBam expects just the path to be passed in

@@ -2,6 +2,8 @@ nextflow.preview.dsl=2
 
 process BISMARK_DEDUPLICATION {
 	label 'hugeMem'
+	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
+
 	// consider dynamic directive to increase memory
 	// memory { 2.GB * task.attempt }
     // time { 1.hour * task.attempt }

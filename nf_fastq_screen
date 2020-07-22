@@ -1,5 +1,5 @@
 #!/usr/bin/env nextflow
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 params.outdir = "."
 params.fastq_screen_args = ''
@@ -11,7 +11,7 @@ if (params.verbose){
 }
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
-include FASTQ_SCREEN                           from './nf_modules/fastq_screen.mod.nf'
+include { FASTQ_SCREEN }                           from './nf_modules/fastq_screen.mod.nf'
 
 file_ch = makeFilesChannel(args)
 

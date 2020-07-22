@@ -1,4 +1,4 @@
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 // parameters passed in by specialised pipelines
 params.singlecell = ''
@@ -7,9 +7,14 @@ params.pbat = false
 
 process BISMARK {
 	
-	label 'hugeMem'
-	label 'multiCore'
-	// label 'quadCore'
+
+	tag "$name" // Adds name to job submission instead of (1), (2) etc.
+
+	// TODO: Fix memory requirements, probably with error handling...
+	//label 'hugeMem'
+	label 'mem40G'
+	// label 'multiCore'
+	label 'quadCore'
 		
     input:
 	    tuple val(name), path(reads)
@@ -37,6 +42,10 @@ process BISMARK {
 		bismark_options = bismark_args
 		if (params.singlecell){
 			bismark_options += " --non_directional "
+			// label 'multiCore'
+		}
+		else{
+			// label 'quadCore'
 		}
 		
 		if (params.pbat){

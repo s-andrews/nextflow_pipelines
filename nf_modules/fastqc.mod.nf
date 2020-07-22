@@ -1,6 +1,9 @@
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
-process FASTQC {	
+process FASTQC {
+
+	tag "$name" // Adds name to job submission instead of (1), (2) etc.
+
 	input:
 	    tuple val(name), path(reads)
 		val (outputdir)

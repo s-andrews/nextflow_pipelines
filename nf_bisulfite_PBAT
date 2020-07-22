@@ -43,24 +43,24 @@ if (params.list_genomes){
 
 genome = getGenome(params.genome)
 
-include FASTQC                                 from './nf_modules/fastqc.mod.nf'                         
-include FASTQC as FASTQC2                      from './nf_modules/fastqc.mod.nf' 
+include { FASTQC }                               from './nf_modules/fastqc.mod.nf'                         
+include { FASTQC as FASTQC2 }                    from './nf_modules/fastqc.mod.nf' 
 
-include FASTQ_SCREEN                           from './nf_modules/fastq_screen.mod.nf' params(bisulfite: '--bisulfite')
+include { FASTQ_SCREEN }                         from './nf_modules/fastq_screen.mod.nf' params(bisulfite: '--bisulfite')
 
 // Adding pbat flag for PBAT processing. For Trim Galore we pass on the number of bp that need to be clipped at the 5' end
-include TRIM_GALORE                            from './nf_modules/trim_galore.mod.nf' params(pbat: params.pbat)
+include { TRIM_GALORE }                          from './nf_modules/trim_galore.mod.nf' params(pbat: params.pbat)
 // Adding pbat flag for PBAT processing
-include BISMARK                                from './nf_modules/bismark.mod.nf' params(genome: genome, pbat: true)
+include { BISMARK }                              from './nf_modules/bismark.mod.nf' params(genome: genome, pbat: true)
 
-include BISMARK_DEDUPLICATION                  from './nf_modules/bismark_deduplication.mod.nf'
+include { BISMARK_DEDUPLICATION }                from './nf_modules/bismark_deduplication.mod.nf'
 
 // Adding pbat flag for PBAT processing
-include BISMARK_METHYLATION_EXTRACTOR          from './nf_modules/bismark_methylation_extractor.mod.nf' params(pbat: true)
-include BISMARK2REPORT                         from './nf_modules/bismark2report.mod.nf'
-include BISMARK2SUMMARY                        from './nf_modules/bismark2summary.mod.nf'
+include { BISMARK_METHYLATION_EXTRACTOR }        from './nf_modules/bismark_methylation_extractor.mod.nf' params(pbat: true)
+include { BISMARK2REPORT }                       from './nf_modules/bismark2report.mod.nf'
+include { BISMARK2SUMMARY }                      from './nf_modules/bismark2summary.mod.nf'
 
-include MULTIQC                                from './nf_modules/multiqc.mod.nf' 
+include { MULTIQC }                              from './nf_modules/multiqc.mod.nf' 
 
 file_ch = makeFilesChannel(args)
 

@@ -1,7 +1,9 @@
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 process BOWTIE2 {
 	
+	tag "$name" // Adds name to job submission instead of (1), (2) etc.
+
 	label 'bigMem'
 	label 'multiCore'
 		
