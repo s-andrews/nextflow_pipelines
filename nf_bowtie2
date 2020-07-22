@@ -1,5 +1,5 @@
 #!/usr/bin/env nextflow
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 params.outdir = "."
 params.genome = ""
@@ -17,8 +17,8 @@ if (params.verbose){
 }
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
-include getGenome                              from './nf_modules/genomes.mod.nf'
-include listGenomes                            from './nf_modules/genomes.mod.nf'
+include { getGenome }                              from './nf_modules/genomes.mod.nf'
+include { listGenomes }                            from './nf_modules/genomes.mod.nf'
 
 if (params.list_genomes){
     listGenomes()  // this lists all available genomes, and exits
@@ -26,7 +26,7 @@ if (params.list_genomes){
 
 genome = getGenome(params.genome)
 
-include BOWTIE2 from './nf_modules/bowtie2.mod.nf'   params(genome: genome)
+include { BOWTIE2 } from './nf_modules/bowtie2.mod.nf'   params(genome: genome)
 
 file_ch = makeFilesChannel(args)
 

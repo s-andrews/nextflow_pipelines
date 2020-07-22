@@ -1,4 +1,4 @@
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 params.singlecell = ''
 params.rrbs       = ''
@@ -11,6 +11,8 @@ params.three_prime_clip_R2 = ''
 
 process TRIM_GALORE {	
     
+	tag "$name" // Adds name to job submission instead of (1), (2) etc.
+
 	input:
 	    tuple val (name), path (reads)
 		val (outputdir)

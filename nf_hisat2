@@ -1,5 +1,5 @@
 #!/usr/bin/env nextflow
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 params.outdir = "."
 params.genome = ""
@@ -16,16 +16,16 @@ if (params.verbose){
     println ("[WORKFLOW] HISAT2 ARGS ARE: "       + params.hisat2_args)
 }
 
-include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
-include getGenome                              from './nf_modules/genomes.mod.nf'
-include listGenomes                            from './nf_modules/genomes.mod.nf'
+include { makeFilesChannel; getFileBaseNames }    from './nf_modules/files.mod.nf'
+include { getGenome }                             from './nf_modules/genomes.mod.nf'
+include { listGenomes }                           from './nf_modules/genomes.mod.nf'
 
 if (params.list_genomes){
     listGenomes()  // this lists all available genomes, and exits
 }
 
 genome = getGenome(params.genome)
-include HISAT2                                 from './nf_modules/hisat2.mod.nf' params(genome: genome)
+include { HISAT2 }                                from './nf_modules/hisat2.mod.nf' params(genome: genome)
 
 file_ch = makeFilesChannel(args)
 

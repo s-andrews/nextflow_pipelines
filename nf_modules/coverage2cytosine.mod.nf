@@ -10,7 +10,8 @@ genome = params.genome["bismark"]
 
 process COVERAGE2CYTOSINE {
 	label 'hugeMem'
-		
+	tag "$coverage_file" // Adds name to job submission instead of (1), (2) etc.
+
     input:
 	    path(coverage_file)
 		val (outputdir)

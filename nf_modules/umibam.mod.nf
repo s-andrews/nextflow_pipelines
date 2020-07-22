@@ -1,9 +1,11 @@
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 params.dual = false
 
 process UMIBAM {	
     
+	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
+
 	input:
 	    path(bam)
 		val (outputdir)
@@ -35,6 +37,7 @@ process UMIBAM {
 		
 		rename UMI_d d *
 		"""
+		
 		// The output files should be renamed so that they bismark2report picks up everything
 		
 		// renaming files using Bash

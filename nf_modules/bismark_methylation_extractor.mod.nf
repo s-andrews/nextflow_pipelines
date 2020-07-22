@@ -9,7 +9,8 @@ params.nonCG      = false
 process BISMARK_METHYLATION_EXTRACTOR {
 	label 'bigMem'
 	label 'multiCore'
-		
+	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
+
     input:
 	    path(bam)
 		val (outputdir)

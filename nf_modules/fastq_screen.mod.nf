@@ -1,9 +1,13 @@
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 params.bisulfite = ''
 params.single_end = false
 
 process FASTQ_SCREEN {
-	label 'hugeMem'
+	
+	tag "$name" // Adds name to job submission instead of (1), (2) etc.
+
+	// label 'hugeMem'
+	// memory = "100.G"
 	label 'multiCore'
 
     input:

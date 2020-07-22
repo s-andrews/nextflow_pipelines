@@ -1,5 +1,5 @@
 #!/usr/bin/env nextflow
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 params.outdir = "."
 params.fastqc_args = ''
@@ -14,7 +14,7 @@ if (params.verbose){
 // nf_fastqc --fastqc_args="--nogroup --adapter ~/adapter_list_with_contamination_one_off.txt" *fastq.gz
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
-include FASTQC                                 from './nf_modules/fastqc.mod.nf'
+include { FASTQC }                             from './nf_modules/fastqc.mod.nf'
 
 file_ch = makeFilesChannel(args) 
 
