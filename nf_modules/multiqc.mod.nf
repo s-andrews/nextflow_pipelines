@@ -2,8 +2,12 @@ nextflow.enable.dsl=2
 
 process MULTIQC {
 	
-	// label 'bigMem'
-	// label 'multiCore'
+	label 'quadCore'
+
+	// dynamic directive
+	memory { 20.GB * task.attempt }  
+	errorStrategy { sleep(Math.pow(2, task.attempt) * 30 as long); return 'retry' }
+	maxRetries 3
 
     input:
 	    path (file)

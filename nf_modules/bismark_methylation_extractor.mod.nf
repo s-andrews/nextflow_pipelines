@@ -1,4 +1,4 @@
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 params.singlecell = false
 params.rrbs       = false
@@ -7,8 +7,9 @@ params.pbat       = false
 params.nonCG      = false
 
 process BISMARK_METHYLATION_EXTRACTOR {
-	label 'bigMem'
-	label 'multiCore'
+	label 'bigMem'          // 20G
+	label 'quadCore'        // 4 cores
+	
 	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
 
     input:

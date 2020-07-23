@@ -24,3 +24,21 @@ workflow {
         FASTQC(file_ch, params.outdir, params.fastqc_args, params.verbose)
        
 }
+
+// // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+// // minimal execution summary report so we at least know what the working directory was...
+// workflow.onComplete {
+
+//     def msg = """\
+//         Pipeline execution summary
+//         ---------------------------
+//         Completed at: ${workflow.complete}
+//         Duration    : ${workflow.duration}
+//         Success     : ${workflow.success}
+//         workDir     : ${workflow.workDir}
+//         exit status : ${workflow.exitStatus}
+//         """
+//     .stripIndent()
+
+//     sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+// }

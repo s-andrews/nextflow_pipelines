@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 
 // Enable modules
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 params.outdir = "."
 params.genome = ""
@@ -33,8 +33,8 @@ if (params.verbose){
 }
 
 include { makeFilesChannel; getFileBaseNames }  from './nf_modules/files.mod.nf'
-include getGenome                               from './nf_modules/genomes.mod.nf'
-include listGenomes                            from './nf_modules/genomes.mod.nf'
+include { getGenome }                               from './nf_modules/genomes.mod.nf'
+include { listGenomes }                           from './nf_modules/genomes.mod.nf'
 
 if (params.list_genomes){
     listGenomes()  // this lists all available genomes, and exits
@@ -42,22 +42,22 @@ if (params.list_genomes){
 
 genome = getGenome(params.genome)
 
-include FASTQC                                  from './nf_modules/fastqc.mod.nf'                        
-include FASTQC as FASTQC2                       from './nf_modules/fastqc.mod.nf'
+include { FASTQC }                                 from './nf_modules/fastqc.mod.nf'                        
+include { FASTQC as FASTQC2 }                      from './nf_modules/fastqc.mod.nf'
 
-include FASTQ_SCREEN                            from './nf_modules/fastq_screen.mod.nf' params(bisulfite: '--bisulfite')
-
-// Adding singlecell flag for scBS-seq processing
-include TRIM_GALORE                             from './nf_modules/trim_galore.mod.nf' params(singlecell: true)
-// Adding singlecell flag for scBS-seq processing
-include BISMARK                                 from './nf_modules/bismark.mod.nf' params(genome: genome, singlecell: true)
-include BISMARK_DEDUPLICATION                   from './nf_modules/bismark_deduplication.mod.nf'
-include BISMARK2REPORT                          from './nf_modules/bismark2report.mod.nf'
-include BISMARK2SUMMARY                         from './nf_modules/bismark2summary.mod.nf'
+include { FASTQ_SCREEN }                           from './nf_modules/fastq_screen.mod.nf' params(bisulfite: '--bisulfite')
 
 // Adding singlecell flag for scBS-seq processing
-include BISMARK_METHYLATION_EXTRACTOR           from './nf_modules/bismark_methylation_extractor.mod.nf'   params(singlecell: true)
-include MULTIQC                                 from './nf_modules/multiqc.mod.nf' 
+include { TRIM_GALORE }                            from './nf_modules/trim_galore.mod.nf' params(singlecell: true)
+// Adding singlecell flag for scBS-seq processing
+include { BISMARK }                                from './nf_modules/bismark.mod.nf' params(genome: genome, singlecell: true)
+include { BISMARK_DEDUPLICATION }                  from './nf_modules/bismark_deduplication.mod.nf'
+include { BISMARK2REPORT }                         from './nf_modules/bismark2report.mod.nf'
+include { BISMARK2SUMMARY }                        from './nf_modules/bismark2summary.mod.nf'
+
+// Adding singlecell flag for scBS-seq processing
+include { BISMARK_METHYLATION_EXTRACTOR }          from './nf_modules/bismark_methylation_extractor.mod.nf'   params(singlecell: true)
+include { MULTIQC }                                from './nf_modules/multiqc.mod.nf' 
 
 file_ch = makeFilesChannel(args)
 
@@ -95,4 +95,22 @@ workflow {
         BISMARK2REPORT                   (bismark_report_ch, params.outdir, params.bismark2report_args, params.verbose)
         BISMARK2SUMMARY                  (bismark_report_ch, params.outdir, params.bismark2summary_args, params.verbose)
         MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
+}
+
+// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+// minimal execution summary report so we at least know what the working directory was...
+workflow.onComplete {
+
+    def msg = """\
+        Pipeline execution summary
+        ---------------------------
+        Completed at: ${workflow.complete}
+        Duration    : ${workflow.duration}
+        Success     : ${workflow.success}
+        workDir     : ${workflow.workDir}
+        exit status : ${workflow.exitStatus}
+        """
+    .stripIndent()
+
+    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
 }
