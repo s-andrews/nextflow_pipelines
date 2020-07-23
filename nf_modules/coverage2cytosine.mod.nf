@@ -1,4 +1,4 @@
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 params.singlecell = false
 params.rrbs       = false
@@ -9,8 +9,12 @@ params.nome       = false
 genome = params.genome["bismark"]
 
 process COVERAGE2CYTOSINE {
-	label 'hugeMem'
 	tag "$coverage_file" // Adds name to job submission instead of (1), (2) etc.
+
+	// dynamic directive
+	memory { 20.GB * task.attempt }  
+	errorStrategy { sleep(Math.pow(2, task.attempt) * 20 as long); return 'retry' }
+	maxRetries 5
 
     input:
 	    path(coverage_file)

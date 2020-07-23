@@ -12,9 +12,15 @@ process BISMARK {
 
 	// TODO: Fix memory requirements, probably with error handling...
 	//label 'hugeMem'
-	label 'mem40G'
+
+	cpus { 5 }
+  	memory { 20.GB * task.attempt }  
+	errorStrategy { sleep(Math.pow(2, task.attempt) * 30 as long); return 'retry' }
+  	maxRetries 3
+	
+	// label 'mem40G'
 	// label 'multiCore'
-	label 'quadCore'
+	// label 'quadCore'
 		
     input:
 	    tuple val(name), path(reads)
@@ -42,10 +48,9 @@ process BISMARK {
 		bismark_options = bismark_args
 		if (params.singlecell){
 			bismark_options += " --non_directional "
-			// label 'multiCore'
 		}
 		else{
-			// label 'quadCore'
+		
 		}
 		
 		if (params.pbat){

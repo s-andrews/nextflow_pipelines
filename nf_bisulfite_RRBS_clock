@@ -1,5 +1,5 @@
 #!/usr/bin/env nextflow
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 params.outdir = "."
 params.genome = ""
@@ -31,8 +31,8 @@ if (params.verbose){
 }
 
 include { makeFilesChannel; getFileBaseNames }  from './nf_modules/files.mod.nf'
-include getGenome                               from './nf_modules/genomes.mod.nf'
-include listGenomes                             from './nf_modules/genomes.mod.nf'
+include { getGenome }                              from './nf_modules/genomes.mod.nf'
+include { listGenomes }                             from './nf_modules/genomes.mod.nf'
 
 if (params.list_genomes){
     listGenomes()  // this lists all available genomes, and exits
@@ -40,28 +40,28 @@ if (params.list_genomes){
 
 genome = getGenome(params.genome)
 
-include FASTQC                                  from './nf_modules/fastqc.mod.nf' 
-include FASTQC as FASTQC2                       from './nf_modules/fastqc.mod.nf'
-include FASTQC as FASTQC3                       from './nf_modules/fastqc.mod.nf'
+include { FASTQC }                                 from './nf_modules/fastqc.mod.nf' 
+include { FASTQC as FASTQC2 }                      from './nf_modules/fastqc.mod.nf'
+include { FASTQC as FASTQC3 }                      from './nf_modules/fastqc.mod.nf'
 
 // --bisulfite paramater needs to be re-enabled, but MultiQC is currently broken
-include FASTQ_SCREEN                            from './nf_modules/fastq_screen.mod.nf' params(bisulfite: '--bisulfite')
+include { FASTQ_SCREEN }                           from './nf_modules/fastq_screen.mod.nf' params(bisulfite: '--bisulfite')
 
 // Adding flag for RRBS processing
 // The second trimming step needs to look like this:
 // trim_galore --paired --three_prime_clip_R1 15 --three_prime_clip_R2 15 *.clock_UMI.R1.fq.gz *.clock_UMI.R2.fq.gz
 
-include TRIM_GALORE                             from './nf_modules/trim_galore.mod.nf' params(three_prime_clip_R1: 15, three_prime_clip_R2: 15)
-include TRIM_GALORE as TRIM_CLOCK               from './nf_modules/trim_galore.mod.nf' params(clock: true)
-include BISMARK                                 from './nf_modules/bismark.mod.nf'     params(genome: genome)
-include UMIBAM                                  from './nf_modules/umibam.mod.nf'      params(dual: true)
+include { TRIM_GALORE }                            from './nf_modules/trim_galore.mod.nf' params(three_prime_clip_R1: 15, three_prime_clip_R2: 15)
+include { TRIM_GALORE as TRIM_CLOCK }              from './nf_modules/trim_galore.mod.nf' params(clock: true)
+include { BISMARK }                                from './nf_modules/bismark.mod.nf'     params(genome: genome)
+include { UMIBAM }                                 from './nf_modules/umibam.mod.nf'      params(dual: true)
 
 // Adding flag for RRBS processing
-include BISMARK_METHYLATION_EXTRACTOR           from './nf_modules/bismark_methylation_extractor.mod.nf' params(rrbs: true)
-include BISMARK2REPORT                          from './nf_modules/bismark2report.mod.nf'
-include BISMARK2SUMMARY                         from './nf_modules/bismark2summary.mod.nf'
+include { BISMARK_METHYLATION_EXTRACTOR }           from './nf_modules/bismark_methylation_extractor.mod.nf' params(rrbs: true)
+include { BISMARK2REPORT }                         from './nf_modules/bismark2report.mod.nf'
+include { BISMARK2SUMMARY }                        from './nf_modules/bismark2summary.mod.nf'
 
-include MULTIQC                                 from './nf_modules/multiqc.mod.nf' 
+include { MULTIQC }                                from './nf_modules/multiqc.mod.nf' 
 
 file_ch = makeFilesChannel(args)
 

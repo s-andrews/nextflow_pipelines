@@ -1,15 +1,15 @@
-nextflow.preview.dsl=2
+nextflow.enable.dsl=2
 
 process BISMARK_DEDUPLICATION {
-	label 'hugeMem'
+	
 	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
 
-	// consider dynamic directive to increase memory
-	// memory { 2.GB * task.attempt }
-    // time { 1.hour * task.attempt }
-    // errorStrategy { task.exitStatus in 137..140 ? 'retry' : 'terminate' }
-    // maxRetries 3
-
+	// dynamic directive to increase memory as required
+	cpus = 1
+	memory { 20.GB * task.attempt }  
+	errorStrategy { sleep(Math.pow(2, task.attempt) * 30 as long); return 'retry' }
+  	maxRetries 5
+  	
     input:
 	    path(bam)
 		val (outputdir)

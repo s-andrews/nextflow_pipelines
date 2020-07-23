@@ -11,8 +11,15 @@ params.three_prime_clip_R2 = ''
 
 process TRIM_GALORE {	
     
-	tag "$name" // Adds name to job submission instead of (1), (2) etc.
+	tag "$name"                         // Adds name to job submission instead of (1), (2) etc.
 
+	label 'quadCore'                    // sets cpus = 4
+	
+	// dynamic directive
+	memory { 10.GB * task.attempt }  
+	errorStrategy { sleep(Math.pow(2, task.attempt) * 30 as long); return 'retry' }
+	maxRetries 2
+    
 	input:
 	    tuple val (name), path (reads)
 		val (outputdir)

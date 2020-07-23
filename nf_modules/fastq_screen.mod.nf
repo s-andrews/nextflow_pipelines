@@ -7,9 +7,13 @@ process FASTQ_SCREEN {
 	tag "$name" // Adds name to job submission instead of (1), (2) etc.
 
 	// label 'hugeMem'
-	// memory = "100.G"
+	
 	label 'multiCore'
-
+	
+	memory { 30.GB * task.attempt }  
+	errorStrategy { sleep(Math.pow(2, task.attempt) * 30 as long); return 'retry' }
+  	maxRetries 3
+  	
     input:
 	    tuple val(name), path(reads)
 		val (outputdir)
