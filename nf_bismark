@@ -66,7 +66,7 @@ def helpMessage() {
                                       differ only by a different read number, e.g. 'base_name_R1.fastq.gz' and 'base_name_R2.fastq.gz'
                                       (, or R3, R4). To run paired-end files in single-end mode, please see '--single_end' below.
 
-      --genome [str]                  Genome ID to be used for the alignment, e.g. GRCh38 (latest human genome build) or GRCm38
+      --genome [str]                  Genome build ID to be used for the alignment, e.g. GRCh38 (latest human genome) or GRCm38
                                       (latest mouse genome build). To list all available genomes, see '--list_genomes' below.
 
 
@@ -85,7 +85,7 @@ def helpMessage() {
 
       --outdir [str]                  Path to the output directory. [Default: current working directory]
 
-      --list_genomes                  List all genomeIDs that are currently available to choose from. To see this list
+      --list_genomes                  List all genomeBuilds that are currently available to choose from. To see this list
                                       of available genomes with more detailed information about paths and indexes, run
                                       the command as '--list_genomes --verbose'
     
@@ -103,13 +103,15 @@ def helpMessage() {
                                       this option will attempt to resume the workflow at the point it got interrupted by using
                                       Nextflow's caching mechanism. This may save a lot of time.
 
-      -bg                             Sends the entire workflow into the background. This means that a daemon process will keep
-                                      running on the headnode. This process will watch over your workflow, and submit new jobs to the
-                                      SLURM queue as required. Use this option for big pipeline jobs, or whenever you do not want to
-                                      sit and watch the status yourself. Upon completion, the pipeline will send you an email with the
-                                      job details. This option is HIGHLY RECOMMENDED!
+      -bg                             Sends the entire workflow into the background, thus disconnecting it from the terminal session.
+                                      This option launches a daemon process (which will keep running on the headnode) which watches over
+                                      your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
+                                      jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
+                                      pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
 
-  
+      -process.executor=local         Temporaily changes where the workflow is executed to the 'local' machine. [Default: slurm] 
+
+    
 
     
 
