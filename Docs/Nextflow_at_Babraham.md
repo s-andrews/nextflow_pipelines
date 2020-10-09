@@ -24,7 +24,11 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
 
 - [QC workflow](#nf_qc)
 - [RNA-seq workflow](#nf_rnaseq)
-- [ChIP-seq/ATAC-seq workflow](#nf_chipseq)
+- [Bisulfite-seq: WGBS workflow](#nf_bisulfite_WGBS)
+- [Bisulfite-seq: PBAT workflow](#nf_bisulfite_PBAT)
+- [Bisulfite-seq: RRBS workflow](#nf_bisulfite_RRBS)
+- [Bisulfite-seq: single-cell BS-seq workflow](#nf_bisulfite_scBSseq)
+- [Bisulfite-seq: single-cell NMT-seq workflow](#nf_bisulfite_scNMT)
 
 ##### nf_qc
     FastQC
