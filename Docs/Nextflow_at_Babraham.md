@@ -33,26 +33,35 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
 ##### nf_qc
     FastQC
     FastQ Screen
+    MultiQC
 ##### nf_rnaseq
+
+Here is an illustration of the RNA-seq workflow:
+
+<img src="./Images/rnaseq_pipeline.png" width="600">
+
     FastQC
     FastQ Screen
     Trim Galore
-    trimmed FastQC
+    Trimmed FastQC
     HISAT2
+    MultiQC
 ##### nf_chipseq
     FastQC
     FastQ Screen
     Trim Galore
-    trimmed FastQC
+    Trimmed FastQC
     Bowtie2
+    MultiQC
 ##### nf_bisulfite_WGBS
     FastQC
     FastQ Screen [--bisulfite]
     Trim Galore
-    trimmed FastQC
+    Trimmed FastQC
     Bismark
-    deduplicate Bismark
-    methylation extract (coverage file) [--ignore_r2 2 for PE files]
+    Deduplicate Bismark
+    Methylation extract (coverage file) [--ignore_r2 2 for PE files]
+    MultiQC
 ##### nf_bisulfite_scBSseq
     FastQC
     FastQ Screen [--bisulfite]
@@ -60,23 +69,28 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
     trimmed FastQC
     Bismark [--non_directional]
     deduplicate Bismark
-    methylation extract (coverage file)
+    Methylation extract (coverage file)
+    bismark2summary
+    MultiQC
 ##### nf_bisulfite_RRBS
     FastQC
     FastQ Screen [--bisulfite]
     Trim Galore [--rrbs]
-    trimmed FastQC
+    Trimmed FastQC
     Bismark
-    methylation extract (coverage file)
+    Methylation extract (coverage file)
+    bismark2summary
+    MultiQC
 ##### nf_bisulfite_PBAT
     FastQC
     FastQ Screen [--bisulfite]
     Trim Galore [--clip_r1 9]
-    trimmed FastQC
+    Trimmed FastQC
     Bismark [--pbat]
-    deduplicate Bismark
-    methylation extract (coverage file)
-
+    Deduplicate Bismark
+    Methylation extract (coverage file)
+    bismark2summary
+    MultiQC
 
 ## Single Program Pipelines:
 
