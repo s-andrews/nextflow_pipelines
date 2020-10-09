@@ -24,7 +24,7 @@ These pipelines are curated by the Babraham Bioinformatics Group, but you are of
 
 Pipelines are supposed to work in a stream-lined and reproducible way every time they are run, and are designed so that users don't have to worry about specifying any of the plethora of options each tool provides. To this end, we try to run the individual programs of a pipeline with a pre-configured set of parameters that are (we find) sensible for the specified data type.
 
-#### List of current pipelines:
+### List of current pipelines:
 
 
 - [RNA-seq workflow](#nf_rnaseq)
@@ -36,7 +36,7 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
 - [Bisulfite-seq: single-cell BS-seq workflow](#nf_bisulfite_scBSseq)
 - [Bisulfite-seq: single-cell NMT-seq workflow](#nf_bisulfite_scNMT)
 
-##### nf_rnaseq
+#### nf_rnaseq
 
 Here is an illustration of the RNA-seq workflow:
 
@@ -49,7 +49,7 @@ Here is an illustration of the RNA-seq workflow:
     HISAT2
     MultiQC
     
-##### nf_chipseq
+#### nf_chipseq
     FastQC
     FastQ Screen
     Trim Galore
@@ -57,12 +57,12 @@ Here is an illustration of the RNA-seq workflow:
     Bowtie2
     MultiQC
     
-##### nf_qc
+#### nf_qc
     FastQC
     FastQ Screen
     MultiQC
     
-##### nf_bisulfite_WGBS
+#### nf_bisulfite_WGBS
     FastQC
     FastQ Screen [--bisulfite]
     Trim Galore
@@ -72,7 +72,7 @@ Here is an illustration of the RNA-seq workflow:
     Methylation extract (coverage file) [--ignore_r2 2 for PE files]
     MultiQC
     
-##### nf_bisulfite_scBSseq
+#### nf_bisulfite_scBSseq
     FastQC
     FastQ Screen [--bisulfite]
     Trim Galore [--clip_r1 6]
@@ -83,7 +83,7 @@ Here is an illustration of the RNA-seq workflow:
     bismark2summary
     MultiQC
     
-##### nf_bisulfite_RRBS
+#### nf_bisulfite_RRBS
     FastQC
     FastQ Screen [--bisulfite]
     Trim Galore [--rrbs]
@@ -93,7 +93,7 @@ Here is an illustration of the RNA-seq workflow:
     bismark2summary
     MultiQC
     
-##### nf_bisulfite_PBAT
+#### nf_bisulfite_PBAT
     FastQC
     FastQ Screen [--bisulfite]
     Trim Galore [--clip_r1 9]
@@ -155,7 +155,10 @@ Our implementation of Nextflow pipelines implements the new (and experimental) m
 
 All output will be written to the working directory.
 
-#### Example of an RNA-seq workflow
+#### Example workflow
+
+Here is an example of the current RNA-seq workflow:
+
 ```nextflow
 #!/usr/bin/env nextflow
 
@@ -219,7 +222,10 @@ workflow {
 ```
 
 
-#### Example of a module (here the HISAT2 module)
+#### Example module
+
+Here is an example of the current HISAT2 module:
+
 ```nextflow
 nextflow.preview.dsl=2
 
