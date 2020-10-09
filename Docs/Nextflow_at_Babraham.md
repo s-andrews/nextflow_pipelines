@@ -6,7 +6,11 @@
 #### Table of Contents
 - [Multi-step pipelines](#pipelines)
 - [Single program pipelines](#single-program-pipelines)
+- [The Nextflow Config file](#the-nextflow-config-file)
+- [Useful Nextflow knowledge](#useful-nextflow-tips)
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
+  * [Example Workflow](#example-workflow)
+  * [Example Module](#example-module)
 
 
 We have recently transitioned from our previous pipelining system [Clusterflow](https://clusterflow.io/) to a new one based on [Nextflow](https://www.nextflow.io/docs/latest/index.html). We offer some preconfigured pipelines that generally discriminate between two different modes of operation: 
@@ -22,18 +26,16 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
 
 #### List of current pipelines:
 
-- [QC workflow](#nf_qc)
+
 - [RNA-seq workflow](#nf_rnaseq)
+- [ChIP-seq/ATAC-seq workflow](#nf_chipseq)
+- [QC workflow](#nf_qc)
 - [Bisulfite-seq: WGBS workflow](#nf_bisulfite_WGBS)
 - [Bisulfite-seq: PBAT workflow](#nf_bisulfite_PBAT)
 - [Bisulfite-seq: RRBS workflow](#nf_bisulfite_RRBS)
 - [Bisulfite-seq: single-cell BS-seq workflow](#nf_bisulfite_scBSseq)
 - [Bisulfite-seq: single-cell NMT-seq workflow](#nf_bisulfite_scNMT)
 
-##### nf_qc
-    FastQC
-    FastQ Screen
-    MultiQC
 ##### nf_rnaseq
 
 Here is an illustration of the RNA-seq workflow:
@@ -46,6 +48,7 @@ Here is an illustration of the RNA-seq workflow:
     Trimmed FastQC
     HISAT2
     MultiQC
+    
 ##### nf_chipseq
     FastQC
     FastQ Screen
@@ -53,6 +56,12 @@ Here is an illustration of the RNA-seq workflow:
     Trimmed FastQC
     Bowtie2
     MultiQC
+    
+##### nf_qc
+    FastQC
+    FastQ Screen
+    MultiQC
+    
 ##### nf_bisulfite_WGBS
     FastQC
     FastQ Screen [--bisulfite]
@@ -62,6 +71,7 @@ Here is an illustration of the RNA-seq workflow:
     Deduplicate Bismark
     Methylation extract (coverage file) [--ignore_r2 2 for PE files]
     MultiQC
+    
 ##### nf_bisulfite_scBSseq
     FastQC
     FastQ Screen [--bisulfite]
@@ -72,6 +82,7 @@ Here is an illustration of the RNA-seq workflow:
     Methylation extract (coverage file)
     bismark2summary
     MultiQC
+    
 ##### nf_bisulfite_RRBS
     FastQC
     FastQ Screen [--bisulfite]
@@ -81,6 +92,7 @@ Here is an illustration of the RNA-seq workflow:
     Methylation extract (coverage file)
     bismark2summary
     MultiQC
+    
 ##### nf_bisulfite_PBAT
     FastQC
     FastQ Screen [--bisulfite]
