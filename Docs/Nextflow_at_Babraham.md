@@ -1,5 +1,7 @@
-# Nextflow Pipelines at the Babraham Institute
+![./Images/nf_at_babraham.png](./Images/nf_at_babraham.png)
 
+
+# Nextflow Pipelines at the Babraham Institute - a User Guide
 
 #### Table of Contents
 - [Multi-step pipelines](#pipelines)
@@ -7,18 +9,22 @@
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
 
 
-We are currently transitioning from our previous pipelining system [Clusterflow](https://clusterflow.io/) to a new one based on [Nextflow](https://www.nextflow.io/docs/latest/index.html). We offer some preconfigured pipelines that generally discriminate between two different modes of operation: 
+We have recently transitioned from our previous pipelining system [Clusterflow](https://clusterflow.io/) to a new one based on [Nextflow](https://www.nextflow.io/docs/latest/index.html). We offer some preconfigured pipelines that generally discriminate between two different modes of operation: 
 
-- data type specific, multi-step pipelines
 - single program pipelines (formerly known as modules)
+- data type specific, multi-step pipelines
 
 These pipelines are curated by the Babraham Bioinformatics Group, but you are of course welcome to write and use your own additional pipelines. If you need help getting started with Nextflow, please come and see any member of the Bioinformatics group who shall be happy to help.
 
 ## Pipelines:
 
-Pipelines are supposed to work in a stream-lined and reproducible way every time they are run, and are designed so that users don't have to worry about specifying any of the plethora of options each tool provides. To this end, we try to run the individual programs of a pipeline with a pre-configured set of parameters that are (we find) sensible for the specific data type.
+Pipelines are supposed to work in a stream-lined and reproducible way every time they are run, and are designed so that users don't have to worry about specifying any of the plethora of options each tool provides. To this end, we try to run the individual programs of a pipeline with a pre-configured set of parameters that are (we find) sensible for the specified data type.
 
 #### List of current pipelines:
+
+- [QC workflow](#nf_qc)
+- [RNA-seq workflow](#nf_rnaseq)
+- [ChIP-seq/ATAC-seq workflow](#nf_chipseq)
 
 ##### nf_qc
     FastQC
