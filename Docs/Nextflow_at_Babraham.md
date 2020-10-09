@@ -107,27 +107,26 @@ Here is an illustration of the RNA-seq workflow:
 ## Single Program Pipelines:
 
 #### List of current single program pipelines:
-- nf_fastqc
-- nf_fastq_screen
-- nf_trim_galore
-- nf_trim_galore_speciality (for `--hardtrim`, `--clock`, `--polyA` etc.)
-- nf_bowtie2
-- nf_hisat2
-- nf_bismark
+- [FastQC module](#nf_fastqc)
+- [FastQ Screen module](#nf_fastq_screen)
+- [Trim Galore module](#nf_trim_galore)
+- [Bowtie2 module](#nf_bowtie2)
+- [HISAT2 module](#nf_hisat2)
+- [Bismark module](#nf_bismark)
 
 In addition to the pre-configured default parameters, each pipeline accepts a single tool-specific additional argument. For the purpose of constructing this extra agrument, all software tools are `lowercase only` (e.g. `fastqc`, not `FastQC`), followed by `_args`, followed by one or more additional options you would like to supply:
 
 ```
---toolname_args "'--additional_option value --extra_flag etc.'"
+--toolname_args="--additional_option value --extra_flag etc"
 ```
 
 So as an example, you could run specific trimming in Trim Galore like so:
 
 ```
---trim_galore_args "'--clip_r1 10 --clip_r2 10 --nextera'"
+--trim_galore_args="--clip_r1 10 --clip_r2 10 --nextera"
 ```
 
-The `--toolname_args "'...'"` argument should enable experienced users to customise most tools to work in more specialised ways. It should however be stressed that it should be perfectly fine to run pre-configured pipelines such as `nf_chipseq` with no need to alter any parameters manually.
+The `--toolname_args="..."` argument should enable experienced users to customise most tools to work in more specialised ways. It should however be stressed that it should be perfectly fine to run pre-configured pipelines such as `nf_chipseq` with no need to alter any parameters manually.
 
 
 #### A note on options on Nextflow:
