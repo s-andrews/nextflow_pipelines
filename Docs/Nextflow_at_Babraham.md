@@ -7,7 +7,7 @@
 - [Multi-step pipelines](#pipelines)
 - [Single program pipelines](#single-program-pipelines)
 - [The Nextflow Config file](#the-nextflow-config-file)
-- [Useful Nextflow knowledge](#useful-nextflow-tips)
+- [Nextflow Dos and Don'ts](#nextflow-dos-and-don'ts)
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
   * [Example Workflow](#example-workflow)
   * [Example Module](#example-module)
@@ -129,6 +129,18 @@ So as an example, you could run specific trimming in Trim Galore like so:
 The `--toolname_args="..."` argument should enable experienced users to customise most tools to work in more specialised ways. It should however be stressed that it should be perfectly fine to run pre-configured pipelines such as `nf_chipseq` with no need to alter any parameters manually.
 
 
+
+
+## Nextflow Dos and Don'ts
+
+
+- mention: `-bg`
+- mention: `-ansi-log=false` (screenshot)
+- mention: `nextflow log` in work directory
+- mention `-resume` (caching)
+- mention: `--list_genomes`
+- mention: `fail strategy` (retry0
+
 #### A note on options on Nextflow:
 
 Options in Nextflow have to be supplied **exactly** as they are expected: non-matching options are simply ignored! This means that there is no auto-completion, and typos/omissions/case errors will result in the option not getting used at all. So please take extra care when supplying additional options. As an example:
@@ -149,8 +161,9 @@ Our implementation of Nextflow pipelines implements the new (and experimental) m
 - run FastQC or raw FastQ(s)
 - run FastQ Screen species screen
 - run Trim Galore to remove adapters and low quality base calls
-- run FastQC again on the trimmed files
+- run FastQC again, this time on the adapter-/quality trimmed files
 - take the trimmed FastQ files and align them to a genome using HISAT2
+- Once everything is complete - run MulitQC on all files of all samples
 
 All output will be written to the working directory.
 
