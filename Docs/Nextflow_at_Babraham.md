@@ -264,7 +264,7 @@ process HISAT2 {
     script:
 	
 	if (verbose){
-		println ("[MODULE] HISAT2 ARGS: " + hisat2_args)
+	    println ("[MODULE] HISAT2 ARGS: " + hisat2_args)
 	}
 	
 	cores = 8
@@ -275,11 +275,11 @@ process HISAT2 {
 	hisat_options = hisat_options + " --no-unal --no-softclip "
 
 	if (reads instanceof List) {
-		readString = "-1 "+reads[0]+" -2 "+reads[1]
-		hisat_options = hisat_options + " --no-mixed --no-discordant"
+	    readString = "-1 "+reads[0]+" -2 "+reads[1]
+	    hisat_options = hisat_options + " --no-mixed --no-discordant"
 	}
 	else {
-		readString = "-U "+reads
+	    readString = "-U "+reads
 	}
 	index = params.genome["hisat2"]
 
