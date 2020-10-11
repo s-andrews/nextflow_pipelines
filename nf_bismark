@@ -1,6 +1,8 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+// last modified 11 Oct 2020
+
 params.outdir = "."
 params.genome = ""
 params.verbose = false
@@ -17,15 +19,15 @@ if (params.verbose){
     println ("[WORKFLOW] BISMARK ARGS ARE: "       + params.bismark_args)
 }
 
-// Show help message
+// Show help message and exit
 if (params.help){
     helpMessage()
     exit 0
 }
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
-include { getGenome }                             from './nf_modules/genomes.mod.nf'
-include { listGenomes }                            from './nf_modules/genomes.mod.nf'
+include { getGenome }                          from './nf_modules/genomes.mod.nf'
+include { listGenomes }                        from './nf_modules/genomes.mod.nf'
 
 if (params.list_genomes){
     listGenomes()  // this lists all available genomes, and exits
@@ -85,7 +87,7 @@ def helpMessage() {
 
       --outdir [str]                  Path to the output directory. [Default: current working directory]
 
-      --list_genomes                  List all genomeBuilds that are currently available to choose from. To see this list
+      --list_genomes                  List all genome builds that are currently available to choose from. To see this list
                                       of available genomes with more detailed information about paths and indexes, run
                                       the command as '--list_genomes --verbose'
     
@@ -104,19 +106,14 @@ def helpMessage() {
                                       Nextflow's caching mechanism. This may save a lot of time.
 
       -bg                             Sends the entire workflow into the background, thus disconnecting it from the terminal session.
-                                      This option launches a daemon process (which will keep running on the headnode) which watches over
+                                      This option launches a daemon process (which will keep running on the headnode) that watches over
                                       your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
                                       jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
                                       pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
 
-      -process.executor=local         Temporaily changes where the workflow is executed to the 'local' machine. [Default: slurm] 
-
+      -process.executor=local         Temporarily changes where the workflow is executed to the 'local' machine. Please also see the Nextflow
+                                      config file for details. [Default: slurm] 
     
-
-    
-
-    
-        
     """.stripIndent()
 
 }
