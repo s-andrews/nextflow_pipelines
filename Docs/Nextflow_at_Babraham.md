@@ -1,98 +1,145 @@
-# Nextflow Pipelines at the Babraham Institute
+![./Images/nf_at_babraham.png](./Images/nf_at_babraham.png)
 
+
+# Nextflow Pipelines at the Babraham Institute - a User Guide
 
 #### Table of Contents
 - [Multi-step pipelines](#pipelines)
 - [Single program pipelines](#single-program-pipelines)
+- [The Nextflow Config file](#the-nextflow-config-file)
+- [Nextflow Dos and Don'ts](#nextflow-dos-and-don'ts)
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
+  * [Example Workflow](#example-workflow)
+  * [Example Module](#example-module)
 
 
-We are currently transitioning from our previous pipelining system [Clusterflow](https://clusterflow.io/) to a new one based on [Nextflow](https://www.nextflow.io/docs/latest/index.html). We offer some preconfigured pipelines that generally discriminate between two different modes of operation: 
+We have recently transitioned from our previous pipelining system [Clusterflow](https://clusterflow.io/) to a new one based on [Nextflow](https://www.nextflow.io/docs/latest/index.html). We offer some preconfigured pipelines that generally discriminate between two different modes of operation: 
 
-- data type specific, multi-step pipelines
 - single program pipelines (formerly known as modules)
+- data type specific, multi-step pipelines
 
 These pipelines are curated by the Babraham Bioinformatics Group, but you are of course welcome to write and use your own additional pipelines. If you need help getting started with Nextflow, please come and see any member of the Bioinformatics group who shall be happy to help.
 
 ## Pipelines:
 
-Pipelines are supposed to work in a stream-lined and reproducible way every time they are run, and are designed so that users don't have to worry about specifying any of the plethora of options each tool provides. To this end, we try to run the individual programs of a pipeline with a pre-configured set of parameters that are (we find) sensible for the specific data type.
+Pipelines are supposed to work in a stream-lined and reproducible way every time they are run, and are designed so that users don't have to worry about specifying any of the plethora of options each tool provides. To this end, we try to run the individual programs of a pipeline with a pre-configured set of parameters that are (we find) sensible for the specified data type.
 
-#### List of current pipelines:
+### List of current pipelines:
 
-##### nf_qc
-    FastQC
-    FastQ Screen
-##### nf_rnaseq
+
+- [RNA-seq workflow](#nf_rnaseq)
+- [ChIP-seq/ATAC-seq workflow](#nf_chipseq)
+- [QC workflow](#nf_qc)
+- [Bisulfite-seq: WGBS workflow](#nf_bisulfite_WGBS)
+- [Bisulfite-seq: PBAT workflow](#nf_bisulfite_PBAT)
+- [Bisulfite-seq: RRBS workflow](#nf_bisulfite_RRBS)
+- [Bisulfite-seq: single-cell BS-seq workflow](#nf_bisulfite_scBSseq)
+- [Bisulfite-seq: single-cell NMT-seq workflow](#nf_bisulfite_scNMT)
+
+#### nf_rnaseq
+
+Here is an illustration of the RNA-seq workflow:
+
+<img src="./Images/rnaseq_pipeline.png" width="600">
+
     FastQC
     FastQ Screen
     Trim Galore
-    trimmed FastQC
+    Trimmed FastQC
     HISAT2
-##### nf_chipseq
+    MultiQC
+    
+#### nf_chipseq
     FastQC
     FastQ Screen
     Trim Galore
-    trimmed FastQC
+    Trimmed FastQC
     Bowtie2
-##### nf_bisulfite_WGBS
+    MultiQC
+    
+#### nf_qc
+    FastQC
+    FastQ Screen
+    MultiQC
+    
+#### nf_bisulfite_WGBS
     FastQC
     FastQ Screen [--bisulfite]
     Trim Galore
-    trimmed FastQC
+    Trimmed FastQC
     Bismark
-    deduplicate Bismark
-    methylation extract (coverage file) [--ignore_r2 2 for PE files]
-##### nf_bisulfite_scBSseq
+    Deduplicate Bismark
+    Methylation extract (coverage file) [--ignore_r2 2 for PE files]
+    MultiQC
+    
+#### nf_bisulfite_scBSseq
     FastQC
     FastQ Screen [--bisulfite]
     Trim Galore [--clip_r1 6]
     trimmed FastQC
     Bismark [--non_directional]
     deduplicate Bismark
-    methylation extract (coverage file)
-##### nf_bisulfite_RRBS
+    Methylation extract (coverage file)
+    bismark2summary
+    MultiQC
+    
+#### nf_bisulfite_RRBS
     FastQC
     FastQ Screen [--bisulfite]
     Trim Galore [--rrbs]
-    trimmed FastQC
+    Trimmed FastQC
     Bismark
-    methylation extract (coverage file)
-##### nf_bisulfite_PBAT
+    Methylation extract (coverage file)
+    bismark2summary
+    MultiQC
+    
+#### nf_bisulfite_PBAT
     FastQC
     FastQ Screen [--bisulfite]
     Trim Galore [--clip_r1 9]
-    trimmed FastQC
+    Trimmed FastQC
     Bismark [--pbat]
-    deduplicate Bismark
-    methylation extract (coverage file)
-
+    Deduplicate Bismark
+    Methylation extract (coverage file)
+    bismark2summary
+    MultiQC
 
 ## Single Program Pipelines:
 
 #### List of current single program pipelines:
-- nf_fastqc
-- nf_fastq_screen
-- nf_trim_galore
-- nf_trim_galore_speciality (for `--hardtrim`, `--clock`, `--polyA` etc.)
-- nf_bowtie2
-- nf_hisat2
-- nf_bismark
+- [FastQC module](#nf_fastqc)
+- [FastQ Screen module](#nf_fastq_screen)
+- [Trim Galore module](#nf_trim_galore)
+- [Bowtie2 module](#nf_bowtie2)
+- [HISAT2 module](#nf_hisat2)
+- [Bismark module](#nf_bismark)
 
 In addition to the pre-configured default parameters, each pipeline accepts a single tool-specific additional argument. For the purpose of constructing this extra agrument, all software tools are `lowercase only` (e.g. `fastqc`, not `FastQC`), followed by `_args`, followed by one or more additional options you would like to supply:
 
 ```
---toolname_args "'--additional_option value --extra_flag etc.'"
+--toolname_args="--additional_option value --extra_flag etc"
 ```
 
 So as an example, you could run specific trimming in Trim Galore like so:
 
 ```
---trim_galore_args "'--clip_r1 10 --clip_r2 10 --nextera'"
+--trim_galore_args="--clip_r1 10 --clip_r2 10 --nextera"
 ```
 
-The `--toolname_args "'...'"` argument should enable experienced users to customise most tools to work in more specialised ways. It should however be stressed that it should be perfectly fine to run pre-configured pipelines such as `nf_chipseq` with no need to alter any parameters manually.
+The `--toolname_args="..."` argument should enable experienced users to customise most tools to work in more specialised ways. It should however be stressed that it should be perfectly fine to run pre-configured pipelines such as `nf_chipseq` with no need to alter any parameters manually.
 
+
+
+
+## Nextflow Dos and Don'ts
+
+
+- mention: `-bg`
+- mention: `-ansi-log=false` (screenshot)
+- mention: `nextflow log` in work directory
+- mention `-resume` (caching)
+- mention: `--list_genomes`
+- mention: `fail strategy` (retry0
 
 #### A note on options on Nextflow:
 
@@ -114,12 +161,16 @@ Our implementation of Nextflow pipelines implements the new (and experimental) m
 - run FastQC or raw FastQ(s)
 - run FastQ Screen species screen
 - run Trim Galore to remove adapters and low quality base calls
-- run FastQC again on the trimmed files
+- run FastQC again, this time on the adapter-/quality trimmed files
 - take the trimmed FastQ files and align them to a genome using HISAT2
+- Once everything is complete - run MulitQC on all files of all samples
 
 All output will be written to the working directory.
 
-#### Example of an RNA-seq workflow
+#### Example workflow
+
+Here is an example of the current RNA-seq workflow:
+
 ```nextflow
 #!/usr/bin/env nextflow
 
@@ -183,32 +234,39 @@ workflow {
 ```
 
 
-#### Example of a module (here the HISAT2 module)
+#### Example module
+
+Here is an example of the current HISAT2 module:
+
 ```nextflow
-nextflow.preview.dsl=2
-
-params.hisat2_args = ''
-params.verbose = false
-
-// We need to replace single quotes in the arguments so that they are not getting passed in as a single string
-hisat2_args = params.hisat2_args.replaceAll(/'/,"")
-if (params.verbose){
-	println ("[MODULE] HISAT2 ARGS: " + hisat2_args)
-}
+nextflow.enable.dsl=2
 
 process HISAT2 {
 	
-	label 'bigMem'
-	label 'multiCore'
+    tag "$name" // Adds name to job submission instead of (1), (2) etc.
+
+    label 'bigMem'
+    label 'multiCore'
 
     input:
-	    tuple val(name), path(reads)
+        tuple val(name), path(reads)
+	val (outputdir)
+	val (hisat2_args)
+	val (verbose)
 
-	output:
-	    path "*bam",       emit: bam
-		path "*stats.txt", emit: stats 
+    output:
+	path "*bam",       emit: bam
+	path "*stats.txt", emit: stats 
+
+	publishDir "$outputdir",
+	mode: "link", overwrite: true
 
     script:
+	
+	if (verbose){
+	    println ("[MODULE] HISAT2 ARGS: " + hisat2_args)
+	}
+	
 	cores = 8
 	readString = ""
 	hisat_options = hisat2_args
@@ -217,22 +275,27 @@ process HISAT2 {
 	hisat_options = hisat_options + " --no-unal --no-softclip "
 
 	if (reads instanceof List) {
-		readString = "-1 "+reads[0]+" -2 "+reads[1]
-		hisat_options = hisat_options + " --no-mixed --no-discordant"
+	    readString = "-1 "+reads[0]+" -2 "+reads[1]
+	    hisat_options = hisat_options + " --no-mixed --no-discordant"
 	}
 	else {
-		readString = "-U "+reads
+	    readString = "-U "+reads
 	}
 	index = params.genome["hisat2"]
-	
+
 	splices = " --known-splicesite-infile " + params.genome["hisat2_splices"]
 	hisat_name = name + "_" + params.genome["name"]
 
 	"""
 	module load hisat2
 	module load samtools
-	hisat2 -p ${cores} ${hisat_options} -x ${index} ${splices} ${readString}  2>${hisat_name}_hisat2_stats.txt | samtools view -bS -F 4 -F 8 -F 256 -> ${hisat_name}_hisat2.bam
+	hisat2 -p ${cores} ${hisat_options} -x ${index} ${splices} ${readString}  2>${hisat_name}_hisat2_stats.txt | samtools view -bS -F 4 -F 8 -F 256 -> 		${hisat_name}_hisat2.bam
 	"""
 
 }
 ```
+
+
+## Credits
+This documentation was written by Felix Krueger and Simon Andrews, part of the [Babraham Bioinformatics](https://www.bioinformatics.babraham.ac.uk) group.
+<p align="center"> <img title="Babraham Bioinformatics" id="logo_img" src="./Images/bioinformatics_logo.png"></p>
