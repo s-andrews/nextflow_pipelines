@@ -1,6 +1,8 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+// last modified 11 Oct 2020
+
 params.outdir = "."
 params.genome = ""
 params.bowtie2_args = ''
@@ -46,6 +48,24 @@ workflow {
     
 }
 
+// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+// minimal execution summary report so we at least know what the working directory was...
+workflow.onComplete {
+
+    def msg = """\
+        Pipeline execution summary
+        ---------------------------
+        Completed at: ${workflow.complete}
+        Duration    : ${workflow.duration}
+        Success     : ${workflow.success}
+        workDir     : ${workflow.workDir}
+        exit status : ${workflow.exitStatus}
+        """
+    .stripIndent()
+
+    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+}
+
 def helpMessage() {
  
     log.info"""
@@ -55,8 +75,10 @@ def helpMessage() {
     stone compute cluster at Babraham.
 
     If you run Bowtie 2 in this stand-alone workflow it is assumed that you know what you are doing, e.g. raw FastQ files should
-    have been trimmed appropriately. If called as is, Bowtie 2 is run in default mode (i.e. end-to-end mode). To add additional
-    parameters, please consider tool-specific arguments that are compatible with Bowtie 2 (see '--bowtie2_args' below).
+    have been trimmed appropriately. If called as is, Bowtie 2 is run in default end-to-end mode (we are adding the options
+    '--no-unal', and additionally for paired-end files '--no-mixed --no-discordant' to only allow concordant read pair
+    alignmnents). To add additional parameters, please consider tool-specific arguments that are compatible with Bowtie 2
+    (see '--bowtie2_args' below).
 
     USAGE:
     
