@@ -135,9 +135,28 @@ The `--toolname_args="..."` argument should enable experienced users to customis
 
 
 - mention: `-bg`
+Sends the entire workflow into the background, thus disconnecting it from the terminal session.
+                                  This option launches a daemon process (which will keep running on the headnode) that watches over
+                                  your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
+                                  jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
+                                  pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
+
+
 - mention: `-ansi-log=false` (screenshot)
 - mention: `nextflow log` in work directory
+
+The nextflow log command lists the executions run in the current folder, here is an example:
+```
+2020-10-08 12:33:38	53m       	lonely_bhabha  	ERR   	8a59348cdc 	021addb3-61dc-47e2-b795-64a6a30945b3	nextflow nf_chipseq --genome GRCh38 *.fastq.gz        
+2020-10-08 13:54:04	1h 11m 25s	maniac_laplace 	OK    	8a59348cdc 	021addb3-61dc-47e2-b795-64a6a30945b3	nextflow nf_chipseq --genome GRCh38 *.fastq.gz -resume
+```
+
 - mention `-resume` (caching)
+If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
+                                  this option will attempt to resume the workflow at the point it got interrupted by using
+                                  Nextflow's caching mechanism. This may save a lot of time.
+				  
+				  https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html
 - mention: `--list_genomes`
 - mention: `fail strategy` (retry0
 
