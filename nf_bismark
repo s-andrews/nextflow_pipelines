@@ -64,7 +64,8 @@ workflow.onComplete {
 def helpMessage() {
  
     log.info"""
-    
+    >>
+
     
     This workflow takes in a list of filenames (in FastQ format), and aligns these files to a genome using Bismark on the
     stone compute cluster at Babraham.
@@ -131,6 +132,8 @@ def helpMessage() {
       -process.executor=local         Temporarily changes where the workflow is executed to the 'local' machine. Please also see the Nextflow
                                       config file for details. [Default: slurm] 
     
+
+    <<
     """.stripIndent()
 
 }

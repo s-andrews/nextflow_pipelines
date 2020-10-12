@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// last modified 11 Oct 2020
+// last modified 12 Oct 2020
 
 params.outdir = "."
 params.genome = ""
@@ -64,7 +64,8 @@ workflow.onComplete {
 def helpMessage() {
  
     log.info"""
-    
+    >>
+
     
     This workflow takes in a list of filenames (in FastQ format), and aligns these files to a genome using HISAT2 on the
     stone compute cluster at Babraham.
@@ -134,6 +135,8 @@ def helpMessage() {
       -process.executor=local         Temporarily changes where the workflow is executed to the 'local' machine. See also the nextflow.config
                                       file for more details. [Default: slurm] 
     
+
+    <<
     """.stripIndent()
 
 }
