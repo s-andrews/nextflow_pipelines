@@ -92,7 +92,7 @@ def helpMessage() {
                                       (latest mouse genome build). To list all available genomes, see '--list_genomes' below.
 
 
-    Tool-Specific Options:
+    Tool-specific options:
     ======================
 
       --hisat2_args="[str]"           This option can take any number of options that are compatible with HISAT2 to modify its
@@ -103,7 +103,7 @@ def helpMessage() {
                                       ="your options" needs to be strictly adhered to in order to work correctly.
                                       [Default: None]
 
-    Other Options:
+    Other options:
     ==============
 
       --outdir [str]                  Path to the output directory. [Default: current working directory]
@@ -117,7 +117,7 @@ def helpMessage() {
       --verbose                       More verbose status messages. [Default: OFF]
       --help                          Displays this help message and exits.
 
-    Workflow Options:
+    Workflow options:
     =================
 
     Please note the single '-' hyphen for the following options!

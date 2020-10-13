@@ -163,6 +163,12 @@ def helpMessage() {
                                       converted library with fairly relaxed parameters, you could use: 
                                       ' --fastq_screen_args="--bisulfite --score_min L,0,-0.6" '. [Default: None]
 
+      --trim_galore_args="[str]"      This option can take any number of options that are compatible with Trim Galore to modify its
+                                      default trimming behaviour. For more detailed information on available options please refer
+                                      to the Trim Galore User Guide, or run 'trim_galore --help' on the command line. As an example, to trim
+                                      off the first 10bp from the 5' of R1 and 5bp of R2, use: 
+                                      ' --trim_galore_args="--clip_r1 10 --clip_r2 5" '. [Default: None]
+
       --hisat2_args="[str]"           This option can take any number of options that are compatible with HISAT2 to modify its
                                       default mapping behaviour. For more detailed information on available options please refer
                                       to the HISAT2 User Guide, or run 'hisat2 --help' on the command line. As an example, to disable
