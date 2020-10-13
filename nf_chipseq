@@ -126,7 +126,7 @@ def helpMessage() {
     FastQC:         defaults (-q)
     FastQ Screen:   defaults (Bowtie 2; local mode)
     Trim Galore:    defaults (adapter auto-detection)
-    Bowtie 2:       end-to-end mode; '--no-unal'; for paired-end files: '--no-mixed --no-discordant' (only concordant alignmnents)
+    Bowtie 2:       end-to-end mode; '--no-unal'; for paired-end files: '--no-mixed --no-discordant' (concordant PE alignmnents only)
                     
     To add additional parameters to any of the programs, consider supplying tool-specific arguments (see --toolname_args="..." below).
 
@@ -151,27 +151,26 @@ def helpMessage() {
     Tool-specific options:
     ======================
 
+    For all following options, please note that the format: ="your options" needs to be strictly adhered to in order to work correctly.
+
       --fastqc_args="[str]"           This option can take any number of options that are compatible with FastQC to modify its default
                                       behaviour. For more detailed information on available options please refer to the FastQC documentation,
                                       or run 'fastqc --help' on the command line. As an example, to run FastQC without grouping of bases when
                                       reads are >50bp and use a specific file with non-default adapter sequences, use: 
-                                      ' --fastqc_args="--nogroup --adapters ./non_default_adapter_file.txt" '. Please note that the format:
-                                      ="your options" needs to be strictly adhered to in order to work correctly. [Default: None]
+                                      ' --fastqc_args="--nogroup --adapters ./non_default_adapter_file.txt" '. [Default: None]
 
       --fastq_screen_args="[str]"     This option can take any number of options that are compatible with FastQ Screen to modify its
                                       default behaviour. For more detailed information on available options please refer to the FastQ Screen
                                       documentation, or run 'fastq_screen --help' on the command line. For instance, to process a bisulfite
                                       converted library with fairly relaxed parameters, you could use: 
-                                      ' --fastq_screen_args="--bisulfite --score_min L,0,-0.6" '. Please note that the format: 
-                                      ="your options" needs to be strictly adhered to in order to work correctly. [Default: None]
+                                      ' --fastq_screen_args="--bisulfite --score_min L,0,-0.6" '. [Default: None]
 
     
       --bowtie2_args="[str]"          This option can take any number of options that are compatible with Bowtie 2 to modify its
                                       default mapping behaviour. For more detailed information on available options please refer
                                       to the Bowtie 2 User Guide, or run 'bowtie2 --help' on the command line. As an example, to
                                       run somewhat more stringent alignments for only 1 million sequences, use:
-                                      ' --bowtie2_args="-u 1000000 --score_min L,0,-0.4" '. Please note that the format ="your options"
-                                      needs to be strictly adhered to in order to work correctly. [Default: None]
+                                      ' --bowtie2_args="-u 1000000 --score_min L,0,-0.4" '. [Default: None]
 
     Other options:
     ==============
