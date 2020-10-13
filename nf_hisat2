@@ -83,7 +83,7 @@ def helpMessage() {
     Mandatory arguments:
     ====================
 
-      <input_files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. In theory, files will automatically be
+      <input files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. In theory, files will automatically be
                                       processed as single-end or paired end files (if file pairs share the same base-name, and
                                       differ only by a different read number, e.g. 'base_name_R1.fastq.gz' and 'base_name_R2.fastq.gz'
                                       (or R3, R4). To run paired-end files in single-end mode, please see '--single_end' below.

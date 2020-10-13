@@ -138,7 +138,7 @@ def helpMessage() {
     Mandatory arguments:
     ====================
 
-      <input_files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. Files are automatically processed as
+      <input files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. Files are automatically processed as
                                       single-end (SE) or paired end (PE) files (if file pairs share the same base-name, and differ only
                                       by a read number, e.g. 'base_name_R1.fastq.gz' and 'base_name_R2.fastq.gz' (or R3, R4). For
                                       PE files, only Read 1 is run through FastQ Screen (as typically R1 and R2 produce nearly identical

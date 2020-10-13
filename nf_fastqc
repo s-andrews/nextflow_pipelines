@@ -71,7 +71,7 @@ def helpMessage() {
     Mandatory arguments:
     ====================
 
-      <input_files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. All supplied files are processed with FastQC
+      <input files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. All supplied files are processed with FastQC
                                       irrespective of whether they were detected to be single-end files or paired-end file pairs. 
 
     Tool-Specific Options:
