@@ -140,9 +140,15 @@ I am sure there is a ton of interesting or useful Nextflow options which we are 
 
 - Default logging or `-ansi-log=false`
 
-By default, Nextflow launches an interactive pipeline that keeps writing overwriting status messages in place. This looks very tidy, and it is mesmerising to watch a job progress: 
+By default, Nextflow launches an interactive pipeline that keeps overwriting status messages in place whenever a job status updates. This looks very tidy, and it is mesmerising to watch a job progress: 
 
-<img src="./Images/interactive_log.png" width="400">
+<img src="./Images/interactive_log.png" width="500">
+
+Sometimes, especially during development of a new pipeline, this neat logging mode may 'swallow' some useful print or debugging statements. Thus, for testing purposes you can use the option `-ansi-log false`. This will allow log messages to be shown, and use a single line for each process:
+
+<img src="./Images/ansilog_false.png" width="500">
+
+In both modes, the Nextflow process is running interactively, and presssing `ctrl + C`, or closing the terminal window (or close the laptop) will cause the entire Nextflow pipeline process to fail and abort.
 
  - `-bg` 
 
