@@ -7,7 +7,7 @@
 - [Multi-step pipelines](#pipelines)
 - [Single program pipelines](#single-program-pipelines)
 - [The Nextflow Config file](#the-nextflow-config-file)
-- [Nextflow Dos and Don'ts](#nextflow-dos-and-don'ts)
+- [Nextflow Dos and Don'ts](#nextflow-dos-and-donts)
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
   * [Example Workflow](#example-workflow)
   * [Example Module](#example-module)
@@ -134,12 +134,19 @@ The `--toolname_args="..."` argument should enable experienced users to customis
 ## Nextflow Dos and Don'ts
 
 
-- mention: `-bg`
-Sends the entire workflow into the background, thus disconnecting it from the terminal session.
-                                  This option launches a daemon process (which will keep running on the headnode) that watches over
-                                  your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
-                                  jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
-                                  pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
+### Single-hyphen options are Nextflow options
+
+I am sure there is a ton of interesting or useful Nextflow options which we are not aware of, but we will try to list a few of these interesting concepts here. 
+
+- Default logging or `-ansi-log=false`
+
+By default, Nextflow launches an interactive pipeline that keeps writing overwriting status messages in place. This looks very tidy, and it is mesmerising to watch a job progress: 
+
+<img src="./Images/interactive_log.png" width="400">
+
+ - `-bg` 
+
+This option sends the entire workflow into the background, thus disconnecting it from the terminal session (similar to the `nohup` command). This option launches a daemon process (which will keep running on the headnode) that watches over your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
 
 
 - mention: `-ansi-log=false` (screenshot)
@@ -154,14 +161,15 @@ The nextflow log command lists the executions run in the current folder, here is
 2020-10-08 13:54:04	1h 11m 25s	maniac_laplace 	OK    	8a59348cdc 	021addb3-61dc-47e2-b795-64a6a30945b3	nextflow nf_chipseq --genome GRCh38 *.fastq.gz -resume
 ```
 
-- mention `-resume` (caching)
+- `-resume` (caching)
+
 If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
                                   this option will attempt to resume the workflow at the point it got interrupted by using
                                   Nextflow's caching mechanism. This may save a lot of time.
 				  
 				  https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html
 - mention: `--list_genomes`
-- mention: `fail strategy` (retry0
+- mention: `fail strategy` (retry
 
 #### A note on options on Nextflow:
 
