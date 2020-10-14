@@ -176,11 +176,12 @@ If you want to dig in deeper yourself, you can look at the hidden file `.nextflo
 
 - `-resume` (caching)
 
-If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
-                                  this option will attempt to resume the workflow at the point it got interrupted by using
-                                  Nextflow's caching mechanism. This may save a lot of time.
+If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop), this option will attempt to resume the workflow at the point it got interrupted by using Nextflow's caching mechanism. This may save a lot of time.
 				  
-				  https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html
+https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html
+				  
+<img src="./Images/caching_log.png" width="800">
+
 - mention: `--list_genomes`
 - mention: `fail strategy` (retry
 
