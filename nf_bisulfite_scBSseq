@@ -167,6 +167,9 @@ def helpMessage() {
     To add additional parameters to any of the programs, consider supplying tool-specific arguments (see --toolname_args="..." below).
 
 
+            ==============================================================================================================
+
+
     USAGE:
     
     nf_bisulfite_scBSseq [options] --genome <genomeID> --single_end (recommended!) <input files>

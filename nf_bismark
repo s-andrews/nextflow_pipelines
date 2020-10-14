@@ -76,6 +76,10 @@ def helpMessage() {
     have been trimmed appropriately. If called as is, Bismark is run in default mode. To add additional parameters, please 
     consider tool-specific arguments that are compatible with Bismark (see '--bismark_args' below).
 
+
+            ==============================================================================================================
+
+            
     USAGE:
     
     nf_bismark [options] --genome <genomeID> <input files>

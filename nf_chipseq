@@ -131,6 +131,9 @@ def helpMessage() {
     To add additional parameters to any of the programs, consider supplying tool-specific arguments (see --toolname_args="..." below).
 
 
+            ==============================================================================================================
+
+            
     USAGE:
     
     nf_chipseq [options] --genome <genomeID> <input files>

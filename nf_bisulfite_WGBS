@@ -165,6 +165,9 @@ def helpMessage() {
     Bismark methylation extraction:   '--bedGraph --buffer 10G --parallel 4'; for PE files: '--ignore_r2 2'                  
     
     To add additional parameters to any of the programs, consider supplying tool-specific arguments (see --toolname_args="..." below).
+    
+    
+            ==============================================================================================================
 
 
     USAGE:
