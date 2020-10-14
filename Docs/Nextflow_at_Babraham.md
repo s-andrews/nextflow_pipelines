@@ -12,7 +12,9 @@
     * [Logging styles](#logging-styles)
     * [Executing jobs in the background (`-bg`)](#executing-jobs-in-the-background)
   * [Double-hyphen options are user defined options](#double-hyphen-options-are-user-defined-options)
-    
+    * [Caveat: arguments may be swallowed](#arguments-may-be-swallowed)    
+  * [Hidden (but useful!) files](#hidden-files)
+  * [The Nextflow `work` folder](#the-nextflow-work-folder)
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
   * [Example Workflow](#example-workflow)
   * [Example Module](#example-module)
