@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 
-// Last modified 13 October 2020
+// Last modified 14 October 2020
 
 // Enable modules
 nextflow.enable.dsl=2
@@ -132,9 +132,10 @@ def helpMessage() {
     SYNOPSIS:
 
     This workflow runs an entire whole-genome shotgun bisulfite-seq (WGBS) processing pipeline on FastQ files. This
-    includes QC, quality-/adapter trimming, contamination QC (after trimming), alignments to a genome using Bismark,
-    and finally generate an aggregate MultiQC report. The workflow is suitable for 'standard' bisulfite sequencing
-    experiments. Here is a graphical representation of the workflow:
+    includes QC, quality-/adapter trimming, contamination QC (post-trimming), alignments to a genome using Bismark,
+    deduplication, methylation extraction, coverage file generation, and finally generates an aggregate MultiQC report.
+    The workflow is suitable for 'standard' bisulfite sequencing experiments. Here is a graphical representation of the
+    workflow:
 
     --- FastQC
     --- Trim Galore
