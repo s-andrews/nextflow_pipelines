@@ -9,9 +9,10 @@
 - [The Nextflow Config file](#the-nextflow-config-file)
 - [Nextflow Dos and Don'ts](#nextflow-dos-and-donts)
   * [Single-hyphen options are Nextflow options](#single-hyphen-options-are-nextflow-options)
-  * [Double-hyphen options are user defined options](#double-hyphen-options-are-user-defined-options)
     * [Logging styles](#logging-styles)
-    * [-bg - Executing jobs in the background](#executing-jobs-in-the-background)
+    * [Executing jobs in the background (`-bg`)](#executing-jobs-in-the-background)
+  * [Double-hyphen options are user defined options](#double-hyphen-options-are-user-defined-options)
+    
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
   * [Example Workflow](#example-workflow)
   * [Example Module](#example-module)
@@ -37,6 +38,7 @@ Pipelines are supposed to work in a stream-lined and reproducible way every time
 - [Bisulfite-seq: WGBS workflow](#nf_bisulfite_WGBS)
 - [Bisulfite-seq: PBAT workflow](#nf_bisulfite_PBAT)
 - [Bisulfite-seq: RRBS workflow](#nf_bisulfite_RRBS)
+- [Bisulfite-seq: RRBS Epigenetic clock workflow](#nf_bisulfite_RRBS_clock)
 - [Bisulfite-seq: single-cell BS-seq workflow](#nf_bisulfite_scBSseq)
 - [Bisulfite-seq: single-cell NMT-seq workflow](#nf_bisulfite_scNMT)
 
@@ -67,23 +69,57 @@ Here is an illustration of the RNA-seq workflow:
     MultiQC
     
 #### nf_bisulfite_WGBS
-    FastQC
-    FastQ Screen [--bisulfite]
+    FastQC    
     Trim Galore
+    FastQ Screen [--bisulfite]
     Trimmed FastQC
     Bismark
     Deduplicate Bismark
     Methylation extract (coverage file) [--ignore_r2 2 for PE files]
+    bismark2report
+    bismark2summary
+    MultiQC
+
+#### nf_bisulfite_PBAT
+    FastQC
+    Trim Galore [--clip_r1 9] [--clip_r2 9 for PE files]
+    FastQ Screen [--bisulfite]
+    Trimmed FastQC
+    Bismark [--pbat]
+    Deduplicate Bismark
+    Methylation extract (coverage file)
+    bismark2report
+    bismark2summary
     MultiQC
     
 #### nf_bisulfite_scBSseq
+
+To be executed with `--single_end`
+
     FastQC
-    FastQ Screen [--bisulfite]
     Trim Galore [--clip_r1 6]
-    trimmed FastQC
+    Trimmed FastQC
+    FastQ Screen [--bisulfite]
     Bismark [--non_directional]
     deduplicate Bismark
     Methylation extract (coverage file)
+    bismark2report
+    bismark2summary
+    MultiQC
+    
+#### nf_bisulfite_scNMT
+
+To be executed with `--single_end`
+
+    FastQC
+    Trim Galore [--clip_r1 6]
+    Trimmed FastQC
+    FastQ Screen [--bisulfite]
+    Bismark [--non_directional]
+    deduplicate Bismark
+    Methylation extract (coverage file) [--CX]
+    coverage2cytosine [--NOMe-seq]
+    bismark2report
     bismark2summary
     MultiQC
     
@@ -94,19 +130,25 @@ Here is an illustration of the RNA-seq workflow:
     Trimmed FastQC
     Bismark
     Methylation extract (coverage file)
+    bismark2report
     bismark2summary
     MultiQC
     
-#### nf_bisulfite_PBAT
+#### nf_bisulfite_RRBS_clock
     FastQC
     FastQ Screen [--bisulfite]
-    Trim Galore [--clip_r1 9]
-    Trimmed FastQC
-    Bismark [--pbat]
-    Deduplicate Bismark
+    Trim Galore [--clock]
+    Trimmed FastQC1
+    Trim Galore
+    Trimmed FastQC2
+    Bismark
+    UmiBam [--dual]
     Methylation extract (coverage file)
+    bismark2report
     bismark2summary
     MultiQC
+    
+
 
 ## Single Program Pipelines:
 
