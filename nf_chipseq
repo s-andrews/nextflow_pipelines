@@ -113,9 +113,9 @@ def helpMessage() {
     --- FastQ Screen
     --- Trim Galore
         |
-        --- Bowtie 2 
-          |
-          --- MultiQC*
+        --- FastQC
+        --- Bowtie 2  
+    --- MultiQC*
         
     * This step runs only once ALL other jobs have completed.
      

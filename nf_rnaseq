@@ -111,9 +111,9 @@ def helpMessage() {
     --- FastQ Screen
     --- Trim Galore
         |
+        --- FastQC
         --- HISAT2 
-          |
-          --- MultiQC*
+    --- MultiQC*
         
     * This step runs only once ALL other jobs have completed.
      

@@ -66,8 +66,13 @@ process BISMARK {
 
 		index = "--genome " + params.genome["bismark"]
 
-		// add Genome build to output name. Currently only using Bowtie 2
-		bismark_name = name + "_" + params.genome["name"] + "_bismark_bt2"
+		// add Genome build and aligner to output name
+		if (bismark_args =~ /-hisat/){ // if HISAT2 was given on the command line
+			bismark_name = name + "_" + params.genome["name"] + "_bismark_hisat2"
+		}
+		else{ // default is Bowtie 2
+			bismark_name = name + "_" + params.genome["name"] + "_bismark_bt2"
+		}
 		// println ("Output basename: $bismark_name")
 
 		"""
