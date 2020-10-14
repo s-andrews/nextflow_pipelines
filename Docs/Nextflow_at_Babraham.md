@@ -31,6 +31,14 @@ We have recently transitioned from our previous pipelining system [Clusterflow](
 
 These pipelines are curated by the Babraham Bioinformatics Group, but you are of course welcome to write and use your own additional pipelines. If you need help getting started with Nextflow, please come and see any member of the Bioinformatics group who shall be happy to help.
 
+To use any of our Nextflow pipelines, you will need to load Nextflow first:
+
+```
+module load nf
+```
+Now all all pipelines should work, just type `nf_` followed by hitting TAB twice to see all options.
+
+
 ## Pipelines:
 
 Pipelines are supposed to work in a stream-lined and reproducible way every time they are run, and are designed so that users don't have to worry about specifying any of the plethora of options each tool provides. To this end, we try to run the individual programs of a pipeline with a pre-configured set of parameters that are (we find) sensible for the specified data type.
@@ -205,8 +213,9 @@ In both modes, the Nextflow process is running interactively, and presssing `ctr
 
 #### Executing jobs in the background 
 
-This option sends the entire workflow into the background, thus disconnecting it from the terminal session (similar to the `nohup` command). This option launches a daemon process (which will keep running on the headnode) that watches over your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
+The option `-bg` sends the entire workflow into the background, thus disconnecting it from the terminal session (similar to the `nohup` command for Linux terminal sessions). This option launches a daemon process (which will keep running on the headnode) that watches over your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
 
+#### Tidying up once you have finished
 
 #### Arguments maye be swallowed!
 
