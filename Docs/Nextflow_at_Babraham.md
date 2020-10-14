@@ -138,7 +138,7 @@ The `--toolname_args="..."` argument should enable experienced users to customis
 
 I am sure there is a ton of interesting or useful Nextflow options which we are not aware of, but we will try to list a few of these interesting concepts here. 
 
-- Default logging or `-ansi-log=false`
+#### Default logging or `-ansi-log=false`
 
 By default, Nextflow launches an interactive pipeline that keeps overwriting status messages in place whenever a job status updates. This looks very tidy, and it is mesmerising to watch a job progress: 
 
@@ -150,22 +150,29 @@ Sometimes, especially during development of a new pipeline, this neat logging mo
 
 In both modes, the Nextflow process is running interactively, and presssing `ctrl + C`, or closing the terminal window (or close the laptop) will cause the entire Nextflow pipeline process to fail and abort.
 
- - `-bg` 
+#### `-bg` - Executing jobs on the background 
 
 This option sends the entire workflow into the background, thus disconnecting it from the terminal session (similar to the `nohup` command). This option launches a daemon process (which will keep running on the headnode) that watches over your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
 
 
-- mention: `-ansi-log=false` (screenshot)
+#### arguments maye be swallowed!
+
+
 
 - mention: Dynamic retries with back-off
 
-- mention: `nextflow log` in work directory
+#### The Nextflow log
+
+Sometimes it is very informative to use `nextflow log` in work directory where you tried to execute one or more jobs. This brings up previously executed jobs in this folder, along with useful stats (e.g. whether the job suceeded or errored).
 
 The nextflow log command lists the executions run in the current folder, here is an example:
 ```
+TIMESTAMP          	DURATION  	RUN NAME         	STATUS	REVISION ID	SESSION ID                          	COMMAND  
 2020-10-08 12:33:38	53m       	lonely_bhabha  	ERR   	8a59348cdc 	021addb3-61dc-47e2-b795-64a6a30945b3	nextflow nf_chipseq --genome GRCh38 *.fastq.gz        
 2020-10-08 13:54:04	1h 11m 25s	maniac_laplace 	OK    	8a59348cdc 	021addb3-61dc-47e2-b795-64a6a30945b3	nextflow nf_chipseq --genome GRCh38 *.fastq.gz -resume
 ```
+
+If you want to dig in deeper yourself, you can look at the hidden file `.nextflow.log` yourself (probably for debugging only).
 
 - `-resume` (caching)
 
