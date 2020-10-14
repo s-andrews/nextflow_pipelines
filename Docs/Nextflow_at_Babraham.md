@@ -15,6 +15,7 @@
     * [Caveat: arguments may be swallowed](#arguments-may-be-swallowed)    
   * [Hidden (but useful!) files](#hidden-files)
   * [The Nextflow `work` folder](#the-nextflow-work-folder)
+  * [Dynamic retries](#dynamic-retries) 
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
   * [Example Workflow](#example-workflow)
   * [Example Module](#example-module)
@@ -206,18 +207,48 @@ This option sends the entire workflow into the background, thus disconnecting it
 
 #### arguments maye be swallowed!
 
-This one can catch you out!
+This one can catch you out! Take this command:
 
+--
+
+This comes back to the issue that Nextflow command may be take a positional argument, or just act as simple switch. Let's assume the working directory contains the following files:
+
+```
+sample1.fastq.gz
+sample2.fastq.gz
+sample3.fastq.gz
+sample4.fastq.gz
+```
+
+The command:
+```
+nf_rnaseq --single_end --genome GRCh38 *fastq.gz
+```
+Would (correctly) process all four files: `sample1.fastq.gz`, `sample2.fastq.gz`, `sample3.fastq.gz` and `sample4.fastq.gz`
+
+In contrast, a command:
+```
+nf_rnaseq --genome GRCh38 --single_end *fastq.gz
+```
+would only process files: `sample2.fastq.gz`, `sample3.fastq.gz` and `sample4.fastq.gz`
+
+The reason for this is that `--single_end` as such will be interpreted as `true` by Nextfow if given on the command line. But it would **also** (and probably rather confusingly) take a single positional argument, which in this case is the name of the first file given as `*fastq.gz`, i.e. `--single_end sample1.fastq.gz`. This **also** evaluates to `true`, however has the undesirably side-effect that it consumes first file of `*fastq.gz` in the process. 
+
+**TAKE HOME MESSAGE**: Any boolean switches (e.g. `--verbose`, `--single_end` etc.) **must not** preceed positional arguments. Place before other options (single or double hyphen), or at the very end (`nf_rnaseq --genome GRCh38 *fastq.gz --single_end` would also be fine).
 
 #### Hidden files
 
 #### The Nextflow `work` folder
 
-#### mention: Dynamic retries with back-off
+It is not recommended to keep the work folder to run different pipelines in the same folder!
+
+#### Dynamic retries
+
+with back-off...
 
 #### The Nextflow log
 
-Sometimes it is very informative to use `nextflow log` in work directory where you tried to execute one or more jobs. This brings up previously executed jobs in this folder, along with useful stats (e.g. whether the job suceeded or errored).
+Sometimes it is very informative to use `nextflow log` in a work directory where you tried to execute one or more jobs. This brings up previously executed jobs in this folder, along with useful stats (e.g. whether the job suceeded or errored).
 
 The nextflow log command lists the executions run in the current folder, here is an example:
 ```
