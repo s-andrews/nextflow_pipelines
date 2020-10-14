@@ -8,6 +8,8 @@
 - [Single program pipelines](#single-program-pipelines)
 - [The Nextflow Config file](#the-nextflow-config-file)
 - [Nextflow Dos and Don'ts](#nextflow-dos-and-donts)
+  * [Logging styles]#logging-styles
+  * [-bg - Executing jobs in the background]#executing-jobs-in-the-background
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
   * [Example Workflow](#example-workflow)
   * [Example Module](#example-module)
@@ -138,7 +140,7 @@ The `--toolname_args="..."` argument should enable experienced users to customis
 
 I am sure there is a ton of interesting or useful Nextflow options which we are not aware of, but we will try to list a few of these interesting concepts here. 
 
-#### Default logging or `-ansi-log=false`
+#### Logging styles
 
 By default, Nextflow launches an interactive pipeline that keeps overwriting status messages in place whenever a job status updates. This looks very tidy, and it is mesmerising to watch a job progress: 
 
@@ -150,7 +152,7 @@ Sometimes, especially during development of a new pipeline, this neat logging mo
 
 In both modes, the Nextflow process is running interactively, and presssing `ctrl + C`, or closing the terminal window (or close the laptop) will cause the entire Nextflow pipeline process to fail and abort.
 
-#### `-bg` - Executing jobs on the background 
+#### Executing jobs in the background 
 
 This option sends the entire workflow into the background, thus disconnecting it from the terminal session (similar to the `nohup` command). This option launches a daemon process (which will keep running on the headnode) that watches over your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
 
