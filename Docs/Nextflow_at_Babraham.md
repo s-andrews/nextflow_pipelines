@@ -8,8 +8,8 @@
 - [Single program pipelines](#single-program-pipelines)
 - [The Nextflow Config file](#the-nextflow-config-file)
 - [Nextflow Dos and Don'ts](#nextflow-dos-and-donts)
-  * [Logging styles]#logging-styles
-  * [-bg - Executing jobs in the background]#executing-jobs-in-the-background
+  * [Logging styles](#logging-styles)
+  * [-bg - Executing jobs in the background](#executing-jobs-in-the-background)
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
   * [Example Workflow](#example-workflow)
   * [Example Module](#example-module)
