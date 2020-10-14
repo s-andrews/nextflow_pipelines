@@ -11,11 +11,14 @@
   * [Single-hyphen options are Nextflow options](#single-hyphen-options-are-nextflow-options)
     * [Logging styles](#logging-styles)
     * [Executing jobs in the background (`-bg`)](#executing-jobs-in-the-background)
+    * [Caching (`-resume`)](#caching-(-resume))
   * [Double-hyphen options are user defined options](#double-hyphen-options-are-user-defined-options)
     * [Caveat: arguments may be swallowed](#arguments-may-be-swallowed)    
   * [Hidden (but useful!) files](#hidden-files)
   * [The Nextflow `work` folder](#the-nextflow-work-folder)
-  * [Dynamic retries](#dynamic-retries) 
+  * [Dynamic retries](#dynamic-retries)
+  * [Nextflow log](#nextflow-log)
+  
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
   * [Example Workflow](#example-workflow)
   * [Example Module](#example-module)
@@ -205,11 +208,9 @@ In both modes, the Nextflow process is running interactively, and presssing `ctr
 This option sends the entire workflow into the background, thus disconnecting it from the terminal session (similar to the `nohup` command). This option launches a daemon process (which will keep running on the headnode) that watches over your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
 
 
-#### arguments maye be swallowed!
+#### Arguments maye be swallowed!
 
-This one can catch you out! Take this command:
-
---
+This one can - and will - catch you out! 
 
 This comes back to the issue that Nextflow command may be take a positional argument, or just act as simple switch. Let's assume the working directory contains the following files:
 
@@ -246,7 +247,7 @@ It is not recommended to keep the work folder to run different pipelines in the 
 
 with back-off...
 
-#### The Nextflow log
+#### Nextflow log
 
 Sometimes it is very informative to use `nextflow log` in a work directory where you tried to execute one or more jobs. This brings up previously executed jobs in this folder, along with useful stats (e.g. whether the job suceeded or errored).
 
@@ -259,7 +260,7 @@ TIMESTAMP          	DURATION  	RUN NAME         	STATUS	REVISION ID	SESSION ID  
 
 If you want to dig in deeper yourself, you can look at the hidden file `.nextflow.log` yourself (probably for debugging only).
 
-- `-resume` (caching)
+- Caching (`-resume`)
 
 If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop), this option will attempt to resume the workflow at the point it got interrupted by using Nextflow's caching mechanism. This may save a lot of time.
 				  
