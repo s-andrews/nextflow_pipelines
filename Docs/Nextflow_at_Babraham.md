@@ -8,8 +8,10 @@
 - [Single program pipelines](#single-program-pipelines)
 - [The Nextflow Config file](#the-nextflow-config-file)
 - [Nextflow Dos and Don'ts](#nextflow-dos-and-donts)
-  * [Logging styles](#logging-styles)
-  * [-bg - Executing jobs in the background](#executing-jobs-in-the-background)
+  * [Single-hyphen options are Nextflow options](#single-hyphen-options-are-nextflow-options)
+  * [Double-hyphen options are user defined options](#double-hyphen-options-are-user-defined-options)
+    * [Logging styles](#logging-styles)
+    * [-bg - Executing jobs in the background](#executing-jobs-in-the-background)
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
   * [Example Workflow](#example-workflow)
   * [Example Module](#example-module)
@@ -115,6 +117,7 @@ Here is an illustration of the RNA-seq workflow:
 - [Bowtie2 module](#nf_bowtie2)
 - [HISAT2 module](#nf_hisat2)
 - [Bismark module](#nf_bismark)
+- [UmiBam module](#nf_umibam)
 
 In addition to the pre-configured default parameters, each pipeline accepts a single tool-specific additional argument. For the purpose of constructing this extra agrument, all software tools are `lowercase only` (e.g. `fastqc`, not `FastQC`), followed by `_args`, followed by one or more additional options you would like to supply:
 
@@ -159,9 +162,14 @@ This option sends the entire workflow into the background, thus disconnecting it
 
 #### arguments maye be swallowed!
 
+This one can catch you out!
 
 
-- mention: Dynamic retries with back-off
+#### Hidden files
+
+#### The Nextflow `work` folder
+
+#### mention: Dynamic retries with back-off
 
 #### The Nextflow log
 
@@ -187,6 +195,11 @@ https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html
 - mention: `--list_genomes`
 - mention: `fail strategy` (retry
 
+## Double-hyphen options are user defined options.
+
+As a rule, anything with two hyphens (`--`) is a user defined options. 
+
+
 #### A note on options on Nextflow:
 
 Options in Nextflow have to be supplied **exactly** as they are expected: non-matching options are simply ignored! This means that there is no auto-completion, and typos/omissions/case errors will result in the option not getting used at all. So please take extra care when supplying additional options. As an example:
@@ -209,7 +222,7 @@ Our implementation of Nextflow pipelines implements the new (and experimental) m
 - run Trim Galore to remove adapters and low quality base calls
 - run FastQC again, this time on the adapter-/quality trimmed files
 - take the trimmed FastQ files and align them to a genome using HISAT2
-- Once everything is complete - run MulitQC on all files of all samples
+- Once everything is complete - run MultiQC on all files of all samples
 
 All output will be written to the working directory.
 
