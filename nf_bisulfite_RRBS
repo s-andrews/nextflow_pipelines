@@ -160,7 +160,7 @@ def helpMessage() {
 
     USAGE:
     
-    nf_bisulfite_WGBS [options] --genome <genomeID> <input files>
+    nf_bisulfite_RRBS [options] --genome <genomeID> <input files>
     
     Mandatory arguments:
     ====================
