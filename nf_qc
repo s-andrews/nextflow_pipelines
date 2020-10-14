@@ -69,13 +69,19 @@ def helpMessage() {
     log.info"""
     >>
 
-    
+
+    SYNOPSIS:
+
     This workflow takes in a list of filenames (in FastQ format), and runs them through the three QC tools FastQC, FastQ Screen
     as well as MultiQC (on the Babraham stone compute cluster).
 
     This QC workflow is ideally used for data of which you don't know too much about, such as data downloaded from a public repository.
     Both FastQC and FastQ Screen results are then summarised in one convenient QC report called 'multiqc_report.html'. To add additional
     parameters, please consider specifying tool-specific arguments (see --tool_name_args="[str]" below).
+
+
+              ==============================================================================================================
+
 
     USAGE:
     

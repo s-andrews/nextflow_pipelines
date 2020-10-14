@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// last modified 11 Oct 2020
+// last modified 14 Oct 2020
 
 params.outdir = "."
 params.genome = ""
@@ -69,6 +69,8 @@ def helpMessage() {
     >>
 
     
+    SYNOPSIS:
+
     This workflow takes in a list of filenames (in FastQ format), and aligns these files to a genome using Bismark using the
     stone compute cluster at Babraham.
 
@@ -79,7 +81,7 @@ def helpMessage() {
 
             ==============================================================================================================
 
-            
+
     USAGE:
     
     nf_bismark [options] --genome <genomeID> <input files>

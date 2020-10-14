@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// last modified 13 Oct 2020
+// last modified 14 Oct 2020
 
 params.outdir = "."
 params.verbose = false
@@ -57,6 +57,8 @@ def helpMessage() {
     >>
 
     
+    SYNOPSIS:
+
     This single-tool workflow takes in a list of filenames in BAM format, and de-duplicates these files based on mapping position
     as well as the UMI sequence (on the stone compute cluster at Babraham).
 
@@ -65,8 +67,12 @@ def helpMessage() {
     is run in default mode (we are adding the option '--umi' unless the file is specified to contain dual UMIs (see option '--dual').
     To add additional parameters, please consider tool-specific arguments that are compatible with UmiBam (see '--umibam_args' below).
 
+
+              ==============================================================================================================
+
+
     USAGE:
-    
+
     nf_umibam [options] <input BAM files>
     
     Mandatory arguments:

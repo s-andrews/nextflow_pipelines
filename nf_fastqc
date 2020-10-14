@@ -58,10 +58,16 @@ def helpMessage() {
     >>
     
     
+    SYNOPSIS:
+    
     This workflow takes in a list of filenames (in FastQ format) and runs FastQC on the files (by default on the Babraham stone cluster).
 
     Running this stand-alone workflow executes FastQC with default parameters (i.e. 'fastqc file.fastq.gz'). To add additional parameters,
     please consider specifying tool-specific arguments that are compatible with FastQC (see '--fastqc_args' below).
+
+
+        ==============================================================================================================
+
 
     USAGE:
     

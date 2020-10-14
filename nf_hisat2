@@ -66,6 +66,7 @@ def helpMessage() {
     log.info"""
     >>
 
+    SYNOPSIS:
     
     This workflow takes in a list of filenames (in FastQ format), and aligns these files to a genome using HISAT2 on the
     stone compute cluster at Babraham.
@@ -75,6 +76,10 @@ def helpMessage() {
     --no-softclip', and additionally for paired-end files '--no-mixed --no-discordant' to only allow concordant read pair
     alignmnents). To add additional parameters, please consider tool-specific arguments that are compatible with HISAT2
     (see '--hisat2_args' below).
+
+
+        ==============================================================================================================
+
 
     USAGE:
     

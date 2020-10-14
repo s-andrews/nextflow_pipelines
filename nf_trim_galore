@@ -55,6 +55,7 @@ def helpMessage() {
     log.info"""
     >>
 
+    SYNOPSIS:
     
     This workflow takes in a list of filenames (in FastQ format), and runs the files through Trim Galore for adapter- and
     quality trimming (on the Babraham stone compute cluster).
@@ -62,6 +63,10 @@ def helpMessage() {
     If called as is, this Trim Galore workflow auto-detects the library type (single-end (SE)/ paired-end (PE)), the sequencing 
     adapter used and selects Phred 20 as the default quality cutoff. To modify this default trimming behaviour, please specify
     additional tool-specific arguments that are compatible with Trim Galore (see '--trim_galore_args' below).
+
+
+              ==============================================================================================================
+
 
     USAGE:
     
