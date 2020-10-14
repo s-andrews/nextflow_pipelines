@@ -143,6 +143,9 @@ Sends the entire workflow into the background, thus disconnecting it from the te
 
 
 - mention: `-ansi-log=false` (screenshot)
+
+- mention: Dynamic retries with back-off
+
 - mention: `nextflow log` in work directory
 
 The nextflow log command lists the executions run in the current folder, here is an example:
