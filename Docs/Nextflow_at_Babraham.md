@@ -11,7 +11,7 @@
   * [Single-hyphen options are Nextflow options](#single-hyphen-options-are-nextflow-options)
     * [Logging styles](#logging-styles)
     * [Executing jobs in the background (`-bg`)](#executing-jobs-in-the-background)
-    * [Caching (`-resume`)](#caching-(-resume))
+    * [Caching (`-resume`)](#caching)
   * [Double-hyphen options are user defined options](#double-hyphen-options-are-user-defined-options)
     * [Caveat: arguments may be swallowed](#arguments-may-be-swallowed)    
   * [Hidden (but useful!) files](#hidden-files)
@@ -212,7 +212,7 @@ This option sends the entire workflow into the background, thus disconnecting it
 
 This one can - and will - catch you out! 
 
-This comes back to the issue that Nextflow command may be take a positional argument, or just act as simple switch. Let's assume the working directory contains the following files:
+This comes back to the issue that Nextflow commands may be take a positional argument, or just act as simple switch. Let's assume the working directory contains the following files:
 
 ```
 sample1.fastq.gz
@@ -260,7 +260,7 @@ TIMESTAMP          	DURATION  	RUN NAME         	STATUS	REVISION ID	SESSION ID  
 
 If you want to dig in deeper yourself, you can look at the hidden file `.nextflow.log` yourself (probably for debugging only).
 
-- Caching (`-resume`)
+- Caching
 
 If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop), this option will attempt to resume the workflow at the point it got interrupted by using Nextflow's caching mechanism. This may save a lot of time.
 				  
