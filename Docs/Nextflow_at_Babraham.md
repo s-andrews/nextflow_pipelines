@@ -180,13 +180,24 @@ To be executed with `--single_end`
 ## Single-program workflows:
 
 #### List of current single program pipelines:
-- [FastQC module](#nf_fastqc)
-- [FastQ Screen module](#nf_fastq_screen)
-- [Trim Galore module](#nf_trim_galore)
-- [Bowtie2 module](#nf_bowtie2)
-- [HISAT2 module](#nf_hisat2)
-- [Bismark module](#nf_bismark)
-- [UmiBam module](#nf_umibam)
+- FastQC
+- FastQ Screen
+- Trim Galore
+- Bowtie2
+- HISAT2
+- Bismark
+- UmiBam
+
+There isn't all that much to say here, other than these pipelines can be used straight away, and they will generally do the right thing, e.g.:
+
+```
+nf_trim_galore *fastq.gz
+```
+
+will trim all files in the current directory, and send you an email once it is all complete. Simples.
+
+Any of these single program workflows may also be used in conjunction with [tool-specific arguments/parameters](#specifying-tool-specific-arguments). Type `--help` on the command line for more detailed information on each workflow.
+
 
 ## Specifying tool-specific arguments 
 
