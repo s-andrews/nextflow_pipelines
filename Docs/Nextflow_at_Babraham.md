@@ -6,6 +6,7 @@
 #### Table of Contents
 - [Multi-step pipelines](#multi-step-workflows)
 - [Single program pipelines](#single-program-pipelines)
+- [Specifying tool-specific parameters/arguments](#specifying-tool-specific-arguments)
 - [The Nextflow Config file](#the-nextflow-config-file)
 - [Nextflow Dos and Don'ts](#nextflow-dos-and-donts)
   * [Single-hyphen options are Nextflow options](#single-hyphen-options-are-nextflow-options)
@@ -43,7 +44,7 @@ Now all pipelines should work, then just type `nf_` followed by hitting TAB twic
 
 Pipelines are supposed to work in a stream-lined and reproducible way every time they are run, and are designed so that users don't have to worry about specifying any of the plethora of options each tool provides. To this end, we try to run the individual programs of a pipeline with a pre-configured set of parameters that are (we find) sensible for the specified data type.
 
-In the following section we will provide an overview the available multi-step or single-program workflows. For more detailed help on how to run each individual workflow, please type: 
+In the following section we will provide an overview of the available multi-step or single-program workflows. For more detailed help on how to run each individual workflow, please type: 
 
 ```
 nf_workflowname --help
@@ -172,7 +173,7 @@ To be executed with `--single_end`
     
 
 
-## Single Program Pipelines:
+## Single-program workflows:
 
 #### List of current single program pipelines:
 - [FastQC module](#nf_fastqc)
