@@ -10,8 +10,9 @@
   - [The Nextflow Config file](#the-nextflow-config-file)
   - [Specifying tool-specific parameters/arguments](#specifying-tool-specific-arguments)
   * [The Nextflow `work` folder](#the-nextflow-work-folder)
+  * [Dynamic retries upon error](#dynamic-retries)
   * [Single-hyphen options are Nextflow options](#single-hyphen-options-are-nextflow-options)
-    * [Logging styles](#logging-styles)
+    * [Logging styles (`-ansi-log`)](#logging-styles)
     * [Executing jobs in the background (`-bg`)](#executing-jobs-in-the-background)
     * [Caching (`-resume`)](#caching)
   * [Double-hyphen options are user defined options](#double-hyphen-options-are-user-defined-options)
@@ -270,7 +271,7 @@ It is not recommended to keep the work folder to run different pipelines in the 
 
 #### Dynamic retries
 
-with back-off...
+Nextflow offers different strategies to [deal with errors](https://www.nextflow.io/docs/latest/process.html#errorstrategy). For some of our processes we use dynamic retries (e.g. up to 5 retries), where we increase e.g. the amount of memory that the Slurm job is asking for. If you have any questions about this, please come and see someone in the Bioinformatics team.
 
 #### Nextflow log
 
