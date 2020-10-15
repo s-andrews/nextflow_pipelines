@@ -229,7 +229,7 @@ In both modes, the Nextflow process is running interactively, and presssing `ctr
 
 The option `-bg` sends the entire workflow into the background, thus disconnecting it from the terminal session (similar to the `nohup` command for Linux terminal sessions). This option launches a daemon process (which will keep running on the headnode) that watches over your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
 
-Don't get caught out by specifying `--bg` (which will set a user defined variable `bg` to `true` (see more [here](#double-hyphen-options-are-user-definedoptions)).
+Don't get caught out by specifying `--bg` (which will set a user defined variable `bg` to `true` (see more [here](#double-hyphen-options-are-user-defined-options)).
 
 #### Executors
 
@@ -307,7 +307,7 @@ https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html
 <img src="./Images/caching_log.png" width="800">
 
 
-Don't get caught out by specifying `--resume` (which will set a user defined variable `resume` to `true` (see more [here](#double-hyphen-options-are-user-definedoptions)).
+Don't get caught out by specifying `--resume` (which will set a user defined variable `resume` to `true` (see more [here](#double-hyphen-options-are-user-defined-options)).
 
 - mention: `--list_genomes`
 
@@ -334,6 +334,7 @@ params.help = false
 ```
 
 so that one can work with the variable irrespective of whether it has been specified on the command line. The variable `params.help` would also be set to `true` if no default value was defined with the Nextflow script. 
+
 If one were to specify the option accidentally as `--hell`, this would set an internal variable called `params.hell` to `true`. However, since it is unlikely that the script will make use of a variable called `params.hell`, in effect it will be simply ignored. This might catch you out when specifying `--bg` or `--resume` (**dont't do that!**).
 
 ## RNA-seq worklow in more detail
