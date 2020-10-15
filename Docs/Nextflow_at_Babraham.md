@@ -229,6 +229,8 @@ In both modes, the Nextflow process is running interactively, and presssing `ctr
 
 The option `-bg` sends the entire workflow into the background, thus disconnecting it from the terminal session (similar to the `nohup` command for Linux terminal sessions). This option launches a daemon process (which will keep running on the headnode) that watches over your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
 
+Don't get caught out by specifying `--bg` (which will set a user defined variable `bg` to `true` (see more [here](#double-hyphen-options-are-user-definedoptions)).
+
 #### Executors
 
 By default, jobs executed at Babraham will be submitted as non-interactive jobs to the stone cluster via its SLURM queueing system. Sometimes however you might want to quickly test something out on the local machine (especially when the cluster queue is packed), or port the workflow and use it elsewhere (e.g. on the cloud). For this you can specify a different executor in the `nextflow.config` file (e.g. `executor 'sge'` to change the executor to Sun Grid Engine), or on the command line via the option `-process.executor=local` to run the process on the local machine.
@@ -281,7 +283,7 @@ It is not recommended to keep the work folder to run different pipelines in the 
 
 #### Dynamic retries
 
-Nextflow offers different strategies to [deal with errors](https://www.nextflow.io/docs/latest/process.html#errorstrategy). For some of our processes we use dynamic retries (e.g. up to 5 retries), where we increase e.g. the amount of memory that the Slurm job is asking for. If you have any questions about this, please come and see someone in the Bioinformatics team.
+Nextflow offers different strategies to [deal with errors](https://www.nextflow.io/docs/latest/process.html#errorstrategy). For some of our processes we use dynamic retries (e.g. up to 5 retries), where we increase the amount of memory that the Slurm job is asking for (see [dynamic computing resources](https://www.nextflow.io/docs/latest/process.html#dynamic-computing-resources)). If you have any questions about this, please come and see someone in the Bioinformatics team.
 
 #### Nextflow log
 
@@ -304,26 +306,35 @@ https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html
 				  
 <img src="./Images/caching_log.png" width="800">
 
-- mention: `--list_genomes`
-- mention: `fail strategy` (retry
 
-## Double-hyphen options are user defined options.
+Don't get caught out by specifying `--resume` (which will set a user defined variable `resume` to `true` (see more [here](#double-hyphen-options-are-user-definedoptions)).
+
+- mention: `--list_genomes`
+
+## Double-hyphen options are user defined options
 
 As a rule, anything with two hyphens (`--`) is a user defined options. 
-
-
-#### A note on options on Nextflow:
 
 Options in Nextflow have to be supplied **exactly** as they are expected: non-matching options are simply ignored! This means that there is no auto-completion, and typos/omissions/case errors will result in the option not getting used at all. So please take extra care when supplying additional options. As an example:
 
 ```
---fastQC_args "'--nogroup'"
---fastq_args "'--nogroup'"
---fastqc "'--nogroup'"
+--fastQC_args="--nogroup"
+--fastq_args="--nogroup"
+--fastqc="--nogroup"
 ```
 
-would all result in the same behavior: nothing.
+would all result in the same behavior: precisely nothing.
 
+Internally, it works like this: 
+
+Any option given on the command line, say `--help`, would internally be stored in a variable called `params.help` (and in this case set this variable to `true` and display the help text for a pipeline). One might define this variable within the Nextflow script to give the variable a default value, e.g.:
+
+```
+params.help = false
+```
+
+so that one can work with the variable irrespective of whether it has been specified on the command line. The variable `params.help` would also be set to `true` if no default value was defined with the Nextflow script. 
+If one were to specify the option accidentally as `--hell`, this would set an internal variable called `params.hell` to `true`. However, since it is unlikely that the script will make use of a variable called `params.hell`, in effect it will be simply ignored. This might catch you out when specifying `--bg` or `--resume` (**dont't do that!**).
 
 ## RNA-seq worklow in more detail
 
