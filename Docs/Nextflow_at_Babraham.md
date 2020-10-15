@@ -4,7 +4,7 @@
 # Nextflow Pipelines at the Babraham Institute - a User Guide
 
 #### Table of Contents
-- [Multi-step pipelines](#pipelines)
+- [Multi-step pipelines](#multi-step-workflows)
 - [Single program pipelines](#single-program-pipelines)
 - [The Nextflow Config file](#the-nextflow-config-file)
 - [Nextflow Dos and Don'ts](#nextflow-dos-and-donts)
@@ -36,12 +36,20 @@ To use any of our Nextflow pipelines, you will need to load Nextflow first:
 ```
 module load nf
 ```
-Now all all pipelines should work, just type `nf_` followed by hitting TAB twice to see all options.
+Now all pipelines should work, then just type `nf_` followed by hitting TAB twice to see all available workflows. 
 
 
-## Pipelines:
+## Multi-step workflows:
 
 Pipelines are supposed to work in a stream-lined and reproducible way every time they are run, and are designed so that users don't have to worry about specifying any of the plethora of options each tool provides. To this end, we try to run the individual programs of a pipeline with a pre-configured set of parameters that are (we find) sensible for the specified data type.
+
+In the following section we will provide an overview the available multi-step or single-program workflows. For more detailed help on how to run each individual workflow, please type: 
+
+```
+nf_workflowname --help
+```
+
+on the command line.
 
 ### List of current pipelines:
 
@@ -175,21 +183,23 @@ To be executed with `--single_end`
 - [Bismark module](#nf_bismark)
 - [UmiBam module](#nf_umibam)
 
-In addition to the pre-configured default parameters, each pipeline accepts a single tool-specific additional argument. For the purpose of constructing this extra agrument, all software tools are `lowercase only` (e.g. `fastqc`, not `FastQC`), followed by `_args`, followed by one or more additional options you would like to supply:
+## Specifying tool-specific arguments 
+
+In addition to the pre-configured default parameters, each pipeline accepts a single tool-specific additional argument. For the purpose of constructing this extra agrument, all software tools are `lowercase only` (e.g. `fastqc`, not `FastQC`), followed by `_args`, followed by one or more additional options you would like to supply. It is absolutely required that the options you want to specify are given in quotes `"your options"`, otherwise you can expect things to go wrong in some way (most likely the options you supplied will be ignored). 
+
+**General pattern:**
 
 ```
 --toolname_args="--additional_option value --extra_flag etc"
 ```
 
-So as an example, you could run specific trimming in Trim Galore like so:
+As an example, you could run specific trimming in Trim Galore like so:
 
 ```
 --trim_galore_args="--clip_r1 10 --clip_r2 10 --nextera"
 ```
 
-The `--toolname_args="..."` argument should enable experienced users to customise most tools to work in more specialised ways. It should however be stressed that it should be perfectly fine to run pre-configured pipelines such as `nf_chipseq` with no need to alter any parameters manually.
-
-
+The `--toolname_args="..."` argument should enable experienced users to customise most tools to work in more specialised ways. It should however be stressed that our pre-configured pipelines, such as `nf_chipseq`, are designed to work 'as is' without the need to alter any parameters manually.
 
 
 ## Nextflow Dos and Don'ts
