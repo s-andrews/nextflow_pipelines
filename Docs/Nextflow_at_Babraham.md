@@ -312,7 +312,7 @@ Don't get caught out by specifying `--resume` (which will set a user defined var
 
 ## Double-hyphen options are user defined options
 
-As a rule, anything with two hyphens (`--`) is a user defined options. 
+As a rule, anything with two hyphens (`--`) is a user defined option. 
 
 Options in Nextflow have to be supplied **exactly** as they are expected: non-matching options are simply ignored! This means that there is no auto-completion, and typos/omissions/case errors will result in the option not getting used at all. So please take extra care when supplying additional options. As an example:
 
@@ -332,7 +332,7 @@ Any option given on the command line, say `--help`, would internally be stored i
 params.help = false
 ```
 
-so that one can work with the variable irrespective of whether it has been specified on the command line. The variable `params.help` would also be set to `true` if no default value was defined with the Nextflow script. 
+so that one can work with the variable irrespective of whether it has been specified on the command line. The variable `params.help` would also be set to `true` if no default value was defined within the Nextflow script. 
 
 If one were to specify the option accidentally as `--hell`, this would set an internal variable called `params.hell` to `true`. However, since it is unlikely that the script will make use of a variable called `params.hell`, in effect it will be simply ignored. This might catch you out when specifying `--bg` or `--resume` (**dont't do that!**).
 
@@ -340,12 +340,12 @@ If one were to specify the option accidentally as `--hell`, this would set an in
 
 Our implementation of Nextflow pipelines implements the new (and experimental) module system introduced with [DSL2](https://www.nextflow.io/docs/latest/dsl2.html). In essence, processes for different software tools and/or required processing steps are defined as separate **modules**. These modules are then invoked in separate **workflows** that define the different steps that are carried out for a given set of input files. Here is an example of the current RNA-seq workflow, which does the following consecutive steps for each FastQ file (single-end), or file  pair (paired-end):
 
-- run FastQC or raw FastQ(s)
-- run FastQ Screen species screen
+- run FastQC on raw FastQ(s)
+- run FastQ Screen species/contamination screen
 - run Trim Galore to remove adapters and low quality base calls
 - run FastQC again, this time on the adapter-/quality trimmed files
 - take the trimmed FastQ files and align them to a genome using HISAT2
-- Once everything is complete - run MultiQC on all files of all samples
+- once everything is complete - run MultiQC on all files for all samples
 
 All output will be written to the working directory.
 
@@ -355,63 +355,80 @@ Here is an example of the current RNA-seq workflow:
 
 ```nextflow
 #!/usr/bin/env nextflow
-
-// Enable modules
 nextflow.preview.dsl=2
+
+// last modified 13 October 2020
 
 params.outdir = "."
 params.genome = ""
 params.verbose = false
+params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically  
 
 params.fastqc_args = ''
 params.fastq_screen_args = ''
 params.trim_galore_args = ''
 params.hisat2_args = ''
+params.multiqc_args = ''
+
+params.help = false
+// Show help message and exit
+if (params.help){
+    helpMessage()
+    exit 0
+}
+
+params.list_genomes = false;
+if (params.list_genomes){
+    println ("[WORKLFOW] List genomes selected")
+}
 
 if (params.verbose){
     println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
     println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
     println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
     println ("[WORKFLOW] HISAT2 ARGS ARE: "       + params.hisat2_args)
+    println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
 }
 
-include './nf_modules/files.mod.nf'
-include './nf_modules/genomes.mod.nf'
-include './nf_modules/fastqc.mod.nf'                         params(fastqc_args: params.fastqc_args, verbose: params.verbose)
-include  FASTQC as FASTQC2 from './nf_modules/fastqc.mod.nf' params(fastqc_args: params.fastqc_args, verbose: params.verbose)
+include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include { getGenome }    from './nf_modules/genomes.mod.nf'
+include { listGenomes }  from './nf_modules/genomes.mod.nf'
 
-include './nf_modules/fastq_screen.mod.nf'                   params(fastq_screen_args: params.fastq_screen_args, verbose: params.verbose)
-include './nf_modules/trim_galore.mod.nf'                    params(trim_galore_args:  params.trim_galore_args, verbose: params.verbose)
-
-include './nf_modules/hisat2.mod.nf' params(genome: getGenome(params.genome), hisat2_args:  params.hisat2_args, verbose: params.verbose)
-
-file_ch = makeFilesChannel(args)
-
+if (params.list_genomes){
+    listGenomes()  // this lists all available genomes, and exits
+}
 genome = getGenome(params.genome)
 
+include { FASTQC }       from './nf_modules/fastqc.mod.nf'
+include { FASTQC as FASTQC2 } from './nf_modules/fastqc.mod.nf'
+include { FASTQ_SCREEN } from './nf_modules/fastq_screen.mod.nf'
+include { TRIM_GALORE }  from'./nf_modules/trim_galore.mod.nf'
+include { HISAT2 }       from './nf_modules/hisat2.mod.nf' params(genome: genome)
+
+include { MULTIQC }      from './nf_modules/multiqc.mod.nf' 
+file_ch = makeFilesChannel(args)
 
 workflow {
 
     main:
-        FASTQC(file_ch)
-        FASTQ_SCREEN(file_ch)
-        TRIM_GALORE(file_ch)
-        FASTQC2(TRIM_GALORE.out.reads)
-        HISAT2(TRIM_GALORE.out.reads)
+        FASTQC         (file_ch, params.outdir, params.fastqc_args, params.verbose)
+        FASTQ_SCREEN   (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
+        TRIM_GALORE    (file_ch, params.outdir, params.trim_galore_args, params.verbose)
+        FASTQC2        (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        HISAT2         (TRIM_GALORE.out.reads, params.outdir, params.hisat2_args, params.verbose)
 
-    publish:
-        FASTQC.out              to: params.outdir, mode: "link", overwrite: true
-        FASTQ_SCREEN.out.html   to: params.outdir, mode: "link", overwrite: true
-        FASTQ_SCREEN.out.png    to: params.outdir, mode: "link", overwrite: true
-        FASTQ_SCREEN.out.report to: params.outdir, mode: "link", overwrite: true
-        FASTQC2.out             to: params.outdir, mode: "link", overwrite: true
-        TRIM_GALORE.out.reads   to: params.outdir, mode: "link", overwrite: true
-        TRIM_GALORE.out.reports to: params.outdir, mode: 'link', overwrite: true
-        HISAT2.out.bam          to: params.outdir, mode: "link", overwrite: true
-        HISAT2.out.stats        to: params.outdir, mode: "link", overwrite: true
+        // merging channels for MultiQC
+        multiqc_ch = FASTQC.out.report.mix(
+            TRIM_GALORE.out.report,
+            FASTQ_SCREEN.out.report.ifEmpty([]),
+            FASTQC2.out.report.ifEmpty([]),
+            HISAT2.out.stats.ifEmpty([]),
+        ).collect()
 
+        // multiqc_ch.subscribe {  println "Got: $it"  }
+
+        MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 }
-
 
 ```
 
