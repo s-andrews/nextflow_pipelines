@@ -80,6 +80,8 @@ Here is an illustration of the RNA-seq workflow:
     HISAT2
     MultiQC
     
+See here for a more detailed look at the [RNA-seq workflow](#example-workflow)
+    
 #### nf_chipseq
     FastQC
     FastQ Screen
@@ -351,7 +353,7 @@ All output will be written to the working directory.
 
 #### Example workflow
 
-Here is an example of the current RNA-seq workflow:
+Here is an example of the current RNA-seq workflow (the `--help` text is omitted):
 
 ```nextflow
 #!/usr/bin/env nextflow
