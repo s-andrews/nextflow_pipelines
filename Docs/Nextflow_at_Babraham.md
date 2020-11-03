@@ -13,7 +13,8 @@
     * [Executing jobs in the background (`-bg`)](#executing-jobs-in-the-background)
     * [Caching (`-resume`)](#caching)
   * [Double-hyphen options are user defined options](#double-hyphen-options-are-user-defined-options)
-    * [Caveat: arguments may be swallowed](#arguments-may-be-swallowed)   
+    * [Caveat: arguments may be swallowed](#arguments-may-be-swallowed)
+    * [Listing exting, or adding new genomes](#Adding-or-listing-existing-genomes)
   * [Useful bits and bobs](#useful-bits-and-bobs)
     - [The Nextflow Config file](#the-nextflow-config-file)
     * [The Nextflow `work` folder](#the-nextflow-work-folder)
@@ -280,7 +281,7 @@ nf_rnaseq --genome GRCh38 --single_end *fastq.gz
 ```
 would only process files: `sample2.fastq.gz`, `sample3.fastq.gz` and `sample4.fastq.gz`
 
-The reason for this is that `--single_end` as such will be interpreted as `true` by Nextfow if given on the command line. But it would **also** (and probably rather confusingly) take a single positional argument, which in this case is the name of the first file given as `*fastq.gz`, i.e. `--single_end sample1.fastq.gz`. This **also** evaluates to `true`, however has the undesirably side-effect that it consumes first file of `*fastq.gz` in the process. 
+The reason for this is that `--single_end` as such will be interpreted as `true` by Nextfow if given on the command line. But it would **also** (and probably rather confusingly) take a single positional argument, which in this case is the name of the first file given as `*fastq.gz`, i.e. `--single_end sample1.fastq.gz`. This **also** evaluates to `true`, however has the undesirably side-effect of consuming the first file of `*fastq.gz` in the process. 
 
 **TAKE HOME MESSAGE**: Any boolean switches (e.g. `--verbose`, `--single_end` etc.) **must not** preceed positional arguments. Place before other options (single or double hyphen), or at the very end (`nf_rnaseq --genome GRCh38 *fastq.gz --single_end` would also be fine).
 
@@ -295,11 +296,11 @@ It is not recommended to keep the work folder to run different pipelines in the 
 
 #### Dynamic retries
 
-Nextflow offers different strategies to [deal with errors](https://www.nextflow.io/docs/latest/process.html#errorstrategy). For some of our processes we use dynamic retries (e.g. up to 5 retries), where we increase the amount of memory that the Slurm job is asking for (see [dynamic computing resources](https://www.nextflow.io/docs/latest/process.html#dynamic-computing-resources)). If you have any questions about this, please come and see someone in the Bioinformatics team.
+Nextflow offers different strategies to [deal with errors](https://www.nextflow.io/docs/latest/process.html#errorstrategy). For some of our processes we use dynamic retries (e.g. up to 5 retries), where we increase the amount of memory that the Slurm job is asking for each time (see [dynamic computing resources](https://www.nextflow.io/docs/latest/process.html#dynamic-computing-resources)). If you have any questions about this, please come and see someone in the Bioinformatics team.
 
 #### Nextflow log
 
-Sometimes it is very informative to use `nextflow log` in a work directory where you tried to execute one or more jobs. This brings up previously executed jobs in this folder, along with useful stats (e.g. whether the job suceeded or errored).
+Sometimes it is very informative to run the command `nextflow log` in a directory where you tried to execute one or more jobs. This brings up previously executed jobs in this folder, along with useful stats (e.g. whether the job suceeded or errored).
 
 The nextflow log command lists the executions run in the current folder, here is an example:
 ```
@@ -314,14 +315,16 @@ If you want to dig in deeper yourself, you can look at the hidden file `.nextflo
 
 If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop), this option will attempt to resume the workflow at the point it got interrupted by using Nextflow's caching mechanism. This may save a lot of time.
 				  
-https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html
-				  
 <img src="./Images/caching_log.png" width="800">
 
+To learn more about continuing a halted workflow execution please see this blog post: [Demyistifying Nextflow resume](https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html)
+				  
 
-Don't get caught out by specifying `--resume` (which will set a user defined variable `resume` to `true` (see more [here](#double-hyphen-options-are-user-defined-options)).
+**Don't get caught out** by specifying `--resume` (which will set a user defined variable `resume` to `true` (see more [here](#double-hyphen-options-are-user-defined-options)).
 
-- mention: `--list_genomes`
+- Adding or listing existing genomes
+
+`--list_genomes`
 
 ## Double-hyphen options are user defined options
 
