@@ -43,7 +43,7 @@ module load nf
 Now all pipelines should work, then just type `nf_` followed by hitting TAB twice to see all available workflows. 
 
 
-## Multi-step workflows:
+## Multi-step workflows
 
 Pipelines are supposed to work in a stream-lined and reproducible way every time they are run, and are designed so that users don't have to worry about specifying any of the plethora of options each tool provides. To this end, we try to run the individual programs of a pipeline with a pre-configured set of parameters that are (we find) sensible for the specified data type.
 
@@ -178,9 +178,9 @@ To be executed with `--single_end`
     
 
 
-## Single-program workflows:
+## Single-program workflows
 
-#### List of current single program pipelines:
+### List of current single program pipelines:
 - FastQC
 - FastQ Screen
 - Trim Galore
@@ -256,9 +256,9 @@ The work folder will however still contain a copy of all files and logs involved
 
 
 
-#### Arguments maye be swallowed!
+#### Arguments may be swallowed!
 
-This one can - and **will** - **catch you out**! 
+This one can - and mosty likely **will** - **catch you out**! 
 
 This comes back to the issue that Nextflow commands may take a positional argument (e.g. `--genome GRCh38`), or just act as simple switch (`--single_end`). Let's assume the working directory contains the following files:
 
@@ -281,7 +281,7 @@ nf_rnaseq --genome GRCh38 --single_end *fastq.gz
 ```
 would only process files: `sample2.fastq.gz`, `sample3.fastq.gz` and `sample4.fastq.gz`
 
-The reason for this is that `--single_end` as such will be interpreted as `true` by Nextfow if given on the command line. But it would **also** (and probably rather confusingly) take a single positional argument, which in this case is the name of the first file given as `*fastq.gz`, i.e. `--single_end sample1.fastq.gz`. This **also** evaluates to `true`, however has the undesirably side-effect of consuming the first file of `*fastq.gz` in the process. 
+The reason for this is that `--single_end` as such will be interpreted as `true` by Nextflow if given on the command line. But it would **also** (and probably rather confusingly) take a single positional argument, which in this case is the name of the first file given as `*fastq.gz`, i.e. `--single_end sample1.fastq.gz`. This **also** evaluates to `true`, however has the undesirably side-effect of consuming the first file of `*fastq.gz` in the process. 
 
 **TAKE HOME MESSAGE**: Any boolean switches (e.g. `--verbose`, `--single_end` etc.) **must not** preceed positional arguments. Place before other options (single or double hyphen), or at the very end (`nf_rnaseq --genome GRCh38 *fastq.gz --single_end` would also be fine).
 
@@ -348,11 +348,14 @@ params.help = false
 
 so that one can work with the variable irrespective of whether it has been specified on the command line. The variable `params.help` would also be set to `true` if no default value was defined within the Nextflow script. 
 
-If one were to specify the option accidentally as `--hell`, this would set an internal variable called `params.hell` to `true`. However, since it is unlikely that the script will make use of a variable called `params.hell`, in effect it will be simply ignored. This might catch you out when specifying `--bg` or `--resume` (**dont't do that!**).
+If one were to specify the option accidentally as `--hell`, this would set an internal variable called `params.hell` to `true`. However, since it is unlikely that the script will make use of a variable called `params.hell`, in effect it will be simply ignored. This might catch you out when specifying `--bg` or `--resume` (**don't do that!**).
 
 #### Adding or listing existing genomes
 
-`--list_genomes`
+We have already added a considerable number of usable genomes to a folder called `genomes.d` in the Nextflow installation folder. To see all genomes that are already available, type any pipeline that accepts a genome (e.g. `nf_rnaseq`) followed by `--list_genomes`. This will return a list of all usable genome (by convention we are trying to use the genome build as the name to be used in our pipelines.
+
+
+For more detailed information on all files and indexes that are included for each of the genomes, type `--list_genomes --verbose`.
 
 ## RNA-seq worklow in more detail
 
