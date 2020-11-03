@@ -14,7 +14,7 @@
     * [Caching (`-resume`)](#caching)
   * [Double-hyphen options are user defined options](#double-hyphen-options-are-user-defined-options)
     * [Caveat: arguments may be swallowed](#arguments-may-be-swallowed)
-    * [Listing exting, or adding new genomes](#Adding-or-listing-existing-genomes)
+    * [Listing existing or adding new genomes](#adding-or-listing-existing-genomes)
   * [Useful bits and bobs](#useful-bits-and-bobs)
     - [The Nextflow Config file](#the-nextflow-config-file)
     * [The Nextflow `work` folder](#the-nextflow-work-folder)
@@ -322,9 +322,7 @@ To learn more about continuing a halted workflow execution please see this blog 
 
 **Don't get caught out** by specifying `--resume` (which will set a user defined variable `resume` to `true` (see more [here](#double-hyphen-options-are-user-defined-options)).
 
-- Adding or listing existing genomes
 
-`--list_genomes`
 
 ## Double-hyphen options are user defined options
 
@@ -351,6 +349,10 @@ params.help = false
 so that one can work with the variable irrespective of whether it has been specified on the command line. The variable `params.help` would also be set to `true` if no default value was defined within the Nextflow script. 
 
 If one were to specify the option accidentally as `--hell`, this would set an internal variable called `params.hell` to `true`. However, since it is unlikely that the script will make use of a variable called `params.hell`, in effect it will be simply ignored. This might catch you out when specifying `--bg` or `--resume` (**dont't do that!**).
+
+#### Adding or listing existing genomes
+
+`--list_genomes`
 
 ## RNA-seq worklow in more detail
 
