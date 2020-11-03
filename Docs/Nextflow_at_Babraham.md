@@ -6,13 +6,14 @@
 #### Table of Contents
 - [Multi-step pipelines](#multi-step-workflows)
 - [Single program pipelines](#single-program-pipelines)
+- [Specifying tool-specific parameters/arguments](#specifying-tool-specific-arguments) 
 - [Nextflow Dos and Don'ts](#nextflow-dos-and-donts)
   * [Single-hyphen options are Nextflow options](#single-hyphen-options-are-nextflow-options)
     * [Logging styles (`-ansi-log`)](#logging-styles)
     * [Executing jobs in the background (`-bg`)](#executing-jobs-in-the-background)
     * [Caching (`-resume`)](#caching)
   * [Double-hyphen options are user defined options](#double-hyphen-options-are-user-defined-options)
-    - [Specifying tool-specific parameters/arguments](#specifying-tool-specific-arguments) 
+    
     * [Caveat: arguments may be swallowed](#arguments-may-be-swallowed)   
   * [Useful bits and bobs](#useful-bits-and-bobs)
     - [The Nextflow Config file](#the-nextflow-config-file)
