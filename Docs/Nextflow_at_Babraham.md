@@ -330,7 +330,11 @@ nxf_tree() {
 
 #### The Nextflow `work` folder
 
-It is not recommended to keep the work folder to run different pipelines in the same folder!
+It is not recommended to keep the work folder to run different pipelines in the same folder! The reason for this is specified using a Nextflow config file which also makes it simple to track and replicate an experiment over time. Note that you should avoid launching two (or more) Nextflow instances in the same directory concurrently.
+
+Also note that the pipeline work directory is intended to be used as a temporary scratch area. The final workflow outputs are expected to be stored in a different location specified using the publishDir directive.
+
+https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html
 
 Work folder level 1:
 
