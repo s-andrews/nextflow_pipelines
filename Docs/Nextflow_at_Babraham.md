@@ -412,13 +412,12 @@ If you want to dig in deeper yourself, you can look at the hidden file `.nextflo
 
 #### The Nextflow config file
 
-The file `nextflow.config` is quite useful as you can hide away a lot of infra-structure related settings in here. Hieratchical structure.
-When a pipeline script is launched Nextflow looks for a file named nextflow.config in the current directory and in the script base directory (if it is not the same as the current directory). Finally it checks for the file $HOME/.nextflow/config.
+The file `nextflow.config` is quite useful as you can hide away a lot of the 'boring' infra-structure related settings. When a run is started, Nextflow is looking for `nextflow.config` files at several different locations, and merges the config settings from all of them. The order of where the file is located determines which configuration settings take precedence in case the same settings are found more than once. This allows users to customise their runs as necessary. The order of precedence is (from high to most basic):
 
-When more than one of the above files exist they are merged, so that the settings in the first override the same ones that may appear in the second one, and so on.
-
-The default config file search mechanism can be extended proving an extra configuration file by using the command line option -c <config file>.
-	
+1. User defined config: `-c <config file>` (optional)
+2. Current directory (just for one run) (optional)
+3. Script base directory (this would be Babraham Cluster options set globally)
+4. Finally it checks for the file `$HOME/.nextflow/config` (this would be general user-specific options) (optional)
 
 A lot more information may be found over at the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html).
 
