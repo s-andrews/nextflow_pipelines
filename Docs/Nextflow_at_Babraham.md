@@ -289,7 +289,7 @@ The reason for this is that `--single_end` as such will be interpreted as `true`
 
 Yes, there are hidden files...
 
-<img src="./Images/hidden_files.png" width="500">
+<img src="./Images/hidden_files.png" width="300">
 
 
 #### The Nextflow config file
@@ -298,6 +298,15 @@ Yes, there are hidden files...
 #### The Nextflow `work` folder
 
 It is not recommended to keep the work folder to run different pipelines in the same folder!
+
+Work folder level 1:
+<img src="./Images/workdir1.png" width="500">
+
+Work folder level 2:
+<img src="./Images/workdir2.png" width="500">
+
+Work folder level 3:
+<img src="./Images/workdir3.png" width="500">
 
 #### Dynamic retries
 
