@@ -412,7 +412,7 @@ If you want to dig in deeper yourself, you can look at the hidden file `.nextflo
 
 #### The Nextflow config file
 
-The file `nextflow.config` is quite useful as you can hide away a lot of the 'boring' infra-structure related settings. When a run is started, Nextflow is looking for `nextflow.config` files at several different locations, and merges the config settings from all of them. The order of where the file is located determines which configuration settings take precedence in case the same settings are found more than once. This allows users to customise their runs as necessary. The order of precedence is (from high to most basic):
+The file `nextflow.config` is quite useful as you can hide away a lot of the 'boring' infra-structure related settings. When a run is started, Nextflow is looking for `nextflow.config` files at several different locations, and merges the config settings from all of them. The order of where the file is located determines which configuration settings take precedence in case the same settings are found more than once. This allows users to customise their runs as necessary. The order of precedence is (from highest to most basic):
 
 1. User defined config: `-c <config file>` (optional)
 2. Current directory (just for one run) (optional)
@@ -421,7 +421,7 @@ The file `nextflow.config` is quite useful as you can hide away a lot of the 'bo
 
 A lot more information may be found over at the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html).
 
-Here are a few example lines of the `nextflow.config` file in our nextflow scripts folder:
+Here are a few example lines of the `nextflow.config` file used for all Babraham Nextflow workflows (3. above):
 
 ```
 process {
@@ -445,7 +445,7 @@ process {
     withLabel: quadCore{
      	cpus = 4
     }
-   
+   ...
 }
 ...
 notification {
