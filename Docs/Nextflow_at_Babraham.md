@@ -248,6 +248,52 @@ Don't get caught out by specifying `--bg` (which will set a user defined variabl
 
 By default, jobs executed at Babraham will be submitted as non-interactive jobs to the stone cluster via its SLURM queueing system. Sometimes however you might want to quickly test something out on the local machine (especially when the cluster queue is packed), or port the workflow and use it elsewhere (e.g. on the cloud). For this you can specify a different executor in the `nextflow.config` file (e.g. `executor 'sge'` to change the executor to Sun Grid Engine), or on the command line via the option `-process.executor=local` to run the process on the local machine.
 
+#### Caching 
+
+If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop), this option will attempt to resume the workflow at the point it got interrupted by using Nextflow's caching mechanism. This may save a lot of time.
+				  
+<img src="./Images/caching_log.png" width="800">
+
+To learn more about continuing a halted workflow execution please see this blog post: [Demyistifying Nextflow resume](https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html)
+				  
+
+**Don't get caught out** by specifying `--resume` (which will set a user defined variable `params.resume` to `true` (see more [here](#double-hyphen-options-are-user-defined-options)).
+
+
+
+## Double-hyphen options are user defined options
+
+As a rule, anything with two hyphens (`--`) is a user defined option. 
+
+Options in Nextflow have to be supplied **exactly** as they are expected: non-matching options are simply ignored! This means that there is no auto-completion, and typos/omissions/case errors will result in the option not getting used at all. So please take extra care when supplying additional options. As an example:
+
+```
+--fastQC_args="--nogroup"
+--fastq_args="--nogroup"
+--fastqc="--nogroup"
+```
+
+would all result in the same behavior: precisely nothing.
+
+Internally, it works like this: 
+
+Any option given on the command line, say `--help`, would internally be stored in a variable called `params.help` (and in this case set this variable to `true` and display the help text for a pipeline). One might define this variable within the Nextflow script to give the variable a default value, e.g.:
+
+```
+params.help = false
+```
+
+so that one can work with the variable irrespective of whether it has been specified on the command line. The variable `params.help` would also be set to `true` if no default value was defined within the Nextflow script. 
+
+If one were to specify the option accidentally as `--hell`, this would set an internal variable called `params.hell` to `true`. However, since it is unlikely that the script will make use of a variable called `params.hell`, in effect it will be simply ignored. This might catch you out when specifying `--bg` or `--resume` (**don't do that!**).
+
+#### Adding or listing existing genomes
+
+We have already added a considerable number of usable genomes to a folder called `genomes.d` in the Nextflow installation folder. To see all genomes that are already available, type any pipeline that accepts a genome (e.g. `nf_rnaseq`) followed by `--list_genomes`. This will return a list of all usable genome (by convention we are trying to use the genome build as the name to be used in our pipelines.
+
+
+For more detailed information on all files and indexes that are included for each of the genomes, type `--list_genomes --verbose`.
+
 
 #### Arguments may be swallowed!
 
@@ -318,8 +364,6 @@ nxf_tree() {
 
 `.exitcode`: Well, duh...
 
-#### The Nextflow config file
-
 
 #### The Nextflow `work` folder
 
@@ -348,7 +392,6 @@ Once a run has completed, you will be sent an automated email informing you whet
 The work folder will however still contain a copy of all files and logs involved in every single process involved, and there is good reason to want to keep the file system tidy. Once you are sure that the all processes have finished successfully you can remove the `work` folder via a command like: `rm -r work`. Please note again, that once the `work` folder has been removed, the Nextflow option `-resume` will cease to be available for the `work` directory involved.
 
 
-
 #### Dynamic retries
 
 Nextflow offers different strategies to [deal with errors](https://www.nextflow.io/docs/latest/process.html#errorstrategy). For some of our processes we use dynamic retries (e.g. up to 5 retries), where we increase the amount of memory that the Slurm job is asking for each time (see [dynamic computing resources](https://www.nextflow.io/docs/latest/process.html#dynamic-computing-resources)). If you have any questions about this, please come and see someone in the Bioinformatics team.
@@ -357,7 +400,8 @@ Nextflow offers different strategies to [deal with errors](https://www.nextflow.
 
 Sometimes it is very informative to run the command `nextflow log` in a directory where you tried to execute one or more jobs. This brings up previously executed jobs in this folder, along with useful stats (e.g. whether the job suceeded or errored).
 
-The nextflow log command lists the executions run in the current folder, here is an example:
+The `nextflow log` command lists the executions run in the current folder, here is an example:
+
 ```
 TIMESTAMP          	DURATION  	RUN NAME         	STATUS	REVISION ID	SESSION ID                          	COMMAND  
 2020-10-08 12:33:38	53m       	lonely_bhabha  	ERR   	8a59348cdc 	021addb3-61dc-47e2-b795-64a6a30945b3	nextflow nf_chipseq --genome GRCh38 *.fastq.gz        
@@ -366,51 +410,52 @@ TIMESTAMP          	DURATION  	RUN NAME         	STATUS	REVISION ID	SESSION ID  
 
 If you want to dig in deeper yourself, you can look at the hidden file `.nextflow.log` yourself (probably for debugging only).
 
-#### Caching 
+#### The Nextflow config file
 
-If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop), this option will attempt to resume the workflow at the point it got interrupted by using Nextflow's caching mechanism. This may save a lot of time.
-				  
-<img src="./Images/caching_log.png" width="800">
+The file `nextflow.config` is quite useful as you can hide away a lot of infra-structure related settings in here. Hieratchical structure.
+When a pipeline script is launched Nextflow looks for a file named nextflow.config in the current directory and in the script base directory (if it is not the same as the current directory). Finally it checks for the file $HOME/.nextflow/config.
 
-To learn more about continuing a halted workflow execution please see this blog post: [Demyistifying Nextflow resume](https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html)
-				  
+When more than one of the above files exist they are merged, so that the settings in the first override the same ones that may appear in the second one, and so on.
 
-**Don't get caught out** by specifying `--resume` (which will set a user defined variable `params.resume` to `true` (see more [here](#double-hyphen-options-are-user-defined-options)).
+The default config file search mechanism can be extended proving an extra configuration file by using the command line option -c <config file>.
+	
 
+A lot more information may be found over at the [Nextflow documentation](https://www.nextflow.io/docs/latest/config.html).
 
-
-## Double-hyphen options are user defined options
-
-As a rule, anything with two hyphens (`--`) is a user defined option. 
-
-Options in Nextflow have to be supplied **exactly** as they are expected: non-matching options are simply ignored! This means that there is no auto-completion, and typos/omissions/case errors will result in the option not getting used at all. So please take extra care when supplying additional options. As an example:
+Here are a few example lines of the `nextflow.config` file in our nextflow scripts folder:
 
 ```
---fastQC_args="--nogroup"
---fastq_args="--nogroup"
---fastqc="--nogroup"
+process {
+
+    executor = 'slurm'
+    memory = 5.GB
+    cpus = 1
+
+    withLabel: bigMem {
+        memory = 20.GB
+    }
+    
+    withLabel: hugeMem{
+    	memory = 80.GB
+    }
+
+    withLabel: multiCore {
+        cpus = 8
+    }
+
+    withLabel: quadCore{
+     	cpus = 4
+    }
+   
+}
+...
+notification {
+    enabled = true
+    to = "${USER}@babraham.ac.uk"
+}
+...
 ```
 
-would all result in the same behavior: precisely nothing.
-
-Internally, it works like this: 
-
-Any option given on the command line, say `--help`, would internally be stored in a variable called `params.help` (and in this case set this variable to `true` and display the help text for a pipeline). One might define this variable within the Nextflow script to give the variable a default value, e.g.:
-
-```
-params.help = false
-```
-
-so that one can work with the variable irrespective of whether it has been specified on the command line. The variable `params.help` would also be set to `true` if no default value was defined within the Nextflow script. 
-
-If one were to specify the option accidentally as `--hell`, this would set an internal variable called `params.hell` to `true`. However, since it is unlikely that the script will make use of a variable called `params.hell`, in effect it will be simply ignored. This might catch you out when specifying `--bg` or `--resume` (**don't do that!**).
-
-#### Adding or listing existing genomes
-
-We have already added a considerable number of usable genomes to a folder called `genomes.d` in the Nextflow installation folder. To see all genomes that are already available, type any pipeline that accepts a genome (e.g. `nf_rnaseq`) followed by `--list_genomes`. This will return a list of all usable genome (by convention we are trying to use the genome build as the name to be used in our pipelines.
-
-
-For more detailed information on all files and indexes that are included for each of the genomes, type `--list_genomes --verbose`.
 
 ## RNA-seq worklow in more detail
 
