@@ -287,10 +287,43 @@ The reason for this is that `--single_end` as such will be interpreted as `true`
 
 #### Hidden files
 
-Yes, there are hidden files...
+Yes, there are hidden files, and some may be useful for debugging...
 
 <img src="./Images/hidden_files.png" width="300">
 
+`.command.err `: contains the process output that was sent to `STDERR`
+
+`.command.sh`: contains the exact commands that were executed, e.g.:
+
+```
+#!/bin/bash -ue
+module load trim_galore
+module load fastqc
+trim_galore   SRR1045678_Whole_Genome_Shotgun_Bisulfite_Sequencing_of_Aorta_Cells_from_Human_STL002.fastq.gz
+```
+
+`.command.run`: This is the Nextflow task file. Probably for more specialised people...
+
+```
+#!/bin/bash
+#SBATCH -D ../work/00/a5a14062dfee051e42a90a5e71a37c
+#SBATCH -J nf-TRIM_GALORE_(SRR1045678_Whole_Genome_Shotgun_Bisulfite_Sequencing_of_Aorta_Cells_from_Human_STL002)
+#SBATCH -o ../work/00/a5a14062dfee051e42a90a5e71a37c/.command.log
+#SBATCH --no-requeue
+#SBATCH -c 4
+#SBATCH --mem 10240M
+# NEXTFLOW TASK: TRIM_GALORE (SRR1045678_Whole_Genome_Shotgun_Bisulfite_Sequencing_of_Aorta_Cells_from_Human_STL002)
+set -e
+set -u
+NXF_DEBUG=${NXF_DEBUG:=0}; [[ $NXF_DEBUG > 1 ]] && set -x
+NXF_ENTRY=${1:-nxf_main}
+
+nxf_tree() {
+    local pid=$1
+...
+```
+
+`.exitcode`: Well, duh...
 
 #### The Nextflow config file
 
@@ -300,13 +333,16 @@ Yes, there are hidden files...
 It is not recommended to keep the work folder to run different pipelines in the same folder!
 
 Work folder level 1:
-<img src="./Images/workdir1.png" width="500">
+
+<img src="./Images/workdir1.png" width="800">
 
 Work folder level 2:
-<img src="./Images/workdir2.png" width="500">
+
+<img src="./Images/workdir2.png" width="800">
 
 Work folder level 3:
-<img src="./Images/workdir3.png" width="500">
+
+<img src="./Images/workdir3.png" width="800">
 
 #### Dynamic retries
 
