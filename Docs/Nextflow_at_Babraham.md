@@ -242,7 +242,7 @@ In both modes, the Nextflow process is running interactively, and presssing `ctr
 
 The option `-bg` sends the entire workflow into the background, thus disconnecting it from the terminal session (similar to the `nohup` command for Linux terminal sessions). This option launches a daemon process (which will keep running on the headnode) that watches over your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the pipeline will send you an email with the job details. This option is **HIGHLY RECOMMENDED**!
 
-Don't get caught out by specifying `--bg` (which will set a user defined variable `bg` to `true` (see more [here](#double-hyphen-options-are-user-defined-options)).
+Don't get [caught out](#arguments-may-be-swallowed) by specifying `--bg` (which will set a user defined variable `bg` to `true` (see more [user defined options here](#double-hyphen-options-are-user-defined-options)).
 
 #### Executors
 
@@ -370,7 +370,7 @@ If a pipeline workflow has been interrupted or stopped (e.g. by accidentally clo
 To learn more about continuing a halted workflow execution please see this blog post: [Demyistifying Nextflow resume](https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html)
 				  
 
-**Don't get caught out** by specifying `--resume` (which will set a user defined variable `resume` to `true` (see more [here](#double-hyphen-options-are-user-defined-options)).
+**Don't get [caught out](#arguments-may-be-swallowed)** by specifying `--resume` (which will set a user defined variable `resume` to `true` (see more [here](#double-hyphen-options-are-user-defined-options)).
 
 
 
