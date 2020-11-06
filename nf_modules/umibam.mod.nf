@@ -29,6 +29,9 @@ process UMIBAM {
 		if (params.dual){
 			umibam_args += " --double_umi "	
 		}
+		else{
+			umibam_args += " --umi "	
+		}
 		
 		"""
 		module load UmiBam

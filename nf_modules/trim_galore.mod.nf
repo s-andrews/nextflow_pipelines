@@ -75,6 +75,7 @@ process TRIM_GALORE {
 
 		"""
 		module load trim_galore
+		module load fastqc
 		trim_galore $trim_galore_args ${pairedString} ${reads}
 		"""
 

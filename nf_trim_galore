@@ -1,10 +1,19 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
+// Last modified 13 October 2020
+
 params.outdir = "."
 params.verbose = false
 params.trim_galore_args = ''
 params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically 
+
+params.help = false
+// Show help message and exit
+if (params.help){
+    helpMessage()
+    exit 0
+}
 
 if (params.verbose){
     println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
@@ -22,3 +31,96 @@ workflow {
 
 }
 
+
+// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+// minimal execution summary report so we at least know what the working directory was...
+workflow.onComplete {
+
+    def msg = """\
+        Pipeline execution summary
+        ---------------------------
+        Completed at: ${workflow.complete}
+        Duration    : ${workflow.duration}
+        Success     : ${workflow.success}
+        workDir     : ${workflow.workDir}
+        exit status : ${workflow.exitStatus}
+        """
+    .stripIndent()
+
+    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+}
+
+def helpMessage() {
+ 
+    log.info"""
+    >>
+
+    SYNOPSIS:
+    
+    This workflow takes in a list of filenames (in FastQ format), and runs the files through Trim Galore for adapter- and
+    quality trimming (on the Babraham stone compute cluster).
+
+    If called as is, this Trim Galore workflow auto-detects the library type (single-end (SE)/ paired-end (PE)), the sequencing 
+    adapter used and selects Phred 20 as the default quality cutoff. To modify this default trimming behaviour, please specify
+    additional tool-specific arguments that are compatible with Trim Galore (see '--trim_galore_args' below).
+
+
+              ==============================================================================================================
+
+
+    USAGE:
+    
+    nf_trim_galore [options] <input files>
+    
+    Mandatory arguments:
+    ====================
+
+      <input files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. In theory, files will automatically be
+                                      processed as SE or PE files (if file pairs share the same base-name, and differ only by a
+                                      different read number, e.g. 'base_name_R1.fastq.gz' and 'base_name_R2.fastq.gz' (or R3, R4).
+                                      To run PE files in single-end mode, please see '--single_end' below.
+
+    Tool-specific options:
+    ======================
+
+      --trim_galore_args="[str]"      This option can take any number of options that are compatible with Trim Galore to modify its
+                                      default trimming behaviour. For more detailed information on available options please refer
+                                      to the Trim Galore User Guide (https://github.com/FelixKrueger/TrimGalore/tree/master/Docs),
+                                      or run 'trim_galore --help' on the command line. As an example, to trim off the first 10bp
+                                      from the 5' of R1, and run FastQC on the files after trimming, use: 
+                                      ' --trim_galore_args="--clip_R1 10 --fastqc" '. Please note that the format 
+                                      ="your options" needs to be strictly adhered to in order to work correctly. [Default: None]
+
+    Other Options:
+    ==============
+
+      --outdir [str]                  Path to the output directory. [Default: current working directory]
+
+      --single_end                    Force files of a read pair to be treated as single-end files. [Default: auto-detect]
+      
+      --verbose                       More verbose status messages. [Default: OFF]
+      --help                          Displays this help message and exits.
+
+    Workflow Options:
+    =================
+
+    Please note the single '-' hyphen for the following options!
+
+      -resume                         If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
+                                      this option will attempt to resume the workflow at the point it got interrupted by using
+                                      Nextflow's caching mechanism. This may save a lot of time.
+
+      -bg                             Sends the entire workflow into the background, thus disconnecting it from the terminal session.
+                                      This option launches a daemon process (which will keep running on the headnode) that watches over
+                                      your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
+                                      jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
+                                      pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
+
+      -process.executor=local         Temporarily changes where the workflow is executed to the 'local' machine. See also the nextflow.config
+                                      file for more details. [Default: slurm] 
+    
+
+    <<
+    """.stripIndent()
+
+}

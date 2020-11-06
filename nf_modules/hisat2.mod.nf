@@ -42,6 +42,7 @@ process HISAT2 {
 		}
 		index = params.genome["hisat2"]
 		
+		// TODO: need to add a check if the splice-site infile is present or not, and leave out this parameter otherwise 
 		splices = " --known-splicesite-infile " + params.genome["hisat2_splices"]
 		hisat_name = name + "_" + params.genome["name"]
 
