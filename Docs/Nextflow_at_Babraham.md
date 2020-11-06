@@ -253,7 +253,7 @@ By default, jobs executed at Babraham will be submitted as non-interactive jobs 
 
 #### Caching 
 
-If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop), this option will attempt to resume the workflow at the point it got interrupted by using Nextflow's caching mechanism. This may save a lot of time.
+If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop), using the option `-resume` (single-hyphen!) will attempt to resume the workflow at the point it got interrupted by using Nextflow's caching mechanism. This may save a lot of time.
 				  
 <img src="./Images/caching_log.png" width="800">
 
