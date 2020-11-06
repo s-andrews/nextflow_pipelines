@@ -337,7 +337,7 @@ In addition, each of the process folders (`work/short_hash/long_hash/`) themselv
 
 Here is a brief description of which purpose some of these files serve:
 
-`.command.err `: contains the process output that was sent to `STDERR`
+`.command.err`: contains the process output that was sent to `STDERR`
 
 `.command.sh`: contains the exact commands that were executed, e.g.:
 
@@ -374,11 +374,13 @@ nxf_tree() {
 
 #### The Nextflow `work` folder
 
-It is not recommended to keep the work folder to run different pipelines in the same folder! The reason for this is specified using a Nextflow config file which also makes it simple to track and replicate an experiment over time. Note that you should avoid launching two (or more) Nextflow instances in the same directory concurrently.
+A Nextflow process compartimentalises each process in the workflow so that only a sinlge process runs a single physical folder (please refer to the [Nextflow documentation](https://www.nextflow.io/docs/latest/index.html) for more information on basic concepts). Files are linked to these work sub-folders via symbolic links.  
 
-Also note that the pipeline work directory is intended to be used as a temporary scratch area. The final workflow outputs are expected to be stored in a different location specified using the publishDir directive.
+The pipeline work directory is intended to be used as a temporary scratch area. The final workflow outputs are expected to be stored in a different location specified using the `publishDir` [directive](https://www.nextflow.io/docs/latest/process.html#directives).
 
-https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html
+It is **not recommended** to launch two or more different pipelines in the same folder concurrently, as occasionally files may be staged in the same sub-direcories (see [here](https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html) for how the directory hashes are generated) where they might interefere with each other (which may or may not lead to the entire run getting terminated).
+
+
 
 Work folder level 1:
 
