@@ -294,8 +294,9 @@ If one were to specify the option accidentally as `--hell`, this would set an in
 
 We have already added a considerable number of usable genomes to a folder called `genomes.d` in the Nextflow installation folder. To see all genomes that are already available, type any pipeline that accepts a genome (e.g. `nf_rnaseq`) followed by `--list_genomes`. This will return a list of all usable genome (by convention we are trying to use the genome build as the name to be used in our pipelines.
 
+For more detailed information on all files and indexes that are included for each of the genomes, type `--list_genomes --verbose`. For further information also see [here](https://github.com/FelixKrueger/nextflow_pipelines#genomes)
 
-For more detailed information on all files and indexes that are included for each of the genomes, type `--list_genomes --verbose`.
+To add additional genomes just see a member of the bioinformatics team.
 
 
 #### Arguments may be swallowed!
