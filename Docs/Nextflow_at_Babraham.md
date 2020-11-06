@@ -21,6 +21,7 @@
     * [The `nextflow.config` file](#the-nextflow-config-file)
     * [Nextflow log](#nextflow-log)
     * [Dynamic retries upon error](#dynamic-retries)
+    * [Troubleshooting failed/halted runs](#troubleshooting-failed-runs)
     * [Executors](#executors)
     * [Hidden (but useful!) files](#hidden-files)  
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
@@ -226,7 +227,7 @@ The `--toolname_args="..."` argument should enable experienced users to customis
 
 ### Single-hyphen options are Nextflow options
 
-There certainly are a ton of interesting or useful Nextflow options we are not (yet) aware of, but we will try to list a few of these interesting concepts here that make use of the `-` single hyphen notation. 
+There certainly are a ton of interesting or useful [Nextflow](https://www.nextflow.io/docs/latest/index.html) options we are not (yet) aware of, but we will try to list a few of these interesting concepts here that make use of the `-` single hyphen notation. 
 
 #### Logging styles
 
@@ -410,7 +411,23 @@ TIMESTAMP          	DURATION  	RUN NAME         	STATUS	REVISION ID	SESSION ID  
 2020-10-08 13:54:04	1h 11m 25s	maniac_laplace 	OK    	8a59348cdc 	021addb3-61dc-47e2-b795-64a6a30945b3	nextflow nf_chipseq --genome GRCh38 *.fastq.gz -resume
 ```
 
-If you want to dig in deeper yourself, you can look at the hidden file `.nextflow.log` yourself (probably for debugging only).
+#### Troubleshooting failed runs
+
+By default, our pipelines are configured to die and completely abort if any one of the subprocesses produces an error (exceptions to this behaviour are processes with [dynamic retry error strategies](#dynamic-retries)). Fairly common examples of failing processes could be processing of truncated FastQ files (e.g. inclomplete downloads from the SRA which would probably fail early on at the FastQC stage), or attempting to further process completely empty BAM files (e.g. with `deduplicate_bismark`).
+
+If a Nextflow run fails you will be sent an email such as this:
+
+```
+Workflow completion [furious_franklin] - FAILED
+```
+
+If you want to dig in deeper and identify the reasons of why the process failed you can look at the hidden file `.nextflow.log` in the folder where the Nextflow process was started yourself. For debugging purposes you only need to look at the last 100-200 lines of the file, like so:
+
+```
+tail -200 .nextflow.log
+```
+
+It might also help to look at further tool-specific output in their specific process work folder, see also [hidden files](#hidden-files).
 
 #### The Nextflow config file
 
