@@ -5,7 +5,7 @@
 
 ### Table of Contents
 - [Multi-step pipelines](#multi-step-workflows)
-- [Single program pipelines](#single-program-pipelines)
+- [Single program pipelines](#single-program-workflows)
 - [Specifying tool-specific parameters/arguments](#specifying-tool-specific-arguments) 
 - [Nextflow Dos and Don'ts](#nextflow-dos-and-donts)
   * [Single-hyphen options are Nextflow options](#single-hyphen-options-are-nextflow-options)
