@@ -20,10 +20,9 @@
     * [The Nextflow `work` folder](#the-nextflow-work-folder)
     * [Hidden (but useful!) files](#hidden-files)
     * [Tidying up](#tidying-up)
-    * [The Nextflow Config file](#the-nextflow-config-file)
-    
-    * [Nextflow log](#nextflow-log)
     * [Dynamic retries upon error](#dynamic-retries)
+    * [The Nextflow Config file](#the-nextflow-config-file)
+    * [Nextflow log](#nextflow-log)
     * [Troubleshooting failed/halted runs](#troubleshooting-failed-runs)
       
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
@@ -292,7 +291,7 @@ so that one can work with the variable irrespective of whether it has been speci
 
 If one were to specify the option accidentally as `--hell`, this would set an internal variable called `params.hell` to `true`. However, since it is unlikely that the script will make use of a variable called `params.hell`, in effect it will be simply ignored. This might catch you out when specifying `--bg` or `--resume` (**don't do that!**).
 
-#### Adding or listing existing genomes
+### Adding or listing existing genomes
 
 We have already added a considerable number of usable genomes to a folder called `genomes.d` in the Nextflow installation folder. To see all genomes that are already available, type any pipeline that accepts a genome (e.g. `nf_rnaseq`) followed by `--list_genomes`. This will return a list of all usable genome (by convention we are trying to use the genome build as the name to be used in our pipelines.
 
@@ -301,7 +300,7 @@ For more detailed information on all files and indexes that are included for eac
 To add additional genomes just see a member of the bioinformatics team.
 
 
-#### Arguments may be swallowed!
+### Arguments may be swallowed!
 
 This one can - and mosty likely **will** - **catch you out**! 
 
@@ -333,7 +332,38 @@ The reason for this is that `--single_end` as such will be interpreted as `true`
 
 ## Nextflow: useful bits and bobs
 
-#### Hidden files
+
+### The Nextflow `work` folder
+
+A Nextflow process compartimentalises each process in the workflow so that only a sinlge process runs a single physical folder (please refer to the [Nextflow documentation](https://www.nextflow.io/docs/latest/index.html) for more information on basic concepts). Files are linked to these work sub-folders via symbolic links.  
+
+The pipeline work directory is intended to be used as a temporary scratch area. The final workflow outputs are expected to be stored in a different location specified using the `publishDir` [directive](https://www.nextflow.io/docs/latest/process.html#directives). By default, the output directory for all pipelines at Babraham is the current working directory where the Nextflow pipeline is launched (this can be altered with the option `--output_dir`).
+
+It is **not recommended** to launch two or more different pipelines in the same folder concurrently, as occasionally files may be staged in the same sub-direcories (see [here](https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html) for how the directory hashes are generated) where they might interefere with each other (which may or may not lead to the entire run getting terminated).
+
+
+Let's take a look at an example of the structure of the `work` folder.
+
+**Work folder level 1:**
+
+The `work` directory contains many sub-directories (2-characters, called `short_hash` here).
+
+<img src="./Images/workdir1.png">
+
+**Work folder level 2:**
+
+These `short_hash` sub-folders contain one or more sub-directories (termed `long_hash` here).
+
+<img src="./Images/workdir2.png">
+
+**Work folder level 3:**
+
+Finally, the `work/short_hash/long_hash` directories contain the (links to) files involved in a single process, for example:
+
+<img src="./Images/workdir3.png">
+
+
+### Hidden files
 
 Nextflow processes generate quite a few hidden files, some of which may be useful for debugging purposes. The working directory where the Nextflow process is started contains two hidden and potentially useful files [`.nextflow.log`](#troubleshooting-failed-runs) and `.nextflow.pid`.
 
@@ -378,47 +408,18 @@ nxf_tree() {
 `.exitcode`: Well, duh...
 
 
-#### The Nextflow `work` folder
-
-A Nextflow process compartimentalises each process in the workflow so that only a sinlge process runs a single physical folder (please refer to the [Nextflow documentation](https://www.nextflow.io/docs/latest/index.html) for more information on basic concepts). Files are linked to these work sub-folders via symbolic links.  
-
-The pipeline work directory is intended to be used as a temporary scratch area. The final workflow outputs are expected to be stored in a different location specified using the `publishDir` [directive](https://www.nextflow.io/docs/latest/process.html#directives). By default, the output directory for all pipelines at Babraham is the current working directory where the Nextflow pipeline is launched (this can be altered with the option `--output_dir`).
-
-It is **not recommended** to launch two or more different pipelines in the same folder concurrently, as occasionally files may be staged in the same sub-direcories (see [here](https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html) for how the directory hashes are generated) where they might interefere with each other (which may or may not lead to the entire run getting terminated).
-
-
-Let's take a look at an example of the structure of the `work` folder.
-
-**Work folder level 1:**
-
-The `work` directory contains many sub-directories (2-characters, called `short_hash` here).
-
-<img src="./Images/workdir1.png">
-
-**Work folder level 2:**
-
-These `short_hash` sub-folders contain one or more sub-directories (termed `long_hash` here).
-
-<img src="./Images/workdir2.png">
-
-**Work folder level 3:**
-
-Finally, the `work/short_hash/long_hash` directories contain the (links to) files involved in a single process, for example:
-
-<img src="./Images/workdir3.png">
-
-#### Tidying up
+### Tidying up
 
 Once a run has completed, you will be sent an automated email informing you whether the run has been successful or not. The way our pipelines are currently setup (see [the work folder](#the-nextflow-work-folder)), all result files that are generated by the Nextflow processes are (hard-)linked from the `work/short_hash/long_hash/` folders to the current work folder. Links to the those files to do **not** take up additional disk space, and keeping the work folder enables you to make use of the [Nextflow caching mechanism](#caching).
 
 The work folder will however still contain a copy of all files and logs involved in every single process involved, and there is good reason to want to keep the file system tidy. Once you are sure that the all processes have finished successfully you can remove the `work` folder via a command like: `rm -r work`. Please note again, that once the `work` folder has been removed, the Nextflow option `-resume` will cease to be available for the `work` directory involved.
 
 
-#### Dynamic retries
+### Dynamic retries
 
 Nextflow offers different strategies to [deal with errors](https://www.nextflow.io/docs/latest/process.html#errorstrategy). For some of our processes we use dynamic retries (e.g. up to 5 retries), where we increase the amount of memory that the Slurm job is asking for each time (see [dynamic computing resources](https://www.nextflow.io/docs/latest/process.html#dynamic-computing-resources)). If you have any questions about this, please come and see someone in the Bioinformatics team.
 
-#### Nextflow log
+### Nextflow log
 
 Sometimes it is very informative to run the command `nextflow log` in a directory where you tried to execute one or more jobs. This brings up previously executed jobs in this folder, along with useful stats (e.g. whether the job suceeded or errored).
 
