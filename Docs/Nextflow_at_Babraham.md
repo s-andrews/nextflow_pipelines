@@ -329,7 +329,9 @@ The reason for this is that `--single_end` as such will be interpreted as `true`
 
 #### Hidden files
 
-Yes, there are hidden files, and some may be useful for debugging...
+Nextflow processes generate quite a few hidden files, some of which may be useful for debugging purposes. The working directory where the Nextflow process is started contains two hidden and potentially useful files (`.nextflow.log`](#troubleshooting-failed-runs) and `.nextflow.pid`.
+
+In addition, each of the process folders (`work/short_hash/long_hash/`) themselves contain a number of hidden files, here is a brief description of which purpose some of them serve:
 
 <img src="./Images/hidden_files.png" width="300">
 
