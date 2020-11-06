@@ -3,7 +3,7 @@
 
 # Nextflow Pipelines at the Babraham Institute - a User Guide
 
-#### Table of Contents
+### Table of Contents
 - [Multi-step pipelines](#multi-step-workflows)
 - [Single program pipelines](#single-program-pipelines)
 - [Specifying tool-specific parameters/arguments](#specifying-tool-specific-arguments) 
@@ -15,16 +15,15 @@
     * [Caching (`-resume`)](#caching)
   * [Double-hyphen options are user defined options](#double-hyphen-options-are-user-defined-options)
     * [Listing existing or adding new genomes](#adding-or-listing-existing-genomes)
-    * [Caveat: arguments may be swallowed](#arguments-may-be-swallowed)
   * [Nextflow: Useful bits and bobs](#nextflow-useful-bits-and-bobs)
+    * [Caveat: arguments may be swallowed](#arguments-may-be-swallowed)
     * [The Nextflow `work` folder](#the-nextflow-work-folder)
     * [Hidden (but useful!) files](#hidden-files)
     * [Tidying up](#tidying-up)
     * [Dynamic retries upon error](#dynamic-retries)
-    * [The Nextflow Config file](#the-nextflow-config-file)
     * [Nextflow log](#nextflow-log)
     * [Troubleshooting failed/halted runs](#troubleshooting-failed-runs)
-      
+    * [The Nextflow config file](#the-nextflow-config-file)  
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
   * [Example Workflow](#example-workflow)
   * [Example Module](#example-module)
@@ -265,7 +264,7 @@ To learn more about continuing a halted workflow execution please see this blog 
 
 
 
-## Double-hyphen options are user defined options
+### Double-hyphen options are user defined options
 
 As a rule, anything with two hyphens (`--`) is a user defined option. 
 
@@ -291,7 +290,7 @@ so that one can work with the variable irrespective of whether it has been speci
 
 If one were to specify the option accidentally as `--hell`, this would set an internal variable called `params.hell` to `true`. However, since it is unlikely that the script will make use of a variable called `params.hell`, in effect it will be simply ignored. This might catch you out when specifying `--bg` or `--resume` (**don't do that!**).
 
-### Adding or listing existing genomes
+#### Adding or listing existing genomes
 
 We have already added a considerable number of usable genomes to a folder called `genomes.d` in the Nextflow installation folder. To see all genomes that are already available, type any pipeline that accepts a genome (e.g. `nf_rnaseq`) followed by `--list_genomes`. This will return a list of all usable genome (by convention we are trying to use the genome build as the name to be used in our pipelines.
 
@@ -299,6 +298,8 @@ For more detailed information on all files and indexes that are included for eac
 
 To add additional genomes just see a member of the bioinformatics team.
 
+
+## Nextflow: Useful bits and bobs
 
 ### Arguments may be swallowed!
 
@@ -328,9 +329,6 @@ would only process files: `sample2.fastq.gz`, `sample3.fastq.gz` and `sample4.fa
 The reason for this is that `--single_end` as such will be interpreted as `true` by Nextflow if given on the command line. But it would **also** (and probably rather confusingly) take a single positional argument, which in this case is the name of the first file given as `*fastq.gz`, i.e. `--single_end sample1.fastq.gz`. This **also** evaluates to `true`, however has the undesirably side-effect of consuming the first file of `*fastq.gz` in the process. 
 
 **TAKE HOME MESSAGE**: Any boolean switches (e.g. `--verbose`, `--single_end` etc.) **must not** preceed positional arguments. Place before other options (single or double hyphen), or at the very end (`nf_rnaseq --genome GRCh38 *fastq.gz --single_end` would also be fine).
-
-
-## Nextflow: useful bits and bobs
 
 
 ### The Nextflow `work` folder
@@ -431,7 +429,7 @@ TIMESTAMP          	DURATION  	RUN NAME         	STATUS	REVISION ID	SESSION ID  
 2020-10-08 13:54:04	1h 11m 25s	maniac_laplace 	OK    	8a59348cdc 	021addb3-61dc-47e2-b795-64a6a30945b3	nextflow nf_chipseq --genome GRCh38 *.fastq.gz -resume
 ```
 
-#### Troubleshooting failed runs
+### Troubleshooting failed runs
 
 By default, our pipelines are configured to die and completely abort if any one of the subprocesses produces an error (exceptions to this behaviour are processes with [dynamic retry error strategies](#dynamic-retries)). Fairly common examples of failing processes could be processing of truncated FastQ files (e.g. inclomplete downloads from the SRA which would probably fail early on at the FastQC stage), or attempting to further process completely empty BAM files (e.g. with `deduplicate_bismark`).
 
@@ -449,7 +447,7 @@ tail -200 .nextflow.log
 
 Hopefully this will allow you to identify and fix the problem, e.g. re-download a truncated file or remove input files that are corrupted or contain too few sequences to start with, before trying again (consider [using `-resume`](#caching) for this!). It might also help to look at further tool-specific output in their specific process work folder, see also [hidden files](#hidden-files).
 
-#### The Nextflow config file
+### The Nextflow config file
 
 The file `nextflow.config` is quite useful as you can hide away a lot of the 'boring' infra-structure related settings. When a run is started, Nextflow is looking for `nextflow.config` files at several different locations, and merges the config settings from all of them. The order of where the file is located determines which configuration settings take precedence in case the same settings are found more than once. This allows users to customise their runs as necessary. The order of precedence is (from highest to most basic):
 
@@ -655,5 +653,5 @@ process HISAT2 {
 
 
 ## Credits
-This documentation was written by Felix Krueger and Simon Andrews, part of the [Babraham Bioinformatics](https://www.bioinformatics.babraham.ac.uk) group.
+This documentation was written by Felix Krueger and Simon Andrews, part of the [Babraham Bioinformatics](https://www.bioinformatics.babraham.ac.uk) group. Last modified 06 November 2020.
 <p align="center"> <img title="Babraham Bioinformatics" id="logo_img" src="./Images/bioinformatics_logo.png"></p>
