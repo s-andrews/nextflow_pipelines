@@ -376,7 +376,7 @@ nxf_tree() {
 
 A Nextflow process compartimentalises each process in the workflow so that only a sinlge process runs a single physical folder (please refer to the [Nextflow documentation](https://www.nextflow.io/docs/latest/index.html) for more information on basic concepts). Files are linked to these work sub-folders via symbolic links.  
 
-The pipeline work directory is intended to be used as a temporary scratch area. The final workflow outputs are expected to be stored in a different location specified using the `publishDir` [directive](https://www.nextflow.io/docs/latest/process.html#directives).
+The pipeline work directory is intended to be used as a temporary scratch area. The final workflow outputs are expected to be stored in a different location specified using the `publishDir` [directive](https://www.nextflow.io/docs/latest/process.html#directives). By default, the output directory for all pipelines at Babraham is the current working directory where the Nextflow pipeline is launched (this can be altered with the option `--output_dir`).
 
 It is **not recommended** to launch two or more different pipelines in the same folder concurrently, as occasionally files may be staged in the same sub-direcories (see [here](https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html) for how the directory hashes are generated) where they might interefere with each other (which may or may not lead to the entire run getting terminated).
 
