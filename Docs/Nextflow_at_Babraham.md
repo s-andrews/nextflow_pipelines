@@ -421,13 +421,13 @@ If a Nextflow run fails you will be sent an email such as this:
 Workflow completion [furious_franklin] - FAILED
 ```
 
-If you want to dig in deeper and identify the reasons of why the process failed you can look at the hidden file `.nextflow.log` in the folder where the Nextflow process was started yourself. For debugging purposes you only need to look at the last 100-200 lines of the file, like so:
+If you want to dig in deeper and identify the reasons of why the process failed you can look at the hidden file `.nextflow.log` in the folder where the Nextflow process was started. For debugging purposes you only need to look at the last 100-200 lines of the file, like so:
 
 ```
 tail -200 .nextflow.log
 ```
 
-It might also help to look at further tool-specific output in their specific process work folder, see also [hidden files](#hidden-files).
+Hopefully this will allow you to identify and fix the problem, e.g. re-download a truncated file or remove input files that are corrupted or contain too few sequences to start with, before trying again (consider [using `-resume`](#caching) for this!). It might also help to look at further tool-specific output in their specific process work folder, see also [hidden files](#hidden-files).
 
 #### The Nextflow config file
 
