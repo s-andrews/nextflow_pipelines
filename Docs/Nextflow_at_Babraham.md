@@ -381,18 +381,25 @@ The pipeline work directory is intended to be used as a temporary scratch area. 
 It is **not recommended** to launch two or more different pipelines in the same folder concurrently, as occasionally files may be staged in the same sub-direcories (see [here](https://www.nextflow.io/blog/2019/demystifying-nextflow-resume.html) for how the directory hashes are generated) where they might interefere with each other (which may or may not lead to the entire run getting terminated).
 
 
+Let's take a look at an example of the structure of the `work` folder.
 
-Work folder level 1:
+**Work folder level 1:**
 
-<img src="./Images/workdir1.png" width="800">
+The `work` directory contains many sub-directories (2-characters, called `short_hash` here).
 
-Work folder level 2:
+<img src="./Images/workdir1.png">
 
-<img src="./Images/workdir2.png" width="800">
+**Work folder level 2:**
 
-Work folder level 3:
+These `short_hash` sub-folders contain one or more sub-directories (termed `long_hash` here).
 
-<img src="./Images/workdir3.png" width="800">
+<img src="./Images/workdir2.png">
+
+**Work folder level 3:**
+
+Finally, the `work/short_hash/long_hash` directories contain the (links to) files involved in a single process, for example:
+
+<img src="./Images/workdir3.png">
 
 #### Tidying up
 
