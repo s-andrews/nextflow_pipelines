@@ -38,14 +38,16 @@ These pipelines are curated by the Babraham Bioinformatics Group, but you are of
 To use any of our Nextflow pipelines, you will need to load Nextflow first:
 
 ```
-module load nf
+module load nextflow
 ```
-Now all pipelines should work, then just type `nf_` followed by hitting TAB twice to see all available workflows. 
+
+(`module load nf` also works). Now all pipelines should work, then just type `nf_` followed by hitting TAB twice to see all available workflows. 
 
 
 ## Multi-step workflows
 
-Pipelines are supposed to work in a stream-lined and reproducible way every time they are run, and are designed so that users don't have to worry about specifying any of the plethora of options each tool provides. To this end, we try to run the individual programs of a pipeline with a pre-configured set of parameters that are (we find) sensible for the specified data type.
+Pipelines are supposed to work in a stream-lined and reproducible way every time they are run, and are designed so that users don't have to worry about specifying any of the plethora of options each tool provides. To this end, we try to run the individual programs of a pipeline with a pre-configured set of parameters that are (we find) sensible for the specified data type. For additional customisation, any of the programs involved may also be used in conjunction with [tool-specific arguments/parameters](#specifying-tool-specific-arguments), see below.
+
 
 In the following section we will provide an overview of the available multi-step or single-program workflows. For more detailed help on how to run each individual workflow, please type: 
 
