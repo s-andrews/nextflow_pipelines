@@ -11,18 +11,18 @@
   * [Single-hyphen options are Nextflow options](#single-hyphen-options-are-nextflow-options)
     * [Logging styles (`-ansi-log`)](#logging-styles)
     * [Executing jobs in the background (`-bg`)](#executing-jobs-in-the-background)
+    * [Executors](#executors)
     * [Caching (`-resume`)](#caching)
   * [Double-hyphen options are user defined options](#double-hyphen-options-are-user-defined-options)
-    * [Caveat: arguments may be swallowed](#arguments-may-be-swallowed)
     * [Listing existing or adding new genomes](#adding-or-listing-existing-genomes)
-  * [Useful bits and bobs](#useful-bits-and-bobs)
-    - [The Nextflow Config file](#the-nextflow-config-file)
+    * [Caveat: arguments may be swallowed](#arguments-may-be-swallowed)
+  * [Nextflow: Useful bits and bobs](#useful-bits-and-bobs)
     * [The Nextflow `work` folder](#the-nextflow-work-folder)
+    * [The Nextflow Config file](#the-nextflow-config-file)
     * [The `nextflow.config` file](#the-nextflow-config-file)
     * [Nextflow log](#nextflow-log)
     * [Dynamic retries upon error](#dynamic-retries)
     * [Troubleshooting failed/halted runs](#troubleshooting-failed-runs)
-    * [Executors](#executors)
     * [Hidden (but useful!) files](#hidden-files)  
 - [RNA-seq workflow in more detail](#RNA-seq-worklow-in-more-detail)
   * [Example Workflow](#example-workflow)
@@ -294,7 +294,7 @@ If one were to specify the option accidentally as `--hell`, this would set an in
 
 We have already added a considerable number of usable genomes to a folder called `genomes.d` in the Nextflow installation folder. To see all genomes that are already available, type any pipeline that accepts a genome (e.g. `nf_rnaseq`) followed by `--list_genomes`. This will return a list of all usable genome (by convention we are trying to use the genome build as the name to be used in our pipelines.
 
-For more detailed information on all files and indexes that are included for each of the genomes, type `--list_genomes --verbose`. For further information also see [here](https://github.com/FelixKrueger/nextflow_pipelines#genomes)
+For more detailed information on all files and indexes that are included for each of the genomes, type `--list_genomes --verbose`. For further information also see [here](https://github.com/FelixKrueger/nextflow_pipelines#genomes).
 
 To add additional genomes just see a member of the bioinformatics team.
 
@@ -327,6 +327,9 @@ would only process files: `sample2.fastq.gz`, `sample3.fastq.gz` and `sample4.fa
 The reason for this is that `--single_end` as such will be interpreted as `true` by Nextflow if given on the command line. But it would **also** (and probably rather confusingly) take a single positional argument, which in this case is the name of the first file given as `*fastq.gz`, i.e. `--single_end sample1.fastq.gz`. This **also** evaluates to `true`, however has the undesirably side-effect of consuming the first file of `*fastq.gz` in the process. 
 
 **TAKE HOME MESSAGE**: Any boolean switches (e.g. `--verbose`, `--single_end` etc.) **must not** preceed positional arguments. Place before other options (single or double hyphen), or at the very end (`nf_rnaseq --genome GRCh38 *fastq.gz --single_end` would also be fine).
+
+
+## Nextflow: useful bits and bobs
 
 #### Hidden files
 
