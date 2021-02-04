@@ -1,0 +1,7 @@
+name	R64-1-1_2Micron_mutation
+species	S_cerevisiae
+fasta	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/mutation_genome/
+bowtie2	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/mutation_genome/mutation_genome
+hisat2	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/mutation_genome/mutation_genome
+gtf	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/R64-1-1_2Micron/Saccharomyces_cerevisiae.R64-1-1.91.gtf
+hisat2_splices	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/R64-1-1_2Micron/Saccharomyces_cerevisiae.R64-1-1.91.hisat2_splices.txt
