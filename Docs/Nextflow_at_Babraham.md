@@ -70,6 +70,7 @@ on the command line.
 - [Bisulfite-seq: RRBS Epigenetic clock workflow](#nf_bisulfite_RRBS_clock)
 - [Bisulfite-seq: single-cell BS-seq workflow](#nf_bisulfite_scBSseq)
 - [Bisulfite-seq: single-cell NMT-seq workflow](#nf_bisulfite_scNMT)
+- [Sort and Index BAM files](#nf_sortIndexBAM)
 
 #### nf_rnaseq
 
@@ -179,6 +180,11 @@ To be executed with `--single_end`
     bismark2summary
     MultiQC
     
+#### nf_sortIndexBAM
+    samtools sort
+    samtools index
+    
+Usage is simply `nf_sortIndexBAM *bam`.   
 
 
 ## Single-program workflows
