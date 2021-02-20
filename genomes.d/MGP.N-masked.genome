@@ -2,4 +2,5 @@ name	MGP_strains_N-masked
 species	Mouse_GRCm38_reStrainingOrder
 fasta	/bi/scratch/Genomes/Mouse/MGP_strains_N-masked/
 bismark	/bi/scratch/Genomes/Mouse/MGP_strains_N-masked/
+bowtie2	/bi/scratch/Genomes/Mouse/MGP_strains_N-masked/MGP.N-masked
 hisat2	/bi/scratch/Genomes/Mouse/MGP_strains_N-masked/MGP.N-masked
