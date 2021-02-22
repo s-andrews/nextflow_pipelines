@@ -1,0 +1,8 @@
+name	129S1_SvImJ_SPRET_EiJ_dual_hybrid
+species	Mouse_GRCm38
+fasta	/bi/scratch/Genomes/Mouse/Spretus_129S1/129S1_SvImJ_SPRET_EiJ_dual_hybrid.based_on_GRCm38_N-masked
+bismark	/bi/scratch/Genomes/Mouse/Spretus_129S1/129S1_SvImJ_SPRET_EiJ_dual_hybrid.based_on_GRCm38_N-masked
+bowtie2	/bi/scratch/Genomes/Mouse/Spretus_129S1/129S1_SvImJ_SPRET_EiJ_dual_hybrid.based_on_GRCm38_N-masked/129S1_SvImJ_SPRET_EiJ_dual_hybrid
+hisat2	/bi/scratch/Genomes/Mouse/Spretus_129S1/129S1_SvImJ_SPRET_EiJ_dual_hybrid.based_on_GRCm38_N-masked/129S1_SvImJ_SPRET_EiJ_dual_hybrid
+gtf	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.70.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.70.hisat2_splices.txt
