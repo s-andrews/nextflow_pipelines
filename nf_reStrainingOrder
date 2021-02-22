@@ -1,20 +1,37 @@
 #!/usr/bin/env nextflow
 
-// Last modified 13 October 2020
+// Last modified 19 02 2021
 
 // Enable modules
 nextflow.enable.dsl=2
 
 params.outdir = "."
 params.genome = ""
+
+// For reStrainingOrder we start with alignments to the MGP (Mouse Genome Project)
+genome_to_use = "MGP.N-masked";
+if (params.genome){
+    println ("Genome was set on the command line (to "+ params.genome + "), however we will overwrite this with >> " + genome_to_use + " << (required for reStrainingOrder)")
+}
+else{
+    println ("[WORKLFOW] Setting genome for reStrainingOrder manually to >> " + genome_to_use + " << (required)")
+}
+
 params.verbose = false
 params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically 
 
 params.fastqc_args = ''
 params.fastq_screen_args = ''
 params.trim_galore_args = ''
+
 params.bowtie2_args = ''
+params.hisat2_args = ''
+params.bismark_args = ''
+
 params.multiqc_args = ''
+params.reStrainingOrder_args = ''
+
+params.aligner = 'bowtie2' // default is Bowtie2
 
 params.help = false
 // Show help message and exit
@@ -22,6 +39,10 @@ if (params.help){
     helpMessage()
     exit 0
 }
+
+// Validate inputs
+assert params.aligner == 'bowtie2' || params.aligner == 'hisat2' || params.aligner == 'bismark' : "Invalid aligner option: >>${params.aligner}<<. Valid options are: 'bowtie2', 'hisat2' or 'bismark'\n\n"
+println ("Using aligner: " + params.aligner)
 
 params.list_genomes = false;
 if (params.list_genomes){
@@ -38,21 +59,32 @@ if (params.verbose){
 
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
-include { getGenome }                          from './nf_modules/genomes.mod.nf'
-include { listGenomes }                        from './nf_modules/genomes.mod.nf'
+include { getGenome; listGenomes }             from './nf_modules/genomes.mod.nf'
 
 if (params.list_genomes){
     listGenomes()  // this lists all available genomes, and exits
 }
-genome = getGenome(params.genome)
+
+genome = getGenome(genome_to_use)
 
 include { FASTQC }            from './nf_modules/fastqc.mod.nf'
 include { FASTQC as FASTQC2 } from './nf_modules/fastqc.mod.nf'
-include { FASTQ_SCREEN }      from './nf_modules/fastq_screen.mod.nf'
+if (params.aligner == "bismark"){
+    include { FASTQ_SCREEN }      from './nf_modules/fastq_screen.mod.nf'   params(bisulfite: '--bisulfite')
+}
+else{
+    include { FASTQ_SCREEN }      from './nf_modules/fastq_screen.mod.nf'
+}
+
 include { TRIM_GALORE }       from './nf_modules/trim_galore.mod.nf'
 
 include { BOWTIE2 }           from './nf_modules/bowtie2.mod.nf'   params(genome: genome)
+include { BISMARK }           from './nf_modules/bismark.mod.nf'   params(genome: genome)
+include { HISAT2 }            from './nf_modules/hisat2.mod.nf'    params(genome: genome)
+
 include { MULTIQC }           from './nf_modules/multiqc.mod.nf' 
+
+include { RESTRAININGORDER }  from './nf_modules/reStrainingOrder.mod.nf' 
 
 file_ch = makeFilesChannel(args)
 
@@ -63,19 +95,47 @@ workflow {
         FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
         TRIM_GALORE     (file_ch, params.outdir, params.trim_galore_args, params.verbose)
         FASTQC2         (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
-        BOWTIE2         (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)
-     
+        if (params.aligner == 'bowtie2'){
+            BOWTIE2     (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)
+        }
+        else if (params.aligner == 'hisat2'){
+            HISAT2      (TRIM_GALORE.out.reads, params.outdir, params.hisat2_args, params.verbose)
+        }
+        else if (params.aligner == 'bismark'){
+            BISMARK     (TRIM_GALORE.out.reads, params.outdir, params.bismark_args, params.verbose)
+        }
+
         // merging channels for MultiQC
+        if (params.aligner == 'bowtie2'){
+            ch_hisat2  = Channel.empty()
+            ch_bowtie2 = BOWTIE2.out.stats.ifEmpty([])
+            ch_bismark = Channel.empty()
+            ch_reStrainingIn = BOWTIE2.out.bam
+        }
+        else if (params.aligner == 'hisat2'){
+            ch_hisat2  = HISAT2.out.stats.ifEmpty([])
+            ch_bowtie2 = Channel.empty()
+            ch_bismark = Channel.empty()
+            ch_reStrainingIn = HISAT2.out.bam
+        }
+        else if (params.aligner == 'bismark'){
+            ch_hisat2  = Channel.empty()
+            ch_bowtie2 = Channel.empty()
+            ch_bismark = BISMARK.out.report.ifEmpty({})
+            ch_reStrainingIn = BISMARK.out.bam
+        }
         multiqc_ch = FASTQC.out.report.mix(
-            TRIM_GALORE.out.report,
-            FASTQ_SCREEN.out.report.ifEmpty([]),
-            FASTQC2.out.report.ifEmpty([]),
-            BOWTIE2.out.stats.ifEmpty([]),
-        ).collect()
-
-        // multiqc_ch.subscribe {  println "Got: $it"  }
-
-        MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
+                TRIM_GALORE.out.report,
+                FASTQ_SCREEN.out.report.ifEmpty([]),
+                FASTQC2.out.report.ifEmpty([]),
+                ch_bowtie2,
+                ch_hisat2,
+                ch_bismark,
+            ).collect()
+        
+       
+        MULTIQC              (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
+        RESTRAININGORDER     (ch_reStrainingIn, params.outdir, params.reStrainingOrder_args, params.verbose)
 }
 
 // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
@@ -101,34 +161,42 @@ def helpMessage() {
  
     log.info"""
     >>
-
-
+    
+                reStrainingOrder - Mouse Hybrid cell line assessment
+    
     SYNOPSIS:
-
-    In a nutshell, this workflow runs an entire processing pipeline on FastQ files, including QC, contamination QC,
-    quality-/adapter trimming, alignments to a genome using Bowtie 2, and finally generate an aggregate QC report. The
-    workflow is suitable for e.g. ChIP-seq, ATAC-seq or any other form of sequencing that requires standard alignments
-    to a genome. Here is a graphical representation of the workflow:
+    
+    In a nutshell, this workflow runs an entire reStrainingOrder processing pipeline on FastQ files. This includes QC,
+    contamination QC, quality-/adapter trimming, alignments to the Mouse Genomes Project N-masked genome using one of
+    several different aligners (e.g. Bowtie 2, HISAT2 or Bismark), MultiQC and finally runs the BAM file through 
+    reStrainingOrder (https://github.com/FelixKrueger/reStrainingOrder). The workflow is suitable for any data coming
+    from mouse (hybrid) experiments, e.g. ChIP-seq, RNA-seq or Bisulfite-seq. Here is a graphical representation of the
+    reStrainingOrder workflow:
 
     --- FastQC
     --- FastQ Screen
     --- Trim Galore
         |
         --- FastQC
-        --- Bowtie 2  
+        --- Bowtie2 / HISAT2 / Bismark
+            |
+            ---reStrainingOrder
+
     --- MultiQC*
-        
-    * This step runs only once ALL other jobs have completed.
+            
+    * This step runs only once all jobs except reStraininOrder have completed.
      
     By default all these steps are submitted as jobs to the Babraham stone compute cluster.
 
     By default, the involved tools are run in the following way:
     ------------------------------------------------------------
     FastQC:         defaults (-q)
-    FastQ Screen:   defaults (Bowtie 2; local mode)
+    FastQ Screen:   defaults (Bowtie 2; local mode; --bisulfite mode if aligner was selected to be Bismark)
     Trim Galore:    defaults (adapter auto-detection)
     Bowtie 2:       end-to-end mode; '--no-unal'; for paired-end files: '--no-mixed --no-discordant' (concordant PE alignmnents only)
-                    
+    HISAT2:         end-to-end mode; '--no-unal'; for paired-end files: '--no-mixed --no-discordant' (concordant PE alignmnents only)             
+    Bismark:        end-to-end mode;
+  
     To add additional parameters to any of the programs, consider supplying tool-specific arguments (see --toolname_args="..." below).
 
 
@@ -137,7 +205,7 @@ def helpMessage() {
             
     USAGE:
     
-    nf_chipseq [options] --genome <genomeID> <input files>
+    nf_reStrainingOrder [options] <input files>
     
     Mandatory arguments:
     ====================
@@ -148,8 +216,7 @@ def helpMessage() {
                                       PE files, only Read 1 is run through FastQ Screen (as typically R1 and R2 produce nearly identical
                                       contamination profiles). To run PE files in single-end mode, please see '--single_end' below.
 
-      --genome [str]                  Genome build ID to be used for the alignment, e.g. GRCh38 (latest human genome) or GRCm38
-                                      (latest mouse genome build). To list all available genomes, see '--list_genomes' below.
+      --genome [str]                  The genome build ID for this workflow is automatically set to 'MGP.N-masked', and cannot be changed.
 
 
     Tool-specific options:
@@ -182,8 +249,25 @@ def helpMessage() {
                                       run somewhat more stringent alignments for only 1 million sequences, use:
                                       ' --bowtie2_args="-u 1000000 --score_min L,0,-0.4" '. [Default: None]
 
+      --hisat2_args="[str]"           This option can take any number of options that are compatible with HISAT2 to modify its
+                                      default mapping behaviour. For more detailed information on available options please refer
+                                      to the HISAT2 User Guide, or run 'hisat2 --help' on the command line. [Default: None]
+
+      --bismark_args="[str]"          This option can take any number of options that are compatible with Bismark to modify its
+                                      default mapping behaviour. For more detailed information on available options please refer
+                                      to the Bismark User Guide, or run 'bismark --help'. As an example, to run somewhat relaxed
+                                      alignments for a PBAT library, use ' --bismark_args="--pbat --score_min L,0,-0.4" '. Please
+                                      note that the format ="your options" needs to be strictly adhered to in order to work correctly.
+                                      [Default: None]
+
+      --reStrainingOrder_args="[str]" This option can take any number of options that are compatible with reStrainingOrder to modify
+                                      its default behaviour. For more detailed information on available options please refer
+                                      to the reStrainingOrder User Guide, or run 'reStrainingOrder --help'. [Default: None]                                                         
+
     Other options:
     ==============
+
+      --aligner [str]                 Supported aligner options are bowtie2, hisat2 or bismark (lower case only). Default: bowtie2.
 
       --outdir [str]                  Path to the output directory. [Default: current working directory]
 
@@ -195,6 +279,7 @@ def helpMessage() {
       
       --verbose                       More verbose status messages. [Default: OFF]
       --help                          Displays this help message and exits.
+
 
     Workflow options:
     =================
