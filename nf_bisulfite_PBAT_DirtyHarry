@@ -1,0 +1,293 @@
+#!/usr/bin/env nextflow
+nextflow.enable.dsl=2
+
+// Last modified 23 02 2021
+// This pipeline will first run paired-end alignments, with --unmapped specified, and then
+// run single-end alignments afterwards
+
+params.outdir = "."
+params.genome = ""
+
+params.pbat = '9' // default is 9, but this can be changed
+
+params.verbose = false
+params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically
+
+params.fastqc_args = ''
+params.fastq_screen_args = ''
+params.trim_galore_args = ''
+params.bismark_args = ''
+params.deduplicate_bismark_args = ''
+params.bismark_methylation_extractor_args = ''
+params.bismark2summary_args = ''
+params.bismark2report_args= ''
+params.multiqc_args = ''
+
+
+params.help = false
+// Show help message and exit
+if (params.help){
+    helpMessage()
+    exit 0
+}
+
+params.list_genomes = false;
+if (params.list_genomes){
+    println ("[WORKLFOW] List genomes selected")
+}
+
+if (params.verbose){
+    println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
+    println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
+    println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
+    println ("[WORKFLOW] BISMARK ARGS ARE: "      + params.bismark_args)
+    println ("[WORKFLOW] BISMARK DEDUPLICATION ARGS ARE: "         + params.deduplicate_bismark_args)
+    println ("[WORKFLOW] BISMARK METHYLATION EXTRACTOR ARGS ARE: " + params.bismark_methylation_extractor_args)
+}
+
+include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include { getGenome }                             from './nf_modules/genomes.mod.nf'
+include { listGenomes }                           from './nf_modules/genomes.mod.nf'
+
+if (params.list_genomes){
+    listGenomes()  // this lists all available genomes, and exits
+}
+
+genome = getGenome(params.genome)
+
+include { FASTQC }                               from './nf_modules/fastqc.mod.nf'                         
+include { FASTQC as FASTQC2 }                    from './nf_modules/fastqc.mod.nf' 
+
+include { FASTQ_SCREEN }                         from './nf_modules/fastq_screen.mod.nf' params(bisulfite: '--bisulfite')
+
+// Adding pbat flag for PBAT processing. For Trim Galore we pass on the number of bp that need to be clipped at the 5' end
+include { TRIM_GALORE }                          from './nf_modules/trim_galore.mod.nf' params(pbat: params.pbat)
+// Adding pbat flag for PBAT processing
+include { BISMARK }                              from './nf_modules/bismark.mod.nf' params(genome: genome, pbat: true, unmapped: true)
+include { BISMARK as BISMARK_UN1 }               from './nf_modules/bismark.mod.nf' params(genome: genome, pbat: true)
+include { BISMARK as BISMARK_UN2 }               from './nf_modules/bismark.mod.nf' params(genome: genome)
+
+include { BISMARK_DEDUPLICATION }                from './nf_modules/bismark_deduplication.mod.nf'
+include { BISMARK_DEDUPLICATION as BISMARK_DEDUP2}    from './nf_modules/bismark_deduplication.mod.nf'
+include { BISMARK_DEDUPLICATION as BISMARK_DEDUP3}    from './nf_modules/bismark_deduplication.mod.nf'
+
+// Adding pbat flag for PBAT processing
+include { BISMARK_METHYLATION_EXTRACTOR }        from './nf_modules/bismark_methylation_extractor.mod.nf' params(pbat: true)
+include { BISMARK_METHYLATION_EXTRACTOR as METHXTRACT_UN1 }   from './nf_modules/bismark_methylation_extractor.mod.nf'
+include { BISMARK_METHYLATION_EXTRACTOR as METHXTRACT_UN2 }   from './nf_modules/bismark_methylation_extractor.mod.nf'
+
+include { BISMARK2REPORT }                       from './nf_modules/bismark2report.mod.nf'
+include { BISMARK2SUMMARY }                      from './nf_modules/bismark2summary.mod.nf'
+
+include { MULTIQC }                              from './nf_modules/multiqc.mod.nf' 
+
+file_ch = makeFilesChannel(args)
+
+workflow {
+
+    main:
+        FASTQC                          (file_ch, params.outdir, params.fastqc_args, params.verbose)
+        TRIM_GALORE                     (file_ch, params.outdir, params.trim_galore_args, params.verbose)
+        //FASTQ_SCREEN                    (TRIM_GALORE.out.reads, params.outdir, params.fastq_screen_args, params.verbose)
+        FASTQC2                         (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        BISMARK                         (TRIM_GALORE.out.reads, params.outdir, params.bismark_args, params.verbose)
+
+        BISMARK_UN1                     (BISMARK.out.unmapped1, params.outdir, params.bismark_args, params.verbose)
+        BISMARK_UN2                     (BISMARK.out.unmapped2, params.outdir, params.bismark_args, params.verbose)
+
+        BISMARK_DEDUPLICATION           (BISMARK.out.bam, params.outdir, params.deduplicate_bismark_args, params.verbose)
+        BISMARK_DEDUP2                  (BISMARK_UN1.out.bam, params.outdir, params.deduplicate_bismark_args, params.verbose)
+        BISMARK_DEDUP3                  (BISMARK_UN2.out.bam, params.outdir, params.deduplicate_bismark_args, params.verbose)
+
+        BISMARK_METHYLATION_EXTRACTOR   (BISMARK_DEDUPLICATION.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
+        METHXTRACT_UN1                  (BISMARK_DEDUP2.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
+        METHXTRACT_UN2                  (BISMARK_DEDUP3.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
+
+        // // merging channels for MultiQC
+        // multiqc_ch = FASTQC.out.report.mix(
+        //     TRIM_GALORE.out.report,
+        //    // FASTQ_SCREEN.out.report.ifEmpty([]),
+        //     FASTQC2.out.report.ifEmpty([]),
+        //     BISMARK.out.report.ifEmpty([]),
+        //     BISMARK_DEDUPLICATION.out.report.ifEmpty([]),
+        //     BISMARK_METHYLATION_EXTRACTOR.out.report.ifEmpty([]),
+        //     BISMARK_METHYLATION_EXTRACTOR.out.mbias.ifEmpty([]),
+        // ).collect()
+        // // merging channels for Bismark reports
+        // bismark_report_ch = BISMARK.out.bam.mix(
+        //     BISMARK.out.report,
+        //     BISMARK_DEDUPLICATION.out.report.ifEmpty([]),
+        //     BISMARK_METHYLATION_EXTRACTOR.out.report.ifEmpty([]),
+        //     BISMARK_METHYLATION_EXTRACTOR.out.mbias.ifEmpty([]),
+        // ).collect()
+
+        // bismark_report_ch.subscribe {  println "Got: $it"  }
+
+        //BISMARK2REPORT                   (bismark_report_ch, params.outdir, params.bismark2report_args, params.verbose)
+        //BISMARK2SUMMARY                  (bismark_report_ch, params.outdir, params.bismark2summary_args, params.verbose)
+        // MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
+}
+
+// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+// minimal execution summary report so we at least know what the working directory was...
+workflow.onComplete {
+
+    def msg = """\
+        Pipeline execution summary
+        ---------------------------
+        Jobname     : ${workflow.runName}
+        Completed at: ${workflow.complete}
+        Duration    : ${workflow.duration}
+        Success     : ${workflow.success}
+        workDir     : ${workflow.workDir}
+        exit status : ${workflow.exitStatus}
+        """
+    .stripIndent()
+
+    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+}
+
+def helpMessage() {
+ 
+    log.info"""
+    >>
+
+
+    SYNOPSIS:
+
+    This workflow runs an entire bisulfite-seq processing pipeline for PBAT (post-bisulfite adaptor tagging) samples
+    on FastQ files. This includes QC, quality-/adapter trimming, contamination QC (post-trimming), alignments to a
+    genome using Bismark, deduplication, methylation extraction, coverage file generation, and finally generates an
+    aggregate MultiQC report. The workflow is suitable for PBAT-type bisulfite sequencing experiments, by default 
+    assuming 9N oligos for the pulldown reaction. Here is a graphical representation of the workflow:
+
+    --- FastQC
+    --- Trim Galore 
+        |
+        --- FastQ Screen
+        --- FastQC
+        --- Bismark 
+            |
+            --- Bismark deduplication
+                |
+                --- Bismark methylation extraction             
+    --- bismark2report*
+    --- bismark2summary*
+    --- MultiQC*
+        
+    * These steps run only once ALL other jobs have completed.
+     
+    By default all these steps are submitted as jobs to the Babraham stone compute cluster.
+
+    By default, the involved tools are run in the following way:
+    ------------------------------------------------------------
+    FastQC:                           defaults ('-q')
+    FastQ Screen:                     '--bisulfite'
+    Trim Galore:                      adapter auto-detection; '--clip_r1 9 (--clip_r2 9)'
+    Bismark:                          '--pbat'
+    Bismark deduplication:            defaults
+    Bismark methylation extraction:   '--bedGraph --buffer 10G --parallel 4'                  
+    
+    To add additional parameters to any of the programs, consider supplying tool-specific arguments (see --toolname_args="..." below).
+
+
+            ==============================================================================================================
+
+
+    USAGE:
+    
+    nf_bisulfite_PBAT [options] --genome <genomeID> <input files>
+    
+    Mandatory arguments:
+    ====================
+
+      <input files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. Files are automatically processed as
+                                      single-end (SE) or paired end (PE) files (if file pairs share the same base-name, and differ only
+                                      by a read number, e.g. 'base_name_R1.fastq.gz' and 'base_name_R2.fastq.gz' (or R3, R4). For
+                                      PE files, only Read 1 is run through FastQ Screen (as typically R1 and R2 produce nearly identical
+                                      contamination profiles). To run PE files in single-end mode, please see '--single_end' below.
+
+      --genome [str]                  Genome build ID to be used for the alignment, e.g. GRCh38 (latest human genome) or GRCm38
+                                      (latest mouse genome build). To list all available genomes, see '--list_genomes' below.
+
+
+    Tool-specific options:
+    ======================
+
+    For all following options, please note that the format: ="your options" needs to be strictly adhered to in order to work correctly.
+
+      --fastqc_args="[str]"           This option can take any number of options that are compatible with FastQC to modify its default
+                                      behaviour. For more detailed information on available options please refer to the FastQC documentation,
+                                      or run 'fastqc --help' on the command line. As an example, to run FastQC without grouping of bases when
+                                      reads are >50bp and use a specific file with non-default adapter sequences, use: 
+                                      ' --fastqc_args="--nogroup --adapters ./non_default_adapter_file.txt" '. [Default: None]
+
+      --fastq_screen_args="[str]"     This option can take any number of options that are compatible with FastQ Screen to modify its
+                                      default behaviour. For more detailed information on available options please refer to the FastQ Screen
+                                      documentation, or run 'fastq_screen --help' on the command line. For instance, to process a bisulfite
+                                      converted library with fairly relaxed parameters, you could use: 
+                                      ' --fastq_screen_args="--bisulfite --score_min L,0,-0.6" '. [Default: None]
+
+      --trim_galore_args="[str]"      This option can take any number of options that are compatible with Trim Galore to modify its
+                                      default trimming behaviour. For more detailed information on available options please refer
+                                      to the Trim Galore User Guide, or run 'trim_galore --help' on the command line. As an example, to trim
+                                      off the first 10bp from the 5' of R1 and 5bp of R2, use: 
+                                      ' --trim_galore_args="--clip_r1 10 --clip_r2 5" '. [Default: None]
+
+      --bismark_args="[str]"          This option can take any number of options that are compatible with Bismark to modify its
+                                      default mapping behaviour. For more detailed information on available options please refer
+                                      to the Bismark User Guide, or run 'bismark --help' on the comamnd line. As an example, to run somewhat
+                                      relaxed alignments, use: ' --bismark_args="--score_min L,0,-0.4" '. [Default: None]
+
+      --bismark_deduplication_args="[str]"           This option can take any number of options that are compatible with deduplicate_bismark
+                                      to modify its default deduplication behaviour. For more detailed information on available options please
+                                      refer to the Bismark User Guide, or run 'deduplicate_bismark --help'. As an example, to take UMI sequences
+                                      into account, use: ' --bismark_deduplication_args="--barcode" '. [Default: None]
+
+      --bismark_methylation_extractor_args="[str]"   This option can take any number of options that are compatible with bismark_methylation_extractor
+                                      to modify its default exctraction behaviour. For more detailed information on available options please refer
+                                      to the Bismark User Guide, or run 'bismark_methylation_extractor --help' on the command line. As an example,
+                                      to run the extraction and coverage file generation for a genome containing thousands of scaffolds
+                                      or contigs, use: ' --bismark_methylation_extractor_args="--gazillion" '. [Default: None]
+
+
+    Other options:
+    ==============
+
+      --outdir [str]                  Path to the output directory. [Default: current working directory]
+
+      --pbat [int]                    Number of nucleotides used for the PBAT pulldown reaction. This number of bases will be removed
+                                      from the 5'-end of both R1 and R2 (if present) prior to mapping. Default: 9.
+
+      --list_genomes                  List all genome builds that are currently available to choose from. To see this list
+                                      of available genomes with more detailed information about paths and indexes, run
+                                      the command as '--list_genomes --verbose'
+    
+      --single_end                    Force files of a read pair to be treated as single-end files. [Default: auto-detect]
+      
+      --verbose                       More verbose status messages. [Default: OFF]
+      --help                          Displays this help message and exits.
+
+    Workflow options:
+    =================
+
+    Please note the single '-' hyphen for the following options!
+
+      -resume                         If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
+                                      this option will attempt to resume the workflow at the point it got interrupted by using
+                                      Nextflow's caching mechanism. This may save a lot of time.
+
+      -bg                             Sends the entire workflow into the background, thus disconnecting it from the terminal session.
+                                      This option launches a daemon process (which will keep running on the headnode) that watches over
+                                      your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
+                                      jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
+                                      pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
+
+      -process.executor=local         Temporarily changes where the workflow is executed to the 'local' machine. See also Nextflow config
+                                      file for more details. [Default: slurm] 
+    
+
+    <<
+    """.stripIndent()
+
+}
