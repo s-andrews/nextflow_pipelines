@@ -1,92 +1,51 @@
 nextflow.enable.dsl=2
 
 // parameters passed in by specialised pipelines
-params.singlecell = ''
-params.pbat = false
-params.unmapped = false
+params.dirty_harry = false
+
 
 process BISMARK2BEDGRAPH {
 	
-
 	tag "$name" // Adds name to job submission instead of (1), (2) etc.
 
-	// TODO: Fix memory requirements, probably with error handling...
-	//label 'hugeMem'
-
-	cpus { 5 }
-  	memory { 20.GB * task.attempt }  
-	errorStrategy { sleep(Math.pow(2, task.attempt) * 30 as long); return 'retry' }
-  	maxRetries 3
-	
-	// label 'mem40G'
-	// label 'multiCore'
-	// label 'quadCore'
-		
+	label 'bigMem' // 20G
+			
     input:
-	    tuple val(name), path(reads)
+	    tuple val (name), path(reads)
 		val (outputdir)
-		val (bismark_args)
+		val (bismark2bedGraph_args)
 		val (verbose)
 
 	output:
-	    path "*bam",        emit: bam
-		path "*report.txt", emit: report
-		tuple val(unmapped_1_name), path ("*unmapped_reads_1.fq.gz"), optional: true, emit: unmapped1
-		tuple val(unmapped_2_name), path ("*unmapped_reads_2.fq.gz"), optional: true, emit: unmapped2
-
+	    path "*cov.gz",        emit: coverage
+		path "*bedGraph.gz",   emit: bedGraph
+		
 	publishDir "$outputdir",
 		mode: "link", overwrite: true
 
     script:
-		cores = 1
-		readString = ""
 
-		unmapped_1_name = name + "_unmapped_R1"
-		unmapped_2_name = name + "_unmapped_R2"
-		
 		if (verbose){
-			println ("[MODULE] BISMARK ARGS: " + bismark_args)
+			println ("[MODULE] BISMARK2BEDGRAPH ARGS: " + bismark2bedGraph_args)
 		}
 
 		// Options we add are
-		bismark_options = bismark_args
-		if (params.singlecell){
-			bismark_options += " --non_directional "
-		}
+		bismark2bedGraph_options = bismark2bedGraph_args
+
+		if (params.dirty_harry){
+			output_name = name + "_DH.bedGraph.gz"  // Dirty Harry
+		} 
 		else{
+			output_name = name + ".bedGraph.gz"
+		}
+		// println ("Output name: $output_name")
+		// println ("Input names: $reads")
 		
-		}
-		
-		if (params.unmapped){
-			bismark_options += " --unmapped "
-		}
-
-		if (params.pbat){
-			bismark_options += " --pbat "
-		}
-
-		if (reads instanceof List) {
-			readString = "-1 "+reads[0]+" -2 "+reads[1]
-		}
-		else {
-			readString = reads
-		}
-
-		index = "--genome " + params.genome["bismark"]
-
-		// add Genome build and aligner to output name
-		if (bismark_args =~ /-hisat/){ // if HISAT2 was given on the command line
-			bismark_name = name + "_" + params.genome["name"] + "_bismark_hisat2"
-		}
-		else{ // default is Bowtie 2
-			bismark_name = name + "_" + params.genome["name"] + "_bismark_bt2"
-		}
-		// println ("Output basename: $bismark_name")
+		all_reads = reads
 
 		"""
 		module load bismark
-		bismark --basename $bismark_name $index $bismark_options $readString
-		bismark2bedGraph 
+		bismark2bedGraph --buffer 15G -o $output_name $bismark2bedGraph_options $all_reads
 		"""
-
+		
 }

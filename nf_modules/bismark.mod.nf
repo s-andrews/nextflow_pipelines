@@ -3,7 +3,7 @@ nextflow.enable.dsl=2
 // parameters passed in by specialised pipelines
 params.singlecell = ''
 params.pbat = false
-
+params.unmapped = false
 
 process BISMARK {
 	
@@ -31,14 +31,17 @@ process BISMARK {
 	output:
 	    path "*bam",        emit: bam
 		path "*report.txt", emit: report
+		val name,           emit: sample_name
+		tuple val(unmapped_1_name), path ("*unmapped_reads_1.fq.gz"), optional: true, emit: unmapped1
+		tuple val(unmapped_2_name), path ("*unmapped_reads_2.fq.gz"), optional: true, emit: unmapped2
 
 	publishDir "$outputdir",
 		mode: "link", overwrite: true
 
-
     script:
 		cores = 1
 		readString = ""
+		// println ("WHO KEEPS CHANGING THE NAME 1: $name")
 
 		if (verbose){
 			println ("[MODULE] BISMARK ARGS: " + bismark_args)
@@ -53,6 +56,15 @@ process BISMARK {
 		
 		}
 		
+		unmapped_1_name = ''
+		unmapped_2_name = ''
+		
+		if (params.unmapped){
+			bismark_options += " --unmapped "
+			unmapped_1_name = name + "_unmapped_R1"
+			unmapped_2_name = name + "_unmapped_R2"
+		}
+
 		if (params.pbat){
 			bismark_options += " --pbat "
 		}
@@ -74,6 +86,7 @@ process BISMARK {
 			bismark_name = name + "_" + params.genome["name"] + "_bismark_bt2"
 		}
 		// println ("Output basename: $bismark_name")
+		// println ("WHO KEEPS CHANGING THE NAME 2: $name")
 
 		"""
 		module load bismark

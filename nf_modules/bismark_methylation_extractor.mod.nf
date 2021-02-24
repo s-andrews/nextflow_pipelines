@@ -13,13 +13,17 @@ process BISMARK_METHYLATION_EXTRACTOR {
 	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
 
     input:
-	    path(bam)
+	    val (name)
+		path(bam)
 		val (outputdir)
 		val (bismark_methylation_extractor_args)
 		val (verbose)
 
 	output:
-	    path "C*",          emit: context_files
+	    
+		// tuple val('SOMENAME'), path("CpG*")    , emit: context_files_CG
+		tuple val (name), path ("CpG*"),        emit: context_files_CG
+		path "CH*",         emit: context_files_nonCG
 		path "*report.txt", emit: report
 		path "*M-bias.txt", emit: mbias
 		path "*cov.gz",     emit: coverage

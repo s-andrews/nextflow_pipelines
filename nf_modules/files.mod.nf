@@ -1,16 +1,43 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// params.single_end = false
-
 def makeFilesChannel(fileList) {    
     
-    file_ch = Channel.fromFilePairs(
-                getFileBaseNames(fileList),
-                ,size:-1
-                )
+    //def meta = [:]
+    file_ch = Channel.fromFilePairs( getFileBaseNames(fileList), size:-1)
+       // .map { meta.id = it[0]}
+        //.map { meta.files = it[1]}
+        //.view()
+        // .subscribe onNext: { println it }, onComplete: { println 'Done' }
 
+    // meta.each { key, val -> 
+    //     println ("Key: $key = Files: $val")
+    // }
     return(file_ch)
+
+    // TODO: changing the input meta-data to a data structure that will be available throughout the workflow.
+    // Inspired by NF-Core and Harshil
+// // Function to get list of [ meta, [ fastq_1, fastq_2 ] ]
+// def create_fastq_channels(LinkedHashMap row) {
+//     def meta = [:]
+//     meta.id           = row.sample
+//     meta.single_end   = row.single_end.toBoolean()
+
+//     def array = []
+//     if (!file(row.fastq_1).exists()) {
+//         exit 1, "ERROR: Please check input samplesheet -> Read 1 FastQ file does not exist!\n${row.fastq_1}"
+//     }
+//     if (meta.single_end) {
+//         array = [ meta, [ file(row.fastq_1) ] ]
+//     } else {
+//         if (!file(row.fastq_2).exists()) {
+//             exit 1, "ERROR: Please check input samplesheet -> Read 2 FastQ file does not exist!\n${row.fastq_2}"
+//         }
+//         array = [ meta, [ file(row.fastq_1), file(row.fastq_2) ] ]
+//     }
+//     return array    
+// }
+
 }
 
 def getFileBaseNames(fileList) {
@@ -82,12 +109,12 @@ def getFileBaseNames(fileList) {
     for (s in baseNames) {
         pattern = s.key+"_{"+s.value.join(",")+"}.{fastq,fq}.gz"
         patterns.add(pattern)
+        // println("$pattern")
     }
     for (s in bareFiles) {
         pattern = s+".{fastq,fq}.gz"
         patterns.add(pattern)
     }
-
 
     return(patterns)
 }
