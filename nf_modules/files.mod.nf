@@ -3,15 +3,17 @@ nextflow.enable.dsl=2
 
 def makeFilesChannel(fileList) {    
     
-    //def meta = [:]
+    // def meta = [:]
     file_ch = Channel.fromFilePairs( getFileBaseNames(fileList), size:-1)
-       // .map { meta.id = it[0]}
+        //.map { it -> [ [meta.id = it[0]], it[1]] }
+            
+        // .map { meta.id = it[0]}
         //.map { meta.files = it[1]}
         //.view()
         // .subscribe onNext: { println it }, onComplete: { println 'Done' }
 
     // meta.each { key, val -> 
-    //     println ("Key: $key = Files: $val")
+    //   println ("Key: $key = Files: $val")
     // }
     return(file_ch)
 

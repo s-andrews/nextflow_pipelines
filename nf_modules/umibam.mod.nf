@@ -7,14 +7,14 @@ process UMIBAM {
 	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
 
 	input:
-	    path(bam)
+	    tuple val(name), path(bam)
 		val (outputdir)
 		val (umibam_args)
 		val (verbose)
 
 	output:
 		path "*report.txt", emit: report
-		path "*bam",        emit: bam
+		tuple val(name), path ("*bam"),        emit: bam
 
 	publishDir "$outputdir",
 		mode: "link", overwrite: true

@@ -65,8 +65,8 @@ include { FASTQ_SCREEN }                         from './nf_modules/fastq_screen
 include { TRIM_GALORE }                          from './nf_modules/trim_galore.mod.nf' params(pbat: params.pbat)
 // Adding pbat flag for PBAT processing
 include { BISMARK }                              from './nf_modules/bismark.mod.nf' params(genome: genome, pbat: true, unmapped: true)
-include { BISMARK as BISMARK_UN1 }               from './nf_modules/bismark.mod.nf' params(genome: genome, pbat: true)
-include { BISMARK as BISMARK_UN2 }               from './nf_modules/bismark.mod.nf' params(genome: genome)
+include { BISMARK as BISMARK_UN1 }               from './nf_modules/bismark.mod.nf' params(genome: genome, pbat: true, read_identity: "1")
+include { BISMARK as BISMARK_UN2 }               from './nf_modules/bismark.mod.nf' params(genome: genome, read_identity: "2")
 
 include { BISMARK_DEDUPLICATION }                from './nf_modules/bismark_deduplication.mod.nf'
 include { BISMARK_DEDUPLICATION as BISMARK_DEDUP1}    from './nf_modules/bismark_deduplication.mod.nf'
@@ -94,39 +94,32 @@ workflow {
         FASTQ_SCREEN                    (TRIM_GALORE.out.reads, params.outdir, params.fastq_screen_args, params.verbose)
         FASTQC2                         (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
         BISMARK                         (TRIM_GALORE.out.reads, params.outdir, params.bismark_args, params.verbose)
+        BISMARK_DEDUPLICATION           (BISMARK.out.bam, params.outdir, params.deduplicate_bismark_args, params.verbose)
 
         BISMARK_UN1                     (BISMARK.out.unmapped1, params.outdir, params.bismark_args, params.verbose)
-        BISMARK_UN2                     (BISMARK.out.unmapped2, params.outdir, params.bismark_args, params.verbose)
-
-        BISMARK_DEDUPLICATION           (BISMARK.out.bam, params.outdir, params.deduplicate_bismark_args, params.verbose)
         BISMARK_DEDUP1                  (BISMARK_UN1.out.bam, params.outdir, params.deduplicate_bismark_args, params.verbose)
+        
+        BISMARK_UN2                     (BISMARK.out.unmapped2, params.outdir, params.bismark_args, params.verbose) 
         BISMARK_DEDUP2                  (BISMARK_UN2.out.bam, params.outdir, params.deduplicate_bismark_args, params.verbose)
+               
+        BISMARK_METHYLATION_EXTRACTOR   (BISMARK_DEDUPLICATION.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
+        METHXTRACT_UN1                  (BISMARK_DEDUP1.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
+        METHXTRACT_UN2                  (BISMARK_DEDUP2.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
         
-        BISMARK.out.sample_name.view()
-        BISMARK_UN1.out.sample_name.view()
-        BISMARK_UN2.out.sample_name.view()
-        
-        BISMARK_METHYLATION_EXTRACTOR   (BISMARK.out.sample_name, BISMARK_DEDUPLICATION.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
-        METHXTRACT_UN1                  (BISMARK.out.sample_name, BISMARK_DEDUP1.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
-        METHXTRACT_UN2                  (BISMARK.out.sample_name, BISMARK_DEDUP2.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
-        //METHXTRACT_UN1                  (BISMARK_UN1.out.sample_name, BISMARK_DEDUP1.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
-        //METHXTRACT_UN2                  (BISMARK_UN2.out.sample_name, BISMARK_DEDUP2.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
-        
-        //BISMARK_METHYLATION_EXTRACTOR.out.context_files_CG.view()
-        //METHXTRACT_UN1.out.context_files_CG.view()
-        //METHXTRACT_UN2.out.context_files_CG.view()
+        // BISMARK_METHYLATION_EXTRACTOR.out.context_files_CG.view()
+        // METHXTRACT_UN1.out.context_files_CG.view()
+        // METHXTRACT_UN2.out.context_files_CG.view()
 
         // To merge all relevant CpG calls, we will need a join statement instead of mix
         // left.join(right).view(); Joining occurs with the first element as the key
         ch_bedGraph_unmapped = METHXTRACT_UN1.out.context_files_CG
-            .join(METHXTRACT_UN2.out.context_files_CG, by: [0])
-           // .view()
+                         .join(METHXTRACT_UN2.out.context_files_CG, by: [0])
+                         // .view()
 
-        ch_bismark2bedGraph =
-            BISMARK_METHYLATION_EXTRACTOR.out.context_files_CG
-            .join(ch_bedGraph_unmapped, by: [0])
-            .map { it ->  [ it[0], [it[1], it[2], it[3]].flatten() ] }
-            .view()
+        ch_bismark2bedGraph =  BISMARK_METHYLATION_EXTRACTOR.out.context_files_CG
+                         .join(ch_bedGraph_unmapped, by: [0])
+                         .map { it ->  [ it[0], [it[1], it[2], it[3]].flatten() ] }
+                         //.view()
        
         BISMARK2BEDGRAPH                (ch_bismark2bedGraph, params.outdir, params.bismark2bedGraph_args, params.verbose)
       
