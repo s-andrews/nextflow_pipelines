@@ -116,7 +116,7 @@ See here for a more detailed look at the [RNA-seq workflow](#example-workflow)
 
 #### nf_bisulfite_PBAT
     FastQC
-    Trim Galore [--clip_r1 9 --clip_r2 9, PE files required]
+    Trim Galore [--clip_r1 9] [--clip_r2 9 for PE mode]
     FastQ Screen [--bisulfite]
     Trimmed FastQC
     Bismark [--pbat]
@@ -140,7 +140,7 @@ See here for a more detailed look at the [RNA-seq workflow](#example-workflow)
     Bismark SE R2
     Deduplicate Bismark SE R2
     Methylation extract SE R2
-    bismark2bedGraph [--dirty_harry]
+    bismark2bedGraph CpG*[PE/R1_SE/R2_SE] [--dirty_harry] (DH coverage file)
     bismark2report
     bismark2summary
     MultiQC
