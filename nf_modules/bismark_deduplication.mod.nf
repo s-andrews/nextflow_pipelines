@@ -11,14 +11,14 @@ process BISMARK_DEDUPLICATION {
   	maxRetries 5
   	
     input:
-	    path(bam)
+	    tuple val(name), path(bam)
 		val (outputdir)
 		val (deduplicate_bismark_args)
 		val (verbose)
 
 	output:
 		path "*report.txt", emit: report
-		path "*bam",        emit: bam
+		tuple val(name), path ("*bam"),        emit: bam
 
 	publishDir "$outputdir",
 		mode: "link", overwrite: true

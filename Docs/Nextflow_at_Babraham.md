@@ -66,6 +66,7 @@ on the command line.
 - [QC workflow](#nf_qc)
 - [Bisulfite-seq: WGBS workflow](#nf_bisulfite_WGBS)
 - [Bisulfite-seq: PBAT workflow](#nf_bisulfite_PBAT)
+- [Bisulfite-seq: PBAT DirtyHarry workflow](#nf_bisulfite_PBAT_DirtyHarry)
 - [Bisulfite-seq: RRBS workflow](#nf_bisulfite_RRBS)
 - [Bisulfite-seq: RRBS Epigenetic clock workflow](#nf_bisulfite_RRBS_clock)
 - [Bisulfite-seq: single-cell BS-seq workflow](#nf_bisulfite_scBSseq)
@@ -115,7 +116,7 @@ See here for a more detailed look at the [RNA-seq workflow](#example-workflow)
 
 #### nf_bisulfite_PBAT
     FastQC
-    Trim Galore [--clip_r1 9] [--clip_r2 9 for PE files]
+    Trim Galore [--clip_r1 9] [--clip_r2 9 for PE mode]
     FastQ Screen [--bisulfite]
     Trimmed FastQC
     Bismark [--pbat]
@@ -124,6 +125,26 @@ See here for a more detailed look at the [RNA-seq workflow](#example-workflow)
     bismark2report
     bismark2summary
     MultiQC
+    
+#### nf_bisulfite_PBAT_Dirty_Harry
+    FastQC
+    Trim Galore [--clip_r1 9 --clip_r2 9, PE mode]
+    FastQ Screen [--bisulfite]
+    Trimmed FastQC
+    Bismark PE [--pbat --unmapped]
+    Deduplicate Bismark PE
+    Methylation extract PE
+    Bismark SE R1 [--pbat]
+    Deduplicate Bismark SE R1
+    Methylation extract SE R1
+    Bismark SE R2
+    Deduplicate Bismark SE R2
+    Methylation extract SE R2
+    bismark2bedGraph CpG*[PE/R1_SE/R2_SE] [--dirty_harry] (DH coverage file)
+    bismark2report
+    bismark2summary
+    MultiQC
+    
     
 #### nf_bisulfite_scBSseq
 
