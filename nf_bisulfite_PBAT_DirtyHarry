@@ -203,23 +203,48 @@ def helpMessage() {
 
 
     SYNOPSIS:
+    PBAT - Dirty Harry: an abomination for paired-end data...
 
-    This workflow runs an entire bisulfite-seq processing pipeline for PBAT (post-bisulfite adaptor tagging) samples
-    on FastQ files. This includes QC, quality-/adapter trimming, contamination QC (post-trimming), alignments to a
-    genome using Bismark, deduplication, methylation extraction, coverage file generation, and finally generates an
-    aggregate MultiQC report. The workflow is suitable for PBAT-type bisulfite sequencing experiments, by default 
-    assuming 9N oligos for the pulldown reaction. Here is a graphical representation of the workflow:
+    This workflow runs an entire Bisulfite-seq processing pipeline for PBAT (post-bisulfite adaptor tagging) samples
+    on FastQ files, first for paired-end end file, and then in single-end mode for unmapped files. This includes QC,
+    quality-/adapter trimming, contamination QC (post-trimming), alignments to a genome using Bismark (see below
+    deduplication, methylation extraction, coverage file generation, and finally generates aa aggregate MultiQC report.
+    The workflow is suitable for paired-end PBAT-type bisulfite sequencing experiments, by default assuming 9N oligos
+    for the pulldown reaction. The term ‘Dirty Harry’ was coined in ~2014 because it doesn’t seem to be the cleanest of methods…:
+
+    (1) PE alignment (--pbat) to start, while grabbing the unmapped R1 and R2 reads out the end using the option ‘--unmapped’. 
+    Properly aligned PE reads should be methylation extracted using --no_overlap.
+    (2) unmapped R1 is then mapped SE (--pbat)
+    (3) unmapped R2 is then mapped SE (default mode, i.e. directional)
+    
+    Single-end aligned R1 and R2 can then be methylation extracted normally as they should in theory map to different places
+    in the genome anyway so don’t require attention to overlapping reads. Note that paired-end and single-end processing is
+    PE/SE specific until the methylation extraction stage. [CpG]* methylation calls of PE as well as both SE aligments are then
+    fed to a single bismark2bedGraph process to generate a single, merged coverage file (ends in "_DH.cov.gz").
+
+    Here is a graphical representation of the workflow:
 
     --- FastQC
-    --- Trim Galore 
+    --- Trim Galore
         |
         --- FastQ Screen
         --- FastQC
-        --- Bismark 
+        --- Bismark (PE)
             |
-            --- Bismark deduplication
+            --- Bismark deduplication (PE)
                 |
-                --- Bismark methylation extraction             
+                --- Bismark methylation extraction (PE) 
+            ---unmapped R1
+               |
+               ---Bismark deduplication (SE R1)
+                  |
+                  --- Bismark methylation extraction (SE R1) 
+            ---unmapped R2
+               |
+               --- Bismark deduplication (SE R2)
+                 |
+                 --- Bismark methylation extraction (SE R2) 
+        ---bismark2bedGraph (PE, SE R1, SE R2)
     --- bismark2report*
     --- bismark2summary*
     --- MultiQC*
@@ -232,11 +257,12 @@ def helpMessage() {
     ------------------------------------------------------------
     FastQC:                           defaults ('-q')
     FastQ Screen:                     '--bisulfite'
-    Trim Galore:                      adapter auto-detection; '--clip_r1 9 (--clip_r2 9)'
-    Bismark:                          '--pbat'
+    Trim Galore:                      adapter auto-detection; '--paired --clip_r1 9 --clip_r2 9'
+    Bismark:                          PE: '--pbat', SE R1: '--pbat', SE R2: defaults
     Bismark deduplication:            defaults
-    Bismark methylation extraction:   '--bedGraph --buffer 10G --parallel 4'                  
-    
+    Bismark methylation extraction:   '--bedGraph --buffer 10G --parallel 4'
+    bismark2bedGraph                  'dirty_harry'
+
     To add additional parameters to any of the programs, consider supplying tool-specific arguments (see --toolname_args="..." below).
 
 
@@ -245,7 +271,7 @@ def helpMessage() {
 
     USAGE:
     
-    nf_bisulfite_PBAT [options] --genome <genomeID> <input files>
+    nf_bisulfite_PBAT_DirtyHarry [options] --genome <genomeID> <input files>
     
     Mandatory arguments:
     ====================
@@ -299,6 +325,12 @@ def helpMessage() {
                                       to run the extraction and coverage file generation for a genome containing thousands of scaffolds
                                       or contigs, use: ' --bismark_methylation_extractor_args="--gazillion" '. [Default: None]
 
+      --bismark2bedGraph_args="[str]" This option can take any number of options that are compatible with bismark2bedGraph to modify its
+                                      default behaviour. For more detailed information on available options please refer to the Bismark
+                                      User Guide, or run 'bismark2bedGraph --help' on the command line. As an example, to run the coverage file
+                                      generation for a genome containing thousands of scaffolds or contigs, use: 
+                                      ' --bismark2bedGraph_args="--gazillion" '. [Default: None]                           
+
 
     Other options:
     ==============
@@ -306,7 +338,7 @@ def helpMessage() {
       --outdir [str]                  Path to the output directory. [Default: current working directory]
 
       --pbat [int]                    Number of nucleotides used for the PBAT pulldown reaction. This number of bases will be removed
-                                      from the 5'-end of both R1 and R2 (if present) prior to mapping. Default: 9.
+                                      from the 5'-end of both R1 and R2 prior to mapping. Default: 9.
 
       --list_genomes                  List all genome builds that are currently available to choose from. To see this list
                                       of available genomes with more detailed information about paths and indexes, run
