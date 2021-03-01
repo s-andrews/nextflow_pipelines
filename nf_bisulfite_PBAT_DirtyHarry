@@ -258,7 +258,7 @@ def helpMessage() {
     FastQC:                           defaults ('-q')
     FastQ Screen:                     '--bisulfite'
     Trim Galore:                      adapter auto-detection; '--paired --clip_r1 9 --clip_r2 9'
-    Bismark:                          PE: '--pbat', SE R1: '--pbat', SE R2: defaults
+    Bismark:                          PE: '--unmapped --pbat', SE R1: '--pbat', SE R2: defaults
     Bismark deduplication:            defaults
     Bismark methylation extraction:   '--bedGraph --buffer 10G --parallel 4'
     bismark2bedGraph                  'dirty_harry'
