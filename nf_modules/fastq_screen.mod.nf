@@ -42,11 +42,16 @@ process FASTQ_SCREEN {
 			if (reads instanceof List) {
 				reads = reads[0]
 			}
+		}
+		if (params.bisulfite){
+			println("Setting --bisulfite")
+			fastq_screen_args += " --bisulfite "
+			println (fastq_screen_args)
 		}	
 
 	"""
 	module load fastq_screen
-	fastq_screen $params.bisulfite $fastq_screen_args $reads
+	fastq_screen $fastq_screen_args $reads
 	"""
 
 }
