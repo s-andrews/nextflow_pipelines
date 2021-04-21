@@ -4,6 +4,7 @@ params.singlecell = ''
 params.rrbs       = ''
 params.pbat       = ''
 params.clock      = false
+params.single_end = false
 // For Epigenetic Clock Processing
 params.three_prime_clip_R1 = ''
 params.three_prime_clip_R2 = ''
@@ -40,10 +41,15 @@ process TRIM_GALORE {
 		}
 		
 		pairedString = ""
-		if (reads instanceof List) {
-			pairedString = "--paired"
+		if (params.single_end){
+			// paired-end mode may be overridden, see e.g. TrAEL-seq Indexing
 		}
-		
+		else{
+			if (reads instanceof List) {
+				pairedString = "--paired"
+			}
+		}
+
 		// Specialised Epigenetic Clock Processing		
 		if (params.clock){
 			trim_galore_args += " --breitling "	

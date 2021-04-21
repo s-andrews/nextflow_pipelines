@@ -1,22 +1,24 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// last modified 14 Oct 2020
-
+// last modified 07 April 2021
 params.outdir = "."
 params.genome = ""
 params.verbose = false
-params.bismark_args = ''
-params.single_end = false // default mode is auto-detect. NOTE: params are handed over automatically
+params.cellranger_args = ''
+params.single_end = false // default mode is auto-detect
 
+params.sample = ''
 params.list_genomes = false;
 
+params.id = '';
+params.fastqs = '';
 
 params.help = false
 // Show help message and exit
 if (params.help){
     helpMessage()
-    exit 0
+    exit 1
 }
 
 if (params.list_genomes){
@@ -24,7 +26,7 @@ if (params.list_genomes){
 }
 
 if (params.verbose){
-    println ("[WORKFLOW] BISMARK ARGS ARE: "       + params.bismark_args)
+    println ("[WORKFLOW] CELLRANGER ARGS ARE: "       + params.cellranger_args)
 }
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
@@ -36,13 +38,42 @@ if (params.list_genomes){
 }
 
 genome = getGenome(params.genome)
-include { BISMARK }                               from './nf_modules/bismark.mod.nf'   params(genome: genome)
+include { CELLRANGER_COUNT }                   from './nf_modules/cellranger.mod.nf'   params(genome: genome)
 
 file_ch = makeFilesChannel(args)
 // file_ch.view()
+absolute_path = ''
+println("Absolute path:" + absolute_path)
+
+if (params.sample){
+    println ("[WORKFLOW] Cellranger sampleID: "       + params.sample)
+}
+else{
+    println ("Please specify a sample ID with --sample=Sample_Name (please no . (dots) or - (dashes)!)")
+    exit 1
+}
+
+
+// file_ch
+    //.take(1)
+    // .view()
+    //.getParent()
+    //.view(it[0])
+    //.map {absolute_path -> it[1][0].getParent()}
+    // .subscribe onNext: { println "does it worx?" + it[1][0].getParent() }, onComplete: { println 'Done extracting FastQ path name' }
+    //reads.getParent()
+
+
+
 workflow {
     main:
-        BISMARK(file_ch, params.outdir, params.bismark_args, params.verbose)
+        file_ch
+        // subscribe a function to the channel printing the emitted values
+        //.map {absolute_path -> it[1][0]}
+        .subscribe onNext:{  println "Got: $it\n and PATH: $absolute_path"  }
+        // println("Absolute path now:" + absolute_path)
+
+        CELLRANGER_COUNT (file_ch, params.outdir, params.cellranger_args, params.verbose)
 }
 
 // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
@@ -53,6 +84,7 @@ workflow.onComplete {
         Pipeline execution summary
         ---------------------------
         Jobname     : ${workflow.runName}
+        Command Line: ${workflow.commandLine}
         Completed at: ${workflow.complete}
         Duration    : ${workflow.duration}
         Success     : ${workflow.success}

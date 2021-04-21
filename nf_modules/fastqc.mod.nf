@@ -1,4 +1,5 @@
 nextflow.enable.dsl=2
+params.nogroup = false
 
 process FASTQC {
 
@@ -18,6 +19,12 @@ process FASTQC {
 		mode: "link", overwrite: true
 
 	script:
+
+		if (params.nogroup){
+			// println ("ADDING --nogroup: " + fastqc_args)
+			fastqc_args += " --nogroup "
+		}
+		
 		if (verbose){
 			println ("[MODULE] FASTQC ARGS: "+ fastqc_args)
 		}
