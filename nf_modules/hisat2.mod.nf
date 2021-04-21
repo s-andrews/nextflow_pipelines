@@ -15,7 +15,7 @@ process HISAT2 {
 
 	output:
 	    path "*bam",       emit: bam
-		path "*stats.txt", emit: stats 
+		path "*stats.txt", emit: stats
 
 	publishDir "$outputdir",
 		mode: "link", overwrite: true
@@ -31,7 +31,7 @@ process HISAT2 {
 		hisat_options = hisat2_args
 
 		// Options we add are
-		hisat_options = hisat_options + " --no-unal --no-softclip "
+		hisat_options = hisat_options + " --no-unal --no-softclip --new-summary"
 
 		if (reads instanceof List) {
 			readString = "-1 "+reads[0]+" -2 "+reads[1]

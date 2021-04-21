@@ -53,6 +53,7 @@ workflow.onComplete {
     def msg = """\
         Pipeline execution summary
         ---------------------------
+        Jobname     : ${workflow.runName}
         Completed at: ${workflow.complete}
         Duration    : ${workflow.duration}
         Success     : ${workflow.success}
@@ -123,6 +124,8 @@ def helpMessage() {
 
       --single_end                    Force files of a read pair to be treated as single-end files. [Default: auto-detect]
       
+      --bisulfite                     Can be used directly to indicate data is Bisulfite-seq.
+
       --verbose                       More verbose status messages. [Default: OFF]
       --help                          Displays this help message and exits.
 

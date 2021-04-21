@@ -1,4 +1,5 @@
 nextflow.enable.dsl=2
+params.local = ''
 
 process BOWTIE2 {
 	
@@ -14,7 +15,7 @@ process BOWTIE2 {
 		val (verbose)
 
 	output:
-	    path "*bam",  emit: bam
+	    tuple val(name), path ("*bam"),        emit: bam
 		path "*stats.txt", emit: stats 
 
 	publishDir "$outputdir",
@@ -32,6 +33,11 @@ process BOWTIE2 {
 		bowtie_options = bowtie2_args
 		bowtie_options +=  " --no-unal " // We don't need unaligned reads in the BAM file
 		
+		if (params.local == '--local'){
+			// println ("Adding option: " + params.local )
+			bowtie_options += " ${params.local} " 
+		}
+
 		if (reads instanceof List) {
 			readString = "-1 " + reads[0] + " -2 " + reads[1]
 			bowtie_options += " --no-discordant --no-mixed " // just output properly paired reads
@@ -39,6 +45,7 @@ process BOWTIE2 {
 		else {
 			readString = "-U " + reads
 		}
+
 
 		index = params.genome["bowtie2"]
 		bowtie_name = name + "_" + params.genome["name"]
