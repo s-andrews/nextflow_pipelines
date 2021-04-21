@@ -1,0 +1,9 @@
+name	GRCm38_rRNA
+species	Mouse
+fasta	/bi/scratch/Genomes/Mouse/GRCm38_rRNA/
+bismark	/bi/scratch/Genomes/Mouse/GRCm38_rRNA/
+bowtie	/bi/scratch/Genomes/Mouse/GRCm38_rRNA/Mus_musculus.GRCm38_rRNA
+bowtie2	/bi/scratch/Genomes/Mouse/GRCm38_rRNA/Mus_musculus.GRCm38_rRNA
+hisat2	/bi/scratch/Genomes/Mouse/GRCm38_rRNA/Mus_musculus.GRCm38_rRNA
+gtf	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.90.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.90.hisat2_splices.txt

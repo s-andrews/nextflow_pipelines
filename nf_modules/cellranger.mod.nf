@@ -5,7 +5,7 @@ params.singlecell = ''
 params.pbat = false
 params.read_identity = ''
 
-process CELLRANGER {
+process CELLRANGER_COUNT {
 	
 	tag "$name" // Adds name to job submission instead of (1), (2) etc.
 
@@ -44,8 +44,35 @@ process CELLRANGER {
 
 		// Options we add are
 		// bismark_options = bismark_args
-		println(reads)		
+		println(reads)
+		println(name)
+
+		// |-- test_sample1_S1_L001_I1_001.fastq.gz
+        // |-- test_sample1_S1_L001_R1_001.fastq.gz
+		// |-- test_sample1_S1_L001_R2_001.fastq.gz
 		
+		m = name =~ /^(.*)_S\d+_L00/
+		sample_name = m[0][1]
+
+		println ("[MODULE] SAMPLE NAME: " + sample_name) // sample name	)		
+		// println(name =~ /(.*_S.*)_L00/)
+		// These parameters are allowed for CellRanger count
+		// Argument	Description
+		
+	
+		
+		// --id	A unique run ID string: e.g. sample345
+		
+		// --sample	Sample name as specified in the sample sheet supplied to cellranger mkfastq.
+		// Can take multiple comma-separated values, which is helpful if the same library was sequenced on multiple flowcells and the sample name used (and therefore fastq file prefix) is not identical between them.
+		// Doing this will treat all reads from the library, across flowcells, as one sample.
+		// If you have multiple libraries for the sample, you will need to run cellranger count on them individually, and then combine them with cellranger aggr.
+		// Allowable characters in sample names are letters, numbers, hyphens, and underscores.
+		
+		// --transcriptome	Path to the Cell Ranger compatible transcriptome reference e.g.
+		// For a human-only sample, use /opt/refdata-gex-GRCh38-2020-A
+		// For a human and mouse mixture sample, use /opt/refdata-gex-GRCh38-and-mm10-2020-A
+
 		// nf (params.unmapped){
 		// 	bismark_options += " --unmapped "
 		// 	unmapped_1_name = name + "_unmapped_R1"
@@ -94,6 +121,8 @@ process CELLRANGER {
 		command = ''	
 		println ("[MODULE] Constructing the command:\n[MODULE]: >>$command<<")
 		command += " --localcores=$cores --localmem=32 --transcriptome=" + params.genome["cellranger"]
+		println ("[MODULE]: >>$command<<")
+		command += " --sample=$sample_name"
 		println ("[MODULE]: >>$command<<")
 		// Sample command:
 		// ssub --mem=35G --cores 16 -o cellranger.log -j Ranger2 --email cellranger count --localmem=32 --localcores 16 --transcriptome=/bi/apps/cellranger/references/refdata-gex-mm10-2020-A/ --fastqs=/bi/group/bioinf/Stephen_Clark/210205_2more_10X_RNAseq/SIGAD11/ --id=SIGAD11_TET-TKO_Day8_EB --sample=SIGAD11_TET-TKO_Day8_EB

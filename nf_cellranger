@@ -38,12 +38,12 @@ if (params.list_genomes){
 }
 
 genome = getGenome(params.genome)
-include { CELLRANGER }                               from './nf_modules/cellranger.mod.nf'   params(genome: genome)
+include { CELLRANGER_COUNT }                   from './nf_modules/cellranger.mod.nf'   params(genome: genome)
 
 file_ch = makeFilesChannel(args)
 // file_ch.view()
 absolute_path = ''
-println(absolute_path)
+println("Absolute path:" + absolute_path)
 
 if (params.sample){
     println ("[WORKFLOW] Cellranger sampleID: "       + params.sample)
@@ -54,18 +54,26 @@ else{
 }
 
 
-file_ch
-    .take(1)
-    .view()
-    .map {absolute_path -> it[1][0].getParent()}
-    //.subscribe onNext: { println it[1][0] }, onComplete: { println 'Done extracting FastQ path name' }
+// file_ch
+    //.take(1)
+    // .view()
+    //.getParent()
+    //.view(it[0])
+    //.map {absolute_path -> it[1][0].getParent()}
+    // .subscribe onNext: { println "does it worx?" + it[1][0].getParent() }, onComplete: { println 'Done extracting FastQ path name' }
     //reads.getParent()
 
-println(absolute_path)
+
 
 workflow {
     main:
-       CELLRANGER(file_ch, params.outdir, params.cellranger_args, params.verbose)
+        file_ch
+        // subscribe a function to the channel printing the emitted values
+        //.map {absolute_path -> it[1][0]}
+        .subscribe onNext:{  println "Got: $it\n and PATH: $absolute_path"  }
+        // println("Absolute path now:" + absolute_path)
+
+        CELLRANGER_COUNT (file_ch, params.outdir, params.cellranger_args, params.verbose)
 }
 
 // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
@@ -76,6 +84,7 @@ workflow.onComplete {
         Pipeline execution summary
         ---------------------------
         Jobname     : ${workflow.runName}
+        Command Line: ${workflow.commandLine}
         Completed at: ${workflow.complete}
         Duration    : ${workflow.duration}
         Success     : ${workflow.success}
