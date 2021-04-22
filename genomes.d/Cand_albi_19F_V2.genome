@@ -1,7 +1,7 @@
-name	Cand_albi_19F_V2
+name	Candida_albicans_SC5314
 species	Candida albicans
 fasta	/bi/scratch/Genomes/Yeast/Candida_albicans/
 bismark	/bi/scratch/Genomes/Yeast/Candida_albicans/
-bowtie2	/bi/scratch/Genomes/Yeast/Candida_albicans/Cand_albi_19F_V2
-hisat2	/bi/scratch/Genomes/Yeast/Candida_albicans/Cand_albi_19F_V2
-gtf	/bi/scratch/Genomes/Yeast/Candida_albicans/Candida_albicans_19f_gca_000775445.Cand_albi_19F_V2.50.gff3
+bowtie2	/bi/scratch/Genomes/Yeast/Candida_albicans/Candida_albicans_SC5314
+hisat2	/bi/scratch/Genomes/Yeast/Candida_albicans/Candida_albicans_SC5314
+gtf	/bi/scratch/Genomes/Yeast/Candida_albicans/GCF_000182965.3_ASM18296v3_genomic.gff
