@@ -1,0 +1,7 @@
+name	Candida_albicans_SC5314
+species	Candida albicans
+fasta	/bi/scratch/Genomes/Yeast/Candida_albicans/
+bismark	/bi/scratch/Genomes/Yeast/Candida_albicans/
+bowtie2	/bi/scratch/Genomes/Yeast/Candida_albicans/Candida_albicans_SC5314
+hisat2	/bi/scratch/Genomes/Yeast/Candida_albicans/Candida_albicans_SC5314
+gtf	/bi/scratch/Genomes/Yeast/Candida_albicans/GCF_000182965.3_ASM18296v3_genomic.gff

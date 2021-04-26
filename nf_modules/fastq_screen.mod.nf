@@ -44,9 +44,9 @@ process FASTQ_SCREEN {
 			}
 		}
 		if (params.bisulfite){
-			println("Setting --bisulfite")
+			// println("Setting --bisulfite")
 			fastq_screen_args += " --bisulfite "
-			println (fastq_screen_args)
+			// println (fastq_screen_args)
 		}	
 
 	"""

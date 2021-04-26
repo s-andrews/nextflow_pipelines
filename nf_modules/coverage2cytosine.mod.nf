@@ -25,6 +25,7 @@ process COVERAGE2CYTOSINE {
 	output:
 	    path "*{report.txt.gz,report.txt}", emit: report
 		path "*{.cov.gz,.cov}",             emit: coverage
+		path "*cytosine_context_summary.txt", optional: true, emit: summary
 	
 	publishDir "$outputdir",
 		mode: "link", overwrite: true
