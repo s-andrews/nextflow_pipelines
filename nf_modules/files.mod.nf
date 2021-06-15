@@ -60,13 +60,13 @@ def getFileBaseNames(fileList) {
         else{
 
             // let's make a distinction for paired-end files already trimmed with Trim Galore
-            // Paired-end files trimmed with Trim Galore follow the folling pattern:
+            // Paired-end files trimmed with Trim Galore follow the following pattern:
             // lane1_TGGTTGTT_small_test_L001_R1_val_1.fq.gz
             // lane1_TGGTTGTT_small_test_L001_R3_val_2.fq.gz
 
             if (s =~ /_val_/){
                 // println ("Input file '$s' looks like a Trim Galore paired-end file")
-                matcher = s =~ /^(.*)_(R?[1234])_val_[12].(fastq|fq).gz$/
+                matcher = s =~ /^(.*)_(R?[1234]_val_[12]).(fastq|fq).gz$/
                 // in the above example, this would identify the following basename:
                 // lane1_TGGTTGTT_small_test_L001
                 // println (matcher[0])
@@ -109,6 +109,7 @@ def getFileBaseNames(fileList) {
 
     patterns = []
     for (s in baseNames) {
+        // println (s)
         pattern = s.key+"_{"+s.value.join(",")+"}.{fastq,fq}.gz"
         patterns.add(pattern)
         // println("$pattern")
