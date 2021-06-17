@@ -7,7 +7,7 @@ process RESTRAININGORDER {
 	label 'hugeMem'
 			
     input:
-	    path(bam)
+	    tuple val(name), path(bam)
 		val (outputdir)
 		val (reStrainingOrder_args)
 		val (verbose)
