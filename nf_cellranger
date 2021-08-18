@@ -8,6 +8,9 @@ params.verbose = false
 params.cellranger_args = ''
 params.single_end = false // default mode is auto-detect
 
+params.fastqs_dir = '.'
+params.sample_sheet = 'samples.csv' // for testing purposes
+
 params.sample = ''
 params.list_genomes = false;
 
@@ -64,6 +67,27 @@ else{
     //reads.getParent()
 
 
+// Illumina FASTQ files use the following naming scheme:
+// <sample name>_<barcode sequence>_L<lane>_R<read number>_<setnumber>.fastq.gz
+
+// Illegal Characters
+// Project and sample names in the sample sheet cannot contain illegal characters not
+// allowed by some file systems. The characters not allowed are the space character and the
+// following:
+// ? ( ) [ ] / \ = + < > : ; " ' , * ^ | & .
+
+// Let's assume these are some sample files:
+// SIGAG5_9_dnmt3ab_DKO_S2_L005_I1_001.fastq.gz
+// SIGAG5_9_dnmt3ab_DKO_S2_L005_R1_001.fastq.gz
+// SIGAG5_9_dnmt3ab_DKO_S2_L005_R2_001.fastq.gz
+
+// Then this could be a typical Cellranger count run:
+//   cellranger count --id='SIGAG5_9_dnmt3ab_DKO' \
+//             --fastqs='/bi/cellranger/testrun/' \
+//             --transcriptome='/bi/cellranger/references/' \
+//             --sample=${sample_arg} \
+//             --localcores=${task.cpus} \
+//             --localmem=${task.memory.toGiga()}
 
 workflow {
     main:
@@ -72,8 +96,8 @@ workflow {
         //.map {absolute_path -> it[1][0]}
         .subscribe onNext:{  println "Got: $it\n and PATH: $absolute_path"  }
         // println("Absolute path now:" + absolute_path)
-
-        CELLRANGER_COUNT (file_ch, params.outdir, params.cellranger_args, params.verbose)
+        CELLRANGER_COUNT (params.sample, params.fastqs_dir ,params.outdir, params.cellranger_args, params.verbose)
+        //   CELLRANGER_COUNT (file_ch, params.outdir, params.cellranger_args, params.verbose)
 }
 
 // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
@@ -84,12 +108,14 @@ workflow.onComplete {
         Pipeline execution summary
         ---------------------------
         Jobname     : ${workflow.runName}
+        Success     : ${workflow.success}
         Command Line: ${workflow.commandLine}
         Completed at: ${workflow.complete}
         Duration    : ${workflow.duration}
         Success     : ${workflow.success}
         workDir     : ${workflow.workDir}
         exit status : ${workflow.exitStatus}
+        Nextflow version: ${workflow.nextflow.version}
         """
     .stripIndent()
 
@@ -104,7 +130,7 @@ def helpMessage() {
     
     SYNOPSIS:
 
-    This workflow takes in a list of filenames (in FastQ format), and aligns these files to a genome using Bismark using the
+    This workflow takes in a list of filenames (in FastQ format), and aligns these files to a genome using CellRanger count using the
     stone compute cluster at Babraham.
 
     If you run Bismark in this stand-alone workflow it is assumed that you know what you are doing, e.g. raw FastQ files should
@@ -117,7 +143,7 @@ def helpMessage() {
 
     USAGE:
     
-    nf_bismark [options] --genome <genomeID> <input files>
+    nf_cellranger [options] --genome <genomeID> <input files>
     
     Mandatory arguments:
     ====================
@@ -131,6 +157,7 @@ def helpMessage() {
                                       (latest mouse genome build). To list all available genomes, see '--list_genomes' below.
 
 
+
     Tool-Specific Options:
     ======================
 
@@ -140,6 +167,8 @@ def helpMessage() {
                                       alignments for a PBAT library, use ' --bismark_args="--pbat --score_min L,0,-0.4" '. Please
                                       note that the format ="your options" needs to be strictly adhered to in order to work correctly.
                                       [Default: None]
+
+      --fastqs_dir [str]              The folder where CellRanger expects the FastQ files. Default: '.' (i.e. current working directory)
 
     Other Options:
     ==============
