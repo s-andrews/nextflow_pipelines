@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-// last modified 07 April 2021
+// last modified 23 August 2021
 params.outdir = "."
 params.genome = ""
 params.verbose = false
@@ -9,7 +9,7 @@ params.cellranger_args = ''
 params.single_end = false // default mode is auto-detect
 
 params.fastqs_dir = '.'
-params.sample_sheet = 'samples.csv' // for testing purposes
+params.sample_sheet = 'samples.csv' // for testing purposes, not currently used
 
 params.sample = ''
 params.list_genomes = false;
@@ -43,31 +43,21 @@ if (params.list_genomes){
 genome = getGenome(params.genome)
 include { CELLRANGER_COUNT }                   from './nf_modules/cellranger.mod.nf'   params(genome: genome)
 
-file_ch = makeFilesChannel(args)
+// Not currently using a file channel for CellRanger runs, but requiring an option --sample sampleID
+// file_ch = makeFilesChannel(args)
 // file_ch.view()
-absolute_path = ''
-println("Absolute path:" + absolute_path)
+// absolute_path = ''
+// println("Absolute path:" + absolute_path)
 
-if (params.sample){
+if (params.sample && params.verbose){
     println ("[WORKFLOW] Cellranger sampleID: "       + params.sample)
 }
 else{
-    println ("Please specify a sample ID with --sample=Sample_Name (please no . (dots) or - (dashes)!)")
+    println ("\nPlease specify a sample ID with --sample=Sample_Name\n\n(For the sample ID, please no illegal characters! The characters not allowed are the space character and the following: ? ( ) [ ] / \\ = + < > : ; ' \" , * ^ | & . ")
     exit 1
 }
 
-
-// file_ch
-    //.take(1)
-    // .view()
-    //.getParent()
-    //.view(it[0])
-    //.map {absolute_path -> it[1][0].getParent()}
-    // .subscribe onNext: { println "does it worx?" + it[1][0].getParent() }, onComplete: { println 'Done extracting FastQ path name' }
-    //reads.getParent()
-
-
-// Illumina FASTQ files use the following naming scheme:
+// Illumina FASTQ files use the following naming scheme when processed with bcl2fastq:
 // <sample name>_<barcode sequence>_L<lane>_R<read number>_<setnumber>.fastq.gz
 
 // Illegal Characters
@@ -82,21 +72,28 @@ else{
 // SIGAG5_9_dnmt3ab_DKO_S2_L005_R2_001.fastq.gz
 
 // Then this could be a typical Cellranger count run:
-//   cellranger count --id='SIGAG5_9_dnmt3ab_DKO' \
+// cellranger count --id='SIGAG5_9_dnmt3ab_DKO' \
 //             --fastqs='/bi/cellranger/testrun/' \
 //             --transcriptome='/bi/cellranger/references/' \
-//             --sample=${sample_arg} \
-//             --localcores=${task.cpus} \
-//             --localmem=${task.memory.toGiga()}
+//             --sample=SIGAG5_9_dnmt3ab_DKO \
+//             --localcores=16 \
+//             --localmem=35
 
 workflow {
     main:
-        file_ch
-        // subscribe a function to the channel printing the emitted values
-        //.map {absolute_path -> it[1][0]}
-        .subscribe onNext:{  println "Got: $it\n and PATH: $absolute_path"  }
-        // println("Absolute path now:" + absolute_path)
+        
+        // This pipeline is different to our usual pipelines, as it does not necessarily require the input filenames
+        // but only a sample name. In the future, we could work on an automation to extract the sample names if there
+        // are several different sets of files in the same folder
+
         CELLRANGER_COUNT (params.sample, params.fastqs_dir ,params.outdir, params.cellranger_args, params.verbose)
+
+        // The following code does not work, but I'll it here for the time being
+        // file_ch
+        // subscribe a function to the channel printing the emitted values
+        // .map {absolute_path -> it[1][0]}
+        // .subscribe onNext:{  println "Got: $it\n and PATH: $absolute_path"  }
+        // println("Absolute path now:" + absolute_path)
         //   CELLRANGER_COUNT (file_ch, params.outdir, params.cellranger_args, params.verbose)
 }
 
