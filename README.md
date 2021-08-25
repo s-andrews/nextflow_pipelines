@@ -32,6 +32,7 @@ name	GRCm38
 species	Mouse
 fasta	/bi/scratch/Genomes/Mouse/GRCm38/
 bismark	/bi/scratch/Genomes/Mouse/GRCm38/
+cellranger  /bi/apps/cellranger/references/refdata-gex-mm10-2020-A/
 bowtie	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38
 bowtie2	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38
 hisat2	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38
