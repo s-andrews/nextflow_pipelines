@@ -1,0 +1,8 @@
+name	GRCm39
+species	Mouse
+fasta	/bi/scratch/Genomes/Mouse/GRCm39/
+bismark	/bi/scratch/Genomes/Mouse/GRCm39/
+bowtie2	/bi/scratch/Genomes/Mouse/GRCm39/Mus_musculus.GRCm39
+hisat2	/bi/scratch/Genomes/Mouse/GRCm39/Mus_musculus.GRCm39
+gtf	/bi/scratch/Genomes/Mouse/GRCm39/Mus_musculus.GRCm39.103.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm39/Mus_musculus.GRCm39.103.hisat2_splices.txt
