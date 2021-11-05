@@ -1,0 +1,6 @@
+name	GRCh38_GRCm38_composite
+species	Human_Mouse
+fasta	/bi/scratch/Genomes/Human/GRCh38_GRCm38_composite/
+bismark	/bi/scratch/Genomes/Human/GRCh38_GRCm38_composite/
+bowtie2	/bi/scratch/Genomes/Human/GRCh38_GRCm38_composite/GRCh38_GRCm38_composite
+hisat2	/bi/scratch/Genomes/Human/GRCh38_GRCm38_composite/GRCh38_GRCm38_composite
