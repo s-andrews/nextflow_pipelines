@@ -1,0 +1,9 @@
+name	R64-1-1_2Micron_spikein
+species	S_cerevisiae
+fasta	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/R64-1-1_2Micron_spikein/
+bismark	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/R64-1-1_2Micron_spikein/
+bowtie	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/R64-1-1_2Micron_spikein/R64-1-1.1_2Micron_spikein
+bowtie2	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/R64-1-1_2Micron_spikein/R64-1-1.1_2Micron_spikein
+hisat2	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/R64-1-1_2Micron_spikein/R64-1-1.1_2Micron_spikein
+gtf	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/R64-1-1_2Micron_spikein/Saccharomyces_cerevisiae.R64-1-1.91.gtf
+hisat2_splices	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae/R64-1-1_2Micron_spikein/Saccharomyces_cerevisiae.R64-1-1.91.hisat2_splices.txt
