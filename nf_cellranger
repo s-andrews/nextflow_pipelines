@@ -14,7 +14,6 @@ params.sample_sheet = 'samples.csv' // for testing purposes, not currently used
 params.sample = ''
 params.list_genomes = false;
 
-params.id = '';
 params.fastqs = '';
 
 params.help = false
@@ -127,28 +126,37 @@ def helpMessage() {
     
     SYNOPSIS:
 
-    This workflow takes in a list of filenames (in FastQ format), and aligns these files to a genome using CellRanger count using the
-    stone compute cluster at Babraham.
+    This workflow takes in a sample identifier and aligns corresponding FastQ files containing this identifier to a genome using
+    'cellranger count' using the stone compute cluster at Babraham.
+    
+    If called as is, 'cellranger count' is run in default mode (i.e. only counting counts over exons) using '--localcores 16' and
+    '--localmem 35'. To add additional parameters, please consider tool-specific arguments that are compatible with cellranger count
+    (see '--cellranger_args' below).
 
-    If you run Bismark in this stand-alone workflow it is assumed that you know what you are doing, e.g. raw FastQ files should
-    have been trimmed appropriately. If called as is, Bismark is run in default mode. To add additional parameters, please 
-    consider tool-specific arguments that are compatible with Bismark (see '--bismark_args' below).
 
+    Last modified: 25 12 2021
 
             ==============================================================================================================
 
 
     USAGE:
     
-    nf_cellranger [options] --genome <genomeID> <input files>
+    nf_cellranger [options] --genome <genomeID> --sample='sampleID' --fastqs='/path/to/FastQs/'
     
     Mandatory arguments:
     ====================
 
-      <input files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. In theory, files will automatically be
-                                      processed as single-end or paired end files (if file pairs share the same base-name, and
-                                      differ only by a different read number, e.g. 'base_name_R1.fastq.gz' and 'base_name_R2.fastq.gz'
-                                      (, or R3, R4). To run paired-end files in single-end mode, please see '--single_end' below.
+      --sample=[str]                  The unique sampleID of R1, R2, and optionally I1 files. If we assume these input files:
+                                      SIGAG5_9_dnmt3ab_DKO_S2_L005_I1_001.fastq.gz
+                                      SIGAG5_9_dnmt3ab_DKO_S2_L005_R1_001.fastq.gz
+                                      SIGAG5_9_dnmt3ab_DKO_S2_L005_R2_001.fastq.gz
+                                      the unique sampleID would be 'SIGAG5_9_dnmt3ab_DKO'. Project and sample names in the sample
+                                      sheet cannot contain illegal characters not allowed by some file systems. The characters not
+                                      allowed are the space character and the following: ? ( ) [ ] / \\ = + < > : ; \" ' , * ^ | & .
+      
+      --fastqs='/path/'               This is the full path to the folder where CellRanger expects the input FastQ files, e.g.
+                                      --fastqs='/bi/cellrangertest/fastq/' or --fastqs=`pwd` if you are in the directory containing
+                                      the FastQ files.   
 
       --genome [str]                  Genome build ID to be used for the alignment, e.g. GRCh38 (latest human genome) or GRCm38
                                       (latest mouse genome build). To list all available genomes, see '--list_genomes' below.
@@ -158,27 +166,22 @@ def helpMessage() {
     Tool-Specific Options:
     ======================
 
-      --bismark_args="[str]"          This option can take any number of options that are compatible with Bismark to modify its
+      --cellranger_args="[str]"       This option can take any number of options that are compatible with Cellranger count to modify its
                                       default mapping behaviour. For more detailed information on available options please refer
-                                      to the Bismark User Guide, or run 'bismark --help'. As an example, to run somewhat relaxed
-                                      alignments for a PBAT library, use ' --bismark_args="--pbat --score_min L,0,-0.4" '. Please
-                                      note that the format ="your options" needs to be strictly adhered to in order to work correctly.
-                                      [Default: None]
+                                      to the CellRanger Guide, or run 'cellranger count --help'. As an example, to include counts over 
+                                      introns use ' --cellranger_args="--include-introns" '. Please note that the format ="your options"
+                                      needs to be strictly adhered to in order to work correctly. [Default: None]
 
-      --fastqs_dir [str]              The folder where CellRanger expects the FastQ files. Default: '.' (i.e. current working directory)
-
+      
     Other Options:
     ==============
-
-      --outdir [str]                  Path to the output directory. [Default: current working directory]
 
       --list_genomes                  List all genome builds that are currently available to choose from. To see this list
                                       of available genomes with more detailed information about paths and indexes, run
                                       the command as '--list_genomes --verbose'
     
-      --single_end                    Force files of a read pair to be treated as single-end files. [Default: auto-detect]
-      
       --verbose                       More verbose status messages. [Default: OFF]
+
       --help                          Displays this help message and exits.
 
     Workflow Options:
