@@ -32,11 +32,6 @@ process CELLRANGER_COUNT {
 		cores = 16
 		readString = ""
 
-		if (verbose){
-			println ("[MODULE] CELLRANGER ARGS: " + cellranger_args)
-			println ("[MODULE] SAMPLE NAME: " + sampleID)	
-		}
-
 		// These parameters are allowed for CellRanger count
 		// Argument	Description
 		
@@ -56,7 +51,11 @@ process CELLRANGER_COUNT {
 		if (verbose){
 			println ("[MODULE] Constructing the command:\n[MODULE]: >>$command<<")
 		}
-		
+		command += " $cellranger_args "
+		if (verbose){
+			println ("[MODULE] CELLRANGER ARGS: " + cellranger_args)
+		}
+
 		command += " --localcores=$cores --localmem=${task.memory.toGiga()} --transcriptome=" + params.genome["cellranger"]
 		if (verbose){
 			println ("[MODULE]: >>$command<<")
