@@ -8,13 +8,11 @@ params.verbose = false
 params.cellranger_args = ''
 params.single_end = false // default mode is auto-detect
 
-params.fastqs_dir = '.'
+params.fastqs_dir = ''
 params.sample_sheet = 'samples.csv' // for testing purposes, not currently used
 
 params.sample = ''
 params.list_genomes = false;
-
-params.fastqs = '';
 
 params.help = false
 // Show help message and exit
@@ -59,6 +57,13 @@ else{
     exit 1
 }
 
+if (params.fastqs_dir){
+    // fine
+}
+else{
+    println ("\nPlease specify a directory containing the input FastQ files with --fastqs_dir='/path/to/FastQs/'\n\n")
+    exit 1
+}
 // Illumina FASTQ files use the following naming scheme when processed with bcl2fastq:
 // <sample name>_<barcode sequence>_L<lane>_R<read number>_<setnumber>.fastq.gz
 
@@ -157,8 +162,8 @@ def helpMessage() {
                                       sheet cannot contain illegal characters not allowed by some file systems. The characters not
                                       allowed are the space character and the following: ? ( ) [ ] / \\ = + < > : ; \" ' , * ^ | & .
       
-      --fastqs='/path/'               This is the full path to the folder where CellRanger expects the input FastQ files, e.g.
-                                      --fastqs='/bi/cellrangertest/fastq/' or --fastqs=`pwd` if you are in the directory containing
+      --fastqs_dir='/path/'           This is the full path to the folder where CellRanger expects the input FastQ files, e.g.
+                                      --fastqs_dir='/bi/cellrangertest/fastq/' or --fastqs_dir=`pwd` if you are in the directory containing
                                       the FastQ files.   
 
       --genome [str]                  Genome build ID to be used for the alignment, e.g. GRCh38 (latest human genome) or GRCm38
