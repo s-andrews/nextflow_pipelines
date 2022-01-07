@@ -51,6 +51,9 @@ include { CELLRANGER_COUNT }                   from './nf_modules/cellranger.mod
 if (params.sample && params.verbose){
     println ("[WORKFLOW] Cellranger sampleID: "       + params.sample)
 }
+if (params.sample){
+    // fine
+}
 else{
     println ("\nPlease specify a sample ID with --sample=Sample_Name\n\n(For the sample ID, please no illegal characters! The characters not allowed are the space character and the following: ? ( ) [ ] / \\ = + < > : ; ' \" , * ^ | & . ")
     exit 1
