@@ -1,0 +1,3 @@
+name	GRCm38_FPs
+species	Mouse
+cellranger  /bi/apps/cellranger/references/refdata-gex-mm10-2020-A_RFG_CFP_YFP_GFP/GRCm38_YFP_CFP_RFP_GFP/
