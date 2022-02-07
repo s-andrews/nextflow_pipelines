@@ -1,4 +1,5 @@
 nextflow.enable.dsl=2
+params.prefix = "" 
 
 process BISMARK2SUMMARY {
     
@@ -24,9 +25,18 @@ process BISMARK2SUMMARY {
 			println ("[MODULE] BISMARK2SUMMARY ARGS: " + bismark2summary_args)
 		}
 
-		"""
-		module load bismark
-		bismark2summary
-		"""
-
+		if (params.prefix == ""){
+			"""
+			module load bismark
+			bismark2summary
+			"""
+		}
+		else{
+			"""
+			module load bismark
+			bismark2summary
+			mv bismark_summary_report.txt  ${params.prefix}bismark_summary_report.txt 
+			mv bismark_summary_report.html ${params.prefix}bismark_summary_report.html
+			"""
+		}
 }
