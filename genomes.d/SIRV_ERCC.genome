@@ -1,0 +1,5 @@
+name	SIRV_ERCC
+species	SIRV_ERCC
+fasta	/bi/scratch/Genomes/SIRV_reference/
+bowtie2	/bi/scratch/Genomes/SIRV_reference/SIRV_ERCC
+hisat2	/bi/scratch/Genomes/SIRV_reference/SIRV_ERCC
