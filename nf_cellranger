@@ -149,7 +149,7 @@ def helpMessage() {
 
     USAGE:
     
-    nf_cellranger [options] --genome <genomeID> --sample='sampleID' --fastqs='/path/to/FastQs/'
+    nf_cellranger [options] --genome <genomeID> --sample='sampleID' --fastqs_dir='/path/to/FastQs/'
     
     Mandatory arguments:
     ====================
