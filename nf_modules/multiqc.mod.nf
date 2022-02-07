@@ -1,5 +1,9 @@
 nextflow.enable.dsl=2
 
+// let's use an empty default prefix which can be set for each of the pipelines invoking MultiQC
+// using --prefix, e.g. "--prefix lane8075_L001_" so that we can copy files using 'copy_back_files'. 
+params.prefix = "" 
+
 process MULTIQC {
 	
 	label 'quadCore'
@@ -17,20 +21,19 @@ process MULTIQC {
 
 	output:
 	    path "*html",       emit: html
-		// path "*stats.txt", emit: stats 
-
+		
 	publishDir "$outputdir",
 		mode: "link", overwrite: true
 
-    script:
+	script:
+
 		
 		if (verbose){
 			println ("[MODULE] MULTIQC ARGS: " + multiqc_args)
 		}
-
+	
 		"""
 		module load multiqc
-		multiqc $multiqc_args -x work .
+		multiqc $multiqc_args -x work --filename ${params.prefix}multiqc_report.html .
 		"""
-
 }
