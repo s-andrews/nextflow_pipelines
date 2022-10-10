@@ -1,0 +1,3 @@
+name	GRCm38_GFP_AMPLICON
+species	Mouse
+cellranger  /bi/apps/cellranger/references/refdata-gex-mm10-2020-A_GFP_AMPLICON/mm10-2020-A_GFP_AMPLICON

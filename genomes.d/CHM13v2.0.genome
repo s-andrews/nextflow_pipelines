@@ -1,0 +1,7 @@
+name	CHM13v2.0
+species	Human
+fasta	/bi/scratch/Genomes/Human/CHM13v2.0/
+bowtie2	/bi/scratch/Genomes/Human/CHM13v2.0/chm13v2
+hisat2	/bi/scratch/Genomes/Human/CHM13v2.0/chm13v2
+gtf	/bi/scratch/Genomes/Human/CHM13v2.0/GCA_009914755.4_genes.gtf
+hisat2_splices	/bi/scratch/Genomes/Human/CHM13v2.0/chm13v2_splices.txt
