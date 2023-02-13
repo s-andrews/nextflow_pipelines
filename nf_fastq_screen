@@ -86,8 +86,8 @@ def helpMessage() {
                                       default mapping behaviour. For more detailed information on available options please refer
                                       to the FastQ Screen documentation, or run 'fastq_screen --help' on the command line. For instance,
                                       to process a bisulfite converted library with fairly relaxed parameters, you could use: 
-                                      ' --fastq_screen_args="--bisulfite --score_min L,0,-0.6" '. Please note that the format 
-                                      ="your options" needs to be strictly adhered to in order to work correctly.
+                                      ' --fastq_screen_args="--bisulfite" '. Please note that the format="your options" needs to be 
+                                      strictly adhered to in order to work correctly.
                                       [Default: None]
 
     Other Options:
