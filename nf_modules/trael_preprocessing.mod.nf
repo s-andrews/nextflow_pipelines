@@ -13,6 +13,7 @@ process TRAEL_PREPROCESSING {
 	output:
 		path "*.txt", optional: true, emit: stats 
 		tuple val(name), path ("*UMIed*.fastq.gz"), emit: reads
+        //path ("*UMIed*.fastq.gz"), emit: reads
 
 	publishDir "$outputdir",
 		mode: "link", overwrite: true
@@ -43,6 +44,7 @@ process TRAEL_PREPROCESSING_INDEXING {
 	output:
 		path "*.txt", optional: true, emit: stats 
 		tuple val(name), path ("*UMIed*.fastq.gz"), emit: reads
+        //path ("*UMIed*.fastq.gz"), emit: reads
 
 	publishDir "$outputdir",
 		mode: "link", overwrite: true
@@ -52,13 +54,30 @@ process TRAEL_PREPROCESSING_INDEXING {
 			println ("[MODULE] TrAEL-PREPROCESSING ARGS: " + trael_preprocessing_args)
 		}
 
-		// The TrAEL-seq preprocessing script works on all FastQ files in a folder		
+		// The TrAEL-seq preprocessing script works on all FastQ files in a folder	- not anymore - might want to switch back to that though	
 		"""
 		module load python
-		/bi/apps/TrAELseq/TrAEL-seq/TrAELseq_preprocessing_UMIplusBarcode.py		
+		/bi/apps/TrAELseq/latest/TrAEL-seq/TrAELseq_preprocessing_UMIplusBarcode.py	${reads}
 		"""
 
 }
+
+process TRAEL_SPLITTER {
+
+    input:
+	    path(reads)
+		val (outputdir)
+        
+    output:
+        tuple val(reads), path(reads)
+
+    script:
+		
+		"""
+		echo ${reads}
+		"""
+}
+
 
 process TRAEL_SEQDEDUP {
 	
@@ -85,7 +104,7 @@ process TRAEL_SEQDEDUP {
 		// The TrAEL-seq preprocessing script works on all FastQ files in a folder		
 		"""
 		module load python
-		/bi/apps/TrAELseq/TrAEL-seq/TrAELseq_sequence_based_deduplication.py	
+		/bi/apps/TrAELseq/latest/TrAEL-seq/TrAELseq_sequence_based_deduplication.py	
 		"""
 
 }
