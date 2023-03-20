@@ -8,15 +8,15 @@ nextflow.enable.dsl=2
 params.outdir = "."
 params.genome = ""
 params.verbose = false
-params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically 
-
+//params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically 
+params.single_end = true
 params.fastqc_args = ''
 params.trael_preprocessing_args = ''
 params.fastq_screen_args = ''
 params.trim_galore_args = ''
 params.bowtie2_args = ''
-params.multiqc_args = ''
-params.umibam_args = ''
+//params.multiqc_args = ''
+//params.umibam_args = ''
 
 params.help = false
 // Show help message and exit
@@ -27,7 +27,7 @@ if (params.help){
 
 params.list_genomes = false;
 if (params.list_genomes){
-    println ("[WORKLFOW] List genomes selected")
+    println ("[WORKFLOW] List genomes selected")
 }
 
 if (params.verbose){
@@ -35,9 +35,9 @@ if (params.verbose){
     println ("[WORKFLOW] TrAEL-PREPROCESSING ARGS: " + params.trael_preprocessing_args)
     println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
     println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
-    println ("[WORKFLOW] BOWTIE2 ARGS: "          + params.bowtie2_args)
-    println ("[WORKFLOW] UMIBAM ARGS ARE: "       + params.umibam_args)
-    println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
+    //println ("[WORKFLOW] BOWTIE2 ARGS: "          + params.bowtie2_args)
+   // println ("[WORKFLOW] UMIBAM ARGS ARE: "       + params.umibam_args)
+   // println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
 }
 
 
@@ -49,17 +49,20 @@ if (params.list_genomes){
     listGenomes()  // this lists all available genomes, and exits
 }
 genome = getGenome(params.genome)
-include { TRAEL_PREPROCESSING; TRAEL_SEQDEDUP } from './nf_modules/trael_preprocessing.mod.nf'
+//include { TRAEL_PREPROCESSING; TRAEL_SEQDEDUP } from './nf_modules/trael_preprocessing.mod.nf'
+include { TRAEL_PREPROCESSING_INDEXING } from './nf_modules/trael_preprocessing.mod.nf'
 include { FASTQC }              from './nf_modules/fastqc.mod.nf'    params(nogroup: true)
 include { FASTQC as FASTQC2 }   from './nf_modules/fastqc.mod.nf'    params(nogroup: true)
 include { FASTQC as FASTQC3 }   from './nf_modules/fastqc.mod.nf'    params(nogroup: true)
 include { FASTQC as FASTQC4 }   from './nf_modules/fastqc.mod.nf'    params(nogroup: true)
 include { FASTQ_SCREEN }        from './nf_modules/fastq_screen.mod.nf'
-include { TRIM_GALORE }         from './nf_modules/trim_galore.mod.nf'
-
-include { BOWTIE2 }             from './nf_modules/bowtie2.mod.nf'   params(genome: genome, local: "--local")
-include { UMIBAM }              from './nf_modules/umibam.mod.nf'
-include { MULTIQC }             from './nf_modules/multiqc.mod.nf' 
+include { TRIM_GALORE }         from './nf_modules/trim_galore.mod.nf' params(single_end: '--single_end')
+//include { TRAEL_SPLITTER }       from  './nf_modules/trael_preprocessing.mod.nf'
+//include { BOWTIE2 }             from './nf_modules/bowtie2_trael.mod.nf'  params(genome: genome) 
+// params(genome: genome, local: "--local")
+//include { UMIBAM }              from './nf_modules/umibam.mod.nf' // new umibam needs putting into nextflow pipeline
+//include { MULTIQC }             from './nf_modules/multiqc.mod.nf' 
+// https://bioinformaticsworkbook.org/dataAnalysis/nextflow/02_creatingAworkflow.html#gsc.tab=0 
 
 file_ch = makeFilesChannel(args)
 
@@ -68,31 +71,43 @@ workflow {
     main:
         FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
         FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
-        TRAEL_SEQDEDUP  (file_ch, params.outdir, params.trael_preprocessing_args, params.verbose)
-        FASTQC2         (TRAEL_SEQDEDUP.out.reads, params.outdir, params.fastqc_args, params.verbose)
-        TRAEL_PREPROCESSING  (TRAEL_SEQDEDUP.out.reads, params.outdir, params.trael_preprocessing_args, params.verbose)
-        FASTQC3         (TRAEL_PREPROCESSING.out.reads, params.outdir, params.fastqc_args, params.verbose)
-        TRIM_GALORE     (TRAEL_PREPROCESSING.out.reads, params.outdir, params.trim_galore_args, params.verbose)
-        FASTQC4         (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
-        BOWTIE2         (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)
+        TRAEL_PREPROCESSING_INDEXING  (file_ch, params.outdir, params.trael_preprocessing_args, params.verbose)
+        
+        // The problem is that TRAEL_PREPROCESSING_INDEXING produces a set of fastq files for each name, so it doesn't work properly emitting the name, path tuple, but this is what bowtie requires.
+        // I think we need the TRAEL_PREPROCESSING_INDEXING to just emit the fastq files, then we need to do something similar to makeFilesChannel()
+        // to get the tuple of (name, path) to pass to trim galore, bowtie etc.
+        
+        //trael_ch = Channel.fromPath(TRAEL_PREPROCESSING_INDEXING.out.reads)
+        //TRAEL_SPLITTER (TRAEL_PREPROCESSING_INDEXING.out.reads, params.outdir)
+        //FASTQC2         (trael_ch, params.outdir, params.fastqc_args, params.verbose)
+        
+        
+        FASTQC2         (TRAEL_PREPROCESSING_INDEXING.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        TRIM_GALORE     (TRAEL_PREPROCESSING_INDEXING.out.reads, params.outdir, params.trim_galore_args, params.verbose)
 
+		//bowtie_ch = TRIM_GALORE.out.reads.flatten()
+		//println ("bowtie_ch "  + bowtie_ch)
+        //BOWTIE2         (bowtie_ch, params.outdir, params.bowtie2_args, params.verbose)
+		//BOWTIE2         (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)					
+        //FASTQC3         (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        
         // Need UmiBam
-        UMIBAM          (BOWTIE2.out.bam, params.outdir, params.umibam_args, params.verbose)
+       // UMIBAM          (BOWTIE2.out.bam, params.outdir, params.umibam_args, params.verbose)
 
         // merging channels for MultiQC
-        multiqc_ch = FASTQC.out.report.mix(
-            TRIM_GALORE.out.report,
-            FASTQ_SCREEN.out.report.ifEmpty([]),
-            FASTQC2.out.report.ifEmpty([]),
-            FASTQC3.out.report.ifEmpty([]),
-            FASTQC4.out.report.ifEmpty([]),
-            BOWTIE2.out.stats.ifEmpty([]),
-            UMIBAM.out.report.ifEmpty([]),
-        ).collect()
-
-        // multiqc_ch.subscribe {  println "Got: $it"  }
-
-        MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
+//        multiqc_ch = FASTQC.out.report.mix(
+//            TRIM_GALORE.out.report,
+//            FASTQ_SCREEN.out.report.ifEmpty([]),
+//            FASTQC2.out.report.ifEmpty([]),
+//            FASTQC3.out.report.ifEmpty([]),
+//            FASTQC4.out.report.ifEmpty([]),
+//            BOWTIE2.out.stats.ifEmpty([]),
+//            UMIBAM.out.report.ifEmpty([]),
+//        ).collect()
+//
+//        // multiqc_ch.subscribe {  println "Got: $it"  }
+//
+//        MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 }
 
 // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
