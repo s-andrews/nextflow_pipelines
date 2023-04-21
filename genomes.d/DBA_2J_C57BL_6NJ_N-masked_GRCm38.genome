@@ -1,0 +1,6 @@
+name	DBA_2J_C57BL_6NJ_N-masked_GRCm38
+species	Mouse_GRCm38
+fasta	/bi/scratch/Genomes/Mouse/DBA_2J_C57BL_6NJ_GRCm38/DBA_2J_C57BL_6NJ_dual_hybrid.based_on_GRCm38_N-masked
+bowtie2	/bi/scratch/Genomes/Mouse/DBA_2J_C57BL_6NJ_GRCm38/DBA_2J_C57BL_6NJ_dual_hybrid.based_on_GRCm38_N-masked/DBA_2J_C57BL_6NJ_N-masked
+gtf	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.70.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm38/Mus_musculus.GRCm38.70.hisat2_splices.txt
