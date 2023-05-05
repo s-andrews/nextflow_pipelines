@@ -1,0 +1,8 @@
+name	CriGriPICR
+species	Chinese Hamster
+fasta	/bi/home/andrewss/scratch/Genomes/Cricetulus_griseus_picr/CriGri-PICR
+bismark	/bi/home/andrewss/scratch/Genomes/Cricetulus_griseus_picr/CriGri-PICR
+bowtie2	/bi/home/andrewss/scratch/Genomes/Cricetulus_griseus_picr/CriGri-PICR/CriGriPICR
+hisat2	/bi/home/andrewss/scratch/Genomes/Cricetulus_griseus_picr/CriGri-PICR/CriGriPICR
+gtf	/bi/home/andrewss/scratch/Genomes/Cricetulus_griseus_picr/CriGri-PICR/Cricetulus_griseus_picr.CriGri-PICR.109.gtf
+hisat2_splices	/bi/home/andrewss/scratch/Genomes/Cricetulus_griseus_picr/CriGri-PICR/CriGriPICR_splices.txt
