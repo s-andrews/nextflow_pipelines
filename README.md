@@ -14,15 +14,12 @@ All of the pipelines are designed to be directly executable and many of them wil
 
 
 ## Environment
+The pipelines here are designed to work on a linux server which uses [environment modules](https://modules.readthedocs.io/en/latest/) to dynamically load software packages.  We do not include the analysis tools used by the pipelines and you must install these separately. Each of the pipelines will issue appropriate ```module load``` commands for the software it requires and will fail if these are not present.
 
-The pipelines shown here are designed to operate within an environment where all of the required analysis tools and genomes are already available and where there is a queueing system for organising large numbers of jobs (Slurm is the default in our config). This means that the pipelines can run quickly and with minimal setup.  If you are working on a system which has no infrastructure and you're not interested in setting anything up then you would be better looking at pipelines such as those from [nf-core](https://github.com/nf-core) which offer a more complete infrastructure solution.
+You will need to have an installation of [nextflow](https://www.nextflow.io/) to run the pipelines, and this will need to be configured with an appropriate [executor](https://www.nextflow.io/docs/latest/executor.html).  Nextflow can talk to a variety of different queueing systems if running on a cluster, or can run in a local mode on a stand alone server.  Our default setup uses the [slurm](https://slurm.schedmd.com/) queueing system, but you can change this by editing the ```nextflow.config``` file we distribute.
 
-### Software
-This repository provides our pipelines, but it doesn't include a copy of nextflow itself.  You will need to install this and add it to your PATH before trying to do anything with the pipelines. Please see here on how to [install Nextflow](https://www.nextflow.io/docs/latest/getstarted.html#installation).
+If you are working on a system which has no infrastructure and you're not interested in setting anything up then you may prefer looking at pipelines such as those from [nf-core](https://github.com/nf-core) which offer a more complete infrastructure solution.
 
-These pipelines assume that the software required to run the analysis components of these modules are already installed and are either already on the system ```PATH```, or are installed within [Environment modules](https://github.com/cea-hpc/modules) which the pipelines will attempt to load at runtime.
-
-The pipelines will try to submit jobs to a local instance of [Slurm](https://slurm.schedmd.com/).  If you want to run them on the local machine, or if you have a different scheduler then you will need to change the ```executor``` line in the top level ```nextflow.config``` file.
 
 ### Genomes
 Any pipeline which maps data to a reference genome will require the genome to have been downloaded and indexed prior to running the pipeline.  Genome information is supplied to the pipelines in a series of config files found in the ```genomes.d``` folder.  Each of these is a series of key value pairs which tell the pipeline some basic information about the genome (its name and the species it comes from) and the location of the indices or other configuraton files for different programs.  For example our latest mouse file contains:
