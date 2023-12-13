@@ -1,0 +1,131 @@
+#!/usr/bin/env nextflow
+nextflow.enable.dsl=2
+
+params.outdir = "."
+params.genome = ""
+params.verbose = false
+params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically  
+
+params.bamcoverage_args  = '--normaliseUsing CPM'
+
+params.help = false
+// Show help message and exit
+if (params.help){
+    helpMessage()
+    exit 0
+}
+
+if (params.verbose){
+    println ("[WORKFLOW] BAM2BIGWIG ARGS: "           + params.bamcoverage_args)
+}
+
+include { makeFilesChannel; getFileBaseNames }    from './nf_modules/files.mod.nf'
+include { BAMCOVERAGE }          from './nf_modules/bamcoverage.mod.nf'
+
+index_files = []
+for (arg in args) {
+  index_files.add(arg+".bai")
+}
+
+file_ch = Channel.fromPath(args)     // bam2bigwig expects just the path to be passed in
+
+// We need to build a channel for the index files.  We don't pass these in but they will
+// be in the same location as the BAM files, but with a .bai extension.  We therefore just
+// build a new channel from the bam names with .bai stuck on the end.
+index_ch = Channel.fromPath(index_files)
+
+// file_ch.subscribe{  println "Got: $it"  }
+workflow {
+
+    main:
+        BAMCOVERAGE  (file_ch, index_ch, params.outdir, params.bamcoverage_args, params.verbose)
+}
+
+// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+// minimal execution summary report so we at least know what the working directory was...
+workflow.onComplete {
+
+    def msg = """\
+        Pipeline execution summary
+        ---------------------------
+        Jobname     : ${workflow.runName}
+        Completed at: ${workflow.complete}
+        Duration    : ${workflow.duration}
+        Success     : ${workflow.success}
+        workDir     : ${workflow.workDir}
+        exit status : ${workflow.exitStatus}
+        """
+    .stripIndent()
+
+    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+}
+
+def helpMessage() {
+ 
+    log.info"""
+    >>
+
+
+    SYNOPSIS:
+
+    This workflow takes in a list of sorted BAM files, and then uses
+    the deeptools bamCoverage program to turn these into a bigWig file.
+
+    NOTE: The BAM files coming in to this pipeline *must* be sorted, and
+    must have an accompanying .bai index file with them. You only specify
+    the BAM file name and the index file name will be inferred.
+
+    If your BAM files aren't sorted then you can sort them using the 
+    nf_sortIndexBAM pipeline first.
+
+    ==============================================================================================================
+
+
+    USAGE:
+    
+    nf_bam2bigwig [options] <input files>
+    
+    Mandatory arguments:
+    ====================
+
+      <input_files>                   List of sorted, indexed input BAM files, e.g. '*bam'. NB .bai files must also be present
+                                      
+    Tool-specific options:
+    ======================
+
+      --bamcoverage_args="[str]"      This option can take any number of options that are compatible with 'bamCoverage' to modify its default
+                                      behaviour. For more detailed information on available options please refer to the deeptools documentation,
+                                      or run 'bamCoverage --help' on the command line. Please note that the format ="your options" needs to be
+                                      strictly adhered to in order to work correctly. [Default: '--normaliseUsing CPM']
+
+    Other options:
+    ==============
+
+      --outdir [str]                  Path to the output directory. [Default: current working directory]
+
+      --verbose                       More verbose status messages. [Default: OFF]
+      --help                          Displays this help message and exits.
+
+    Workflow options:
+    =================
+
+    Please note the single '-' hyphen for the following options!
+
+      -resume                         If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
+                                      this option will attempt to resume the workflow at the point it got interrupted by using
+                                      Nextflow's caching mechanism. This may save a lot of time.
+
+      -bg                             Sends the entire workflow into the background, thus disconnecting it from the terminal session.
+                                      This option launches a daemon process (which will keep running on the headnode) that watches over
+                                      your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
+                                      jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
+                                      pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
+
+      -process.executor=local         Temporarily changes where the workflow is executed to the 'local' machine. See also the nextflow.config
+                                      file for more details. [Default: slurm] 
+    
+
+    <<
+    """.stripIndent()
+
+}
