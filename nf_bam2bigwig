@@ -6,7 +6,7 @@ params.genome = ""
 params.verbose = false
 params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically  
 
-params.bamcoverage_args  = '--normaliseUsing CPM'
+params.bamcoverage_args  = '--normaliseUsing CPM  --binSize 10'
 
 params.help = false
 // Show help message and exit
@@ -96,7 +96,7 @@ def helpMessage() {
       --bamcoverage_args="[str]"      This option can take any number of options that are compatible with 'bamCoverage' to modify its default
                                       behaviour. For more detailed information on available options please refer to the deeptools documentation,
                                       or run 'bamCoverage --help' on the command line. Please note that the format ="your options" needs to be
-                                      strictly adhered to in order to work correctly. [Default: '--normaliseUsing CPM']
+                                      strictly adhered to in order to work correctly. [Default: '--normaliseUsing CPM  --binSize 10']
 
     Other options:
     ==============

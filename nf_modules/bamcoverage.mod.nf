@@ -4,6 +4,7 @@ process BAMCOVERAGE{
     
 	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
 	label 'bigMem' // 20GB
+	label 'quadCore'  // 4 CPUs
 
 	input:
 		path(bam)
@@ -32,7 +33,7 @@ process BAMCOVERAGE{
 
 		"""
 		module load deeptools
-		bamCoverage $bamcoverage_options -b $bam -of bigwig -o ${bam}.bw 
+		bamCoverage $bamcoverage_options -p 4 -b $bam -of bigwig -o ${bam}.bw 
 		rename .bam.bw .bw *
     	"""
 		
