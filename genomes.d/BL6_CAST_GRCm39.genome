@@ -1,0 +1,6 @@
+name	BL6_CAST_GRCm39
+species	Mouse_GRCm39
+fasta	/bi/scratch/Genomes/Mouse/BL6_CAST_GRCm39/CAST_EiJ_N-masked
+bowtie2	/bi/scratch/Genomes/Mouse/BL6_CAST_GRCm39/CAST_EiJ_N-masked/CAST_EiJ_N-masked
+gtf	/bi/scratch/Genomes/Mouse/GRCm39/Mus_musculus.GRCm39.103.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm39/Mus_musculus.GRCm39.103.hisat2_splices.txt
