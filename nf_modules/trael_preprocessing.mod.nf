@@ -43,8 +43,9 @@ process TRAEL_PREPROCESSING_INDEXING {
 
 	output:
 		path "*.txt", optional: true, emit: stats 
-		tuple val(name), path ("*UMIed*.fastq.gz"), emit: reads
-        //path ("*UMIed*.fastq.gz"), emit: reads
+		//tuple val(name), path ("*UMIed*index*.fastq.gz"), emit: reads
+		//tuple val "\${reads%_R1.fastq.gz}", path(reads), emit: reads
+        path ("*UMIed*index*.fastq.gz"), emit: reads
 
 	publishDir "$outputdir",
 		mode: "link", overwrite: true

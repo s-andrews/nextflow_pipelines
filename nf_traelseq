@@ -15,6 +15,7 @@ params.trael_preprocessing_args = ''
 params.fastq_screen_args = ''
 params.trim_galore_args = ''
 params.bowtie2_args = ''
+params.index = '238' // we want to supply the indexes to use
 //params.multiqc_args = ''
 //params.umibam_args = ''
 
@@ -58,37 +59,84 @@ include { FASTQC as FASTQC4 }   from './nf_modules/fastqc.mod.nf'    params(nogr
 include { FASTQ_SCREEN }        from './nf_modules/fastq_screen.mod.nf'
 include { TRIM_GALORE }         from './nf_modules/trim_galore.mod.nf' params(single_end: '--single_end')
 //include { TRAEL_SPLITTER }       from  './nf_modules/trael_preprocessing.mod.nf'
-//include { BOWTIE2 }             from './nf_modules/bowtie2_trael.mod.nf'  params(genome: genome) 
+include { BOWTIE2 }             from './nf_modules/bowtie2.mod.nf'  params(genome: genome) 
 // params(genome: genome, local: "--local")
 //include { UMIBAM }              from './nf_modules/umibam.mod.nf' // new umibam needs putting into nextflow pipeline
 //include { MULTIQC }             from './nf_modules/multiqc.mod.nf' 
 // https://bioinformaticsworkbook.org/dataAnalysis/nextflow/02_creatingAworkflow.html#gsc.tab=0 
 
 file_ch = makeFilesChannel(args)
+//matcher_string = "/.*index[" + params.index + "].*/"
+matcher_string = ".*index[" + params.index + "].*"
+
+process TEST {
+
+    input:
+    tuple val (sample_name), path(reads)
+    //path(reads)
+
+    output:
+    //tuple val "${reads%_R1.fastq.gz}", path(reads), emit: reads
+    stdout
+
+    script:
+    """
+    echo -e "\n\n==================================================="
+    echo -e "The sample id is $sample_name \nThe reads files are $reads" > channel_info
+    echo -e "\n===================================================\n"
+    """
+
+    //echo -e "The sample id is $sample_name \nThe reads files are $reads" > channel_info
+}
+
+
+
+process SORT_TRAEL_NAMES {
+
+    input:
+    path(reads)
+
+    output:
+    tuple env(sample_id_index), path(reads), emit:reads
+    //stdout
+
+    when:
+    reads.size() > 0
+
+    script:
+    """
+    sample_id_index=${reads}
+    sample_id_index=\${sample_id_index%_R1.fastq.gz}
+    """
+}
+
+
+
 
 workflow {
 
     main:
         FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
         FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
+        //TEST(file_ch)
         TRAEL_PREPROCESSING_INDEXING  (file_ch, params.outdir, params.trael_preprocessing_args, params.verbose)
         
-        // The problem is that TRAEL_PREPROCESSING_INDEXING produces a set of fastq files for each name, so it doesn't work properly emitting the name, path tuple, but this is what bowtie requires.
-        // I think we need the TRAEL_PREPROCESSING_INDEXING to just emit the fastq files, then we need to do something similar to makeFilesChannel()
-        // to get the tuple of (name, path) to pass to trim galore, bowtie etc.
-        
-        //trael_ch = Channel.fromPath(TRAEL_PREPROCESSING_INDEXING.out.reads)
-        //TRAEL_SPLITTER (TRAEL_PREPROCESSING_INDEXING.out.reads, params.outdir)
-        //FASTQC2         (trael_ch, params.outdir, params.fastqc_args, params.verbose)
-        
-        
-        FASTQC2         (TRAEL_PREPROCESSING_INDEXING.out.reads, params.outdir, params.fastqc_args, params.verbose)
-        TRIM_GALORE     (TRAEL_PREPROCESSING_INDEXING.out.reads, params.outdir, params.trim_galore_args, params.verbose)
+        // The problem was that TRAEL_PREPROCESSING_INDEXING produced a set of fastq files for each name, so it didn't work properly emitting the name, path tuple, which is what bowtie requires.      
+        SORT_TRAEL_NAMES(TRAEL_PREPROCESSING_INDEXING.out.reads.flatten())
 
-		//bowtie_ch = TRIM_GALORE.out.reads.flatten()
-		//println ("bowtie_ch "  + bowtie_ch)
-        //BOWTIE2         (bowtie_ch, params.outdir, params.bowtie2_args, params.verbose)
-		//BOWTIE2         (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)					
+        //trael_ch = SORT_TRAEL_NAMES.out.reads.filter( ~/.*index[345].*/ )
+        trael_ch = SORT_TRAEL_NAMES.out.reads.filter( ~ /${matcher_string}/ )
+
+        //TEST(trael_ch)
+
+        //BOWTIE2 (SORT_TRAEL_NAMES.out.reads, params.outdir, params.bowtie2_args, params.verbose)
+        //FASTQC2         (TRAEL_PREPROCESSING_INDEXING.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        TRIM_GALORE     (trael_ch, params.outdir, params.trim_galore_args, params.verbose)
+        //BOWTIE2 (trael_ch, params.outdir, params.bowtie2_args, params.verbose)
+        BOWTIE2 (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)
+
+        //FASTQC2         (trael_ch, params.outdir, params.fastqc_args, params.verbose)
+        				
         //FASTQC3         (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
         
         // Need UmiBam
