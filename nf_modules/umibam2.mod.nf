@@ -2,7 +2,9 @@ nextflow.enable.dsl=2
 
 params.dual = false
 
-process UMIBAM {	
+// This only works for single ended data
+
+process UMIBAM2 {	
     
 	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
 
@@ -13,14 +15,17 @@ process UMIBAM {
   	maxRetries 5
 	  
 	input:
-	    tuple val(name), path(bam)
+	   // tuple val(name), path(bam)
+	    path(bam)
+		path(bai) // an index file is required even if it's not used directly
 		val (outputdir)
 		val (umibam_args)
 		val (verbose)
 
 	output:
 		path "*report.txt", emit: report
-		tuple val(name), path ("*bam"),        emit: bam
+		//tuple val(name), path ("*bam"),        emit: bam
+		path ("*bam"),        emit: bam
 
 	publishDir "$outputdir",
 		mode: "link", overwrite: true
@@ -32,11 +37,8 @@ process UMIBAM {
 		}
 			
 		"""
-		module load UmiBam
-		
-		UmiBam $umibam_args  $bam
-		
-		rename UMI_d d *
+		module load python3
+		python /bi/apps/TrAELseq/latest/TrAEL-seq/umibam2.py $bam
 		"""
 		
 		// The output files should be renamed so that they bismark2report picks up everything
