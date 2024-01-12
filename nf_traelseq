@@ -72,16 +72,66 @@ file_ch = makeFilesChannel(args)
 
 matcher_string = ".*index[" + params.index + "].*"
 
+/* 
+At first this seemed like complete overkill but I couldn't work out a nextflow way of doing this
+The fq.gz files are "not empty" so can't use ifEmpty. Bash also doesn't recognise them 
+as empty so this seems like a reasonable way to check. 
+The line below can be used to filter the output.
+filt = CHECK_FQ_GZ_NOT_EMPTY.out.reads.filter { it.first().countLines() > 0 }
+*/
+process CHECK_FQ_GZ_NOT_EMPTY {
+
+    input:
+    path(reads)
+
+    output:
+    tuple path ("*fq"), path (reads), emit: reads
+
+    script:
+    """
+    zcat ${reads} | head -n 5 > first_line.fq
+    """
+}
+
+// same approach as the CHECK_FQ_GZ_NOT_EMPTY process above but for bam files
+process CHECK_BAMFILE_NOT_EMPTY {
+
+    input:
+    path(bam)
+
+    output:
+    tuple path ("*sam"), path (bam), emit: bam
+
+    script:
+    """
+    module load samtools
+    samtools view ${bam} | head -n 1 > first_line.sam
+    """
+}
+
+
 workflow {
 
     main:
         FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
         FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
         TRAEL_PREPROCESSING_INDEXING  (file_ch, params.outdir, params.trael_preprocessing_args, params.verbose)
-       
-        // TRAEL_PREPROCESSING_INDEXING produces a set of fastq files for each name, 
-        // not a tuple of one name, one path which is what bowtie requires.      
-        SORT_TRAEL_NAMES(TRAEL_PREPROCESSING_INDEXING.out.reads.flatten())
+
+        /* TRAEL_PREPROCESSING_INDEXING produces a set of fastq files for each name, but some may be empty. 
+        We need to filter these out as some processes e.g. trim_galore will fail if empty files are passed. 
+        Also, we don't want to keep processing a load of empty files. 
+        */
+        CHECK_FQ_GZ_NOT_EMPTY(TRAEL_PREPROCESSING_INDEXING.out.reads.flatten())
+        
+        filt = CHECK_FQ_GZ_NOT_EMPTY.out.reads.filter { it.first().countLines() > 0 }.map { it.last() }
+
+        // or in 2 steps
+        //filt = CHECK_FQ_GZ_NOT_EMPTY.out.reads.filter { it.first().countLines() > 0 }
+        //SORT_TRAEL_NAMES(filt.map { it.last() })
+
+        // Required input for bowtie2 module is a tuple of one name, one path, not just a set of paths
+        // which is what TRAEL_PREPROCESSING_INDEXING produces
+        SORT_TRAEL_NAMES(filt)
 
         // only keep the selected indexes
         trael_ch = SORT_TRAEL_NAMES.out.reads.filter( ~ /${matcher_string}/ )
@@ -93,7 +143,11 @@ workflow {
         // we just need the bam files for SAMTOOLS_SORT and INDEX, not a tuple of the name and the bam
         mapped_bams = BOWTIE2.out.bam.map { it.last() }
 
-        SAMTOOLS_SORT  (mapped_bams, params.outdir, params.samtools_sort_args, params.verbose)
+        // need to filter out any empty bam files from the channel - umibam fails if passed an empty bam file
+        CHECK_BAMFILE_NOT_EMPTY(mapped_bams)
+        filt_sam_bam = CHECK_BAMFILE_NOT_EMPTY.out.bam.filter { it.first().countLines() > 0 }
+        filt_bam = filt_sam_bam.map { it.last() }
+        SAMTOOLS_SORT  (filt_bam, params.outdir, params.samtools_sort_args, params.verbose)
         SAMTOOLS_INDEX (SAMTOOLS_SORT.out.bam, params.outdir, params.samtools_index_args, params.verbose)
       				        
         // Deduplication
@@ -112,6 +166,7 @@ workflow {
         //multiqc_ch.subscribe {  println "Got: $it"  }
 
         MULTIQC  (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
+        
 }
 
 // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
@@ -140,13 +195,9 @@ def helpMessage() {
 
     SYNOPSIS:
 
-    In a nutshell, this workflow runs an entire TrAEL-seq processing pipeline on FastQ files, including QC, contamination QC,
-    splitting by TrAEL barcodes, quality-/adapter trimming, alignments to a genome using Bowtie 2, deduplication and finally 
-    generates an aggregate QC report. 
-
-    If there are any empty files after TrAEL splitting, then Trim Galore may fail, so it is advisable to pass the 
-    expected indexes to the pipeline e.g. for indexes 3, 5, 6 use --index 356. For more details of the barcodes/indexes see
-    below.
+    This workflow runs a TrAEL-seq processing pipeline from FastQ files, including QC, contamination QC,
+    splitting by TrAEL barcodes, quality-/adapter trimming, alignments to a genome using Bowtie 2, 
+    deduplication based on position and UMI, and finally generates an aggregate QC report. 
 
     Here is a graphical representation of the workflow:
 
@@ -179,7 +230,6 @@ def helpMessage() {
                     
     To add additional parameters to any of the programs, consider supplying tool-specific arguments (see --toolname_args="..." below).
 
-
             ==============================================================================================================
 
             
@@ -203,7 +253,9 @@ def helpMessage() {
     Optional arguments:
     ====================
 
-      --index [int]                  TrAEL indexes that are expected to be present. [Default: all, equivalent to --index 123456789]
+      --index [int]                  TrAEL indexes that are expected to be present. Provide the index numbers without spaces, 
+                                        e.g. --index 245 for indexes 2,4 and 5.  [Default: all indexes, equivalent to --index 123456789]
+
                                      These are the TrAEL indexes:   
                                         barcode_1 = "AGTC" 
                                         barcode_2 = "GACT" 
@@ -214,8 +266,7 @@ def helpMessage() {
                                         barcode_7 = "GTGC"
                                         barcode_8 = "GCCA"
                                         barcode_9 = "GATG"
-
-                                       
+                                  
 
     Tool-specific options:
     ======================
