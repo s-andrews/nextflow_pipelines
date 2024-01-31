@@ -19,6 +19,7 @@ params.samtools_sort_args = ''
 params.samtools_index_args = ''
 params.umibam2_args = ''
 params.index = '123456789' // we want to supply the indexes to use
+params.no_index = false
 params.multiqc_args = ''
 
 params.help = false
@@ -54,6 +55,7 @@ if (params.list_genomes){
 genome = getGenome(params.genome)
 
 include { TRAEL_PREPROCESSING_INDEXING } from './nf_modules/trael_preprocessing.mod.nf'
+include { TRAEL_PREPROCESSING } from './nf_modules/trael_preprocessing.mod.nf'
 include { SORT_TRAEL_NAMES }    from './nf_modules/trael_preprocessing.mod.nf'
 include { FASTQC }              from './nf_modules/fastqc.mod.nf'    params(nogroup: true)
 include { FASTQC as FASTQC2 }   from './nf_modules/fastqc.mod.nf'    params(nogroup: true)
@@ -115,14 +117,22 @@ workflow {
     main:
         FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
         FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
-        TRAEL_PREPROCESSING_INDEXING  (file_ch, params.outdir, params.trael_preprocessing_args, params.verbose)
 
-        /* TRAEL_PREPROCESSING_INDEXING produces a set of fastq files for each name, but some may be empty. 
+        if ( params.no_index ) {
+            TRAEL_PREPROCESSING  (file_ch, params.outdir, params.trael_preprocessing_args, params.verbose)
+            CHECK_FQ_GZ_NOT_EMPTY(TRAEL_PREPROCESSING.out.reads.flatten())
+
+        }
+        else  {
+            TRAEL_PREPROCESSING_INDEXING  (file_ch, params.outdir, params.trael_preprocessing_args, params.verbose)
+            CHECK_FQ_GZ_NOT_EMPTY(TRAEL_PREPROCESSING_INDEXING.out.reads.flatten())
+        }       
+
+        /* The TRAEL_PREPROCESSING scripts produce a set of fastq files for each name, but some may be empty. 
         We need to filter these out as some processes e.g. trim_galore will fail if empty files are passed. 
         Also, we don't want to keep processing a load of empty files. 
         */
-        CHECK_FQ_GZ_NOT_EMPTY(TRAEL_PREPROCESSING_INDEXING.out.reads.flatten())
-        
+                      
         filt = CHECK_FQ_GZ_NOT_EMPTY.out.reads.filter { it.first().countLines() > 0 }.map { it.last() }
 
         // or in 2 steps
@@ -133,8 +143,14 @@ workflow {
         // which is what TRAEL_PREPROCESSING_INDEXING produces
         SORT_TRAEL_NAMES(filt)
 
-        // only keep the selected indexes
-        trael_ch = SORT_TRAEL_NAMES.out.reads.filter( ~ /${matcher_string}/ )
+
+        if ( params.no_index ) {
+            trael_ch = SORT_TRAEL_NAMES.out.reads
+        }
+        else {
+            // only keep the selected indexes
+            trael_ch = SORT_TRAEL_NAMES.out.reads.filter( ~ /${matcher_string}/ )
+        }
         FASTQC2     (trael_ch, params.outdir, params.fastqc_args, params.verbose)
         TRIM_GALORE (trael_ch, params.outdir, params.trim_galore_args, params.verbose)
         FASTQC3     (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
