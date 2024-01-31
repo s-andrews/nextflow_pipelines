@@ -1,6 +1,8 @@
 nextflow.enable.dsl=2
 
-/* process TRAEL_PREPROCESSING {
+
+// This is for the early versions of the TrAEL method did not incorporate the inline TrAEL barcodes. 
+process TRAEL_PREPROCESSING {
 	
 	tag "$name" // Adds name to job submission instead of (1), (2) etc.
 		
@@ -12,8 +14,7 @@ nextflow.enable.dsl=2
 
 	output:
 		path "*.txt", optional: true, emit: stats 
-		tuple val(name), path ("*UMIed*.fastq.gz"), emit: reads
-        //path ("*UMIed*.fastq.gz"), emit: reads
+        path ("*UMIed*.fastq.gz"), emit: reads
 
 	publishDir "$outputdir",
 		mode: "link", overwrite: true
@@ -23,13 +24,15 @@ nextflow.enable.dsl=2
 			println ("[MODULE] TrAEL-PREPROCESSING ARGS: " + trael_preprocessing_args)
 		}
 
-		// The TrAEL-seq preprocessing script works on all FastQ files in a folder		
+		// Run the TrAELseq_preprocessing script	
 		"""
 		module load python
-		/bi/apps/TrAELseq/TrAEL-seq/TrAELseq_preprocessing.py 		
+		/bi/apps/TrAELseq/latest/TrAEL-seq/TrAELseq_preprocessing.py ${reads}		
 		"""
-} */
+} 
 
+
+// For later versions of the TrAEL method do incorporate the inline TrAEL barcodes. 
 process TRAEL_PREPROCESSING_INDEXING {
 	
 	tag "$name" // Adds name to job submission instead of (1), (2) etc.
@@ -52,7 +55,10 @@ process TRAEL_PREPROCESSING_INDEXING {
 			println ("[MODULE] TrAEL-PREPROCESSING ARGS: " + trael_preprocessing_args)
 		}
 
-		// The TrAEL-seq preprocessing script works on all FastQ files in a folder	- not anymore - might want to switch back to that though	
+		/* Run the TrAELseq_preprocessing_UMIplusBarcode script
+			This splits the input fastq file by the 9 TrAEL barcodes and T or no T at position 13, 
+			so produces 20 output fastq files (9 + unassigned)*2 for T and noT. 
+		*/
 		"""
 		module load python
 		/bi/apps/TrAELseq/latest/TrAEL-seq/TrAELseq_preprocessing_UMIplusBarcode.py	${reads}
@@ -60,6 +66,10 @@ process TRAEL_PREPROCESSING_INDEXING {
 
 }
 
+
+/* The output from the TrAEL preprocessing scripts are a set of paths.
+We need to create new sample names for these as other nf modules e.g. bowtie2 require them.
+*/
 process SORT_TRAEL_NAMES {
 
     input:
@@ -67,10 +77,6 @@ process SORT_TRAEL_NAMES {
 
     output:
     tuple env(sample_id_index), path(reads), emit:reads
-    //stdout
-
-   // when:
-   // reads.size() > 0
 
     script:
     """
