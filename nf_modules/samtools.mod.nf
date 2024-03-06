@@ -1,4 +1,5 @@
 nextflow.enable.dsl=2
+params.no_output = false
 
 process SAMTOOLS_SORT{	
     
@@ -16,7 +17,7 @@ process SAMTOOLS_SORT{
 		path "*bam",        emit: bam
 
 	publishDir "$outputdir",
-		mode: "link", overwrite: true
+		mode: "link", overwrite: true, enabled: !params.no_output
 
 	
     script:
@@ -52,7 +53,7 @@ process SAMTOOLS_INDEX{
 		path "*.bai",     emit: bai
     	
 	publishDir "$outputdir",
-		mode: "link", overwrite: true
+		mode: "link", overwrite: true, enabled: !params.no_output
 
     script:
 		samtools_index_options = samtools_index_args

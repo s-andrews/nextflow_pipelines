@@ -1,5 +1,6 @@
 nextflow.enable.dsl=2
 params.local = ''
+params.no_output = false
 
 process BOWTIE2 {
 	
@@ -19,7 +20,7 @@ process BOWTIE2 {
 		path "*stats.txt", emit: stats 
 
 	publishDir "$outputdir",
-		mode: "link", overwrite: true
+		mode: "link", overwrite: true, enabled: !params.no_output
 
 	script:
 		if (verbose){
