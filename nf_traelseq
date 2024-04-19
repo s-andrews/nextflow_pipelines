@@ -286,6 +286,16 @@ def helpMessage() {
     Optional arguments:
     ====================
 
+      --no_output                    If specified, the only files produced in the output directory will be *umibam2.1.bam, *umibam2.1_dedup_report.txt 
+                                     and multiqc_report.html.
+                                     The output files from fastqc, fastq_screen, bowtie, trim_galore, samtools sort and index can be found 
+                                     in the nf work/ directory but will not be written into the output directory. 
+                                     This option was implemented when reprocessing a load of samples, where intermediate files were not required.
+                                     [Default: false] 
+
+      --no_index                     For samples that do not contain TrAEL indexes and so do not need to be demultiplexed. 
+                                     Cannot be used with --index [int] below. [Default: false] 
+
       --index [int]                  TrAEL indexes that are expected to be present. Provide the index numbers without spaces, 
                                         e.g. --index 245 for indexes 2,4 and 5.  [Default: all indexes, equivalent to --index 123456789]
 
