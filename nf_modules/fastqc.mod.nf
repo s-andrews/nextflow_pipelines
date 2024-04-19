@@ -1,5 +1,6 @@
 nextflow.enable.dsl=2
 params.nogroup = false
+params.no_output = false
 
 process FASTQC {
 
@@ -16,7 +17,7 @@ process FASTQC {
 		path "*.zip",  emit: report
 	
 	publishDir "$outputdir",
-		mode: "link", overwrite: true
+		mode: "link", overwrite: true, enabled: !params.no_output
 
 	script:
 

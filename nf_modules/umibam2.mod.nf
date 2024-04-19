@@ -13,7 +13,8 @@ process UMIBAM2 {
 	memory { 20.GB * task.attempt }  
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 30 as long); return 'retry' }
   	maxRetries 5
-	  
+	// we also have an occasional fail where the index file isn't quite available. I'm just putting in a sleep statement
+
 	input:
 	   // tuple val(name), path(bam)
 	    path(bam)
@@ -37,6 +38,7 @@ process UMIBAM2 {
 		}
 			
 		"""
+		sleep 2
 		module load python3
 		python /bi/apps/TrAELseq/latest/TrAEL-seq/umibam2.py $bam
 		"""

@@ -21,6 +21,8 @@ params.umibam2_args = ''
 params.index = '123456789' // we want to supply the indexes to use
 params.no_index = false
 params.multiqc_args = ''
+params.no_output = false
+params.no_qc = false
 
 params.help = false
 // Show help message and exit
@@ -54,17 +56,17 @@ if (params.list_genomes){
 }
 genome = getGenome(params.genome)
 
-include { TRAEL_PREPROCESSING_INDEXING } from './nf_modules/trael_preprocessing.mod.nf'
-include { TRAEL_PREPROCESSING } from './nf_modules/trael_preprocessing.mod.nf'
+include { TRAEL_PREPROCESSING_INDEXING } from './nf_modules/trael_preprocessing.mod.nf' params(no_output: params.no_output)
+include { TRAEL_PREPROCESSING } from './nf_modules/trael_preprocessing.mod.nf' params(no_output: params.no_output)
 include { SORT_TRAEL_NAMES }    from './nf_modules/trael_preprocessing.mod.nf'
-include { FASTQC }              from './nf_modules/fastqc.mod.nf'    params(nogroup: true)
-include { FASTQC as FASTQC2 }   from './nf_modules/fastqc.mod.nf'    params(nogroup: true)
-include { FASTQC as FASTQC3 }   from './nf_modules/fastqc.mod.nf'    params(nogroup: true)
-include { FASTQ_SCREEN }        from './nf_modules/fastq_screen.mod.nf'
-include { TRIM_GALORE }         from './nf_modules/trim_galore.mod.nf' params(single_end: '--single_end')
-include { SAMTOOLS_SORT }       from './nf_modules/samtools.mod.nf'
-include { SAMTOOLS_INDEX }      from './nf_modules/samtools.mod.nf'
-include { BOWTIE2 }             from './nf_modules/bowtie2.mod.nf'  params(genome: genome) 
+include { FASTQC }              from './nf_modules/fastqc.mod.nf'    params(nogroup: true, no_output: params.no_output)
+include { FASTQC as FASTQC2 }   from './nf_modules/fastqc.mod.nf'    params(nogroup: true, no_output: params.no_output)
+include { FASTQC as FASTQC3 }   from './nf_modules/fastqc.mod.nf'    params(nogroup: true, no_output: params.no_output)
+include { FASTQ_SCREEN }        from './nf_modules/fastq_screen.mod.nf' params(no_output: params.no_output)
+include { TRIM_GALORE }         from './nf_modules/trim_galore.mod.nf' params(single_end: '--single_end', no_output: params.no_output)
+include { SAMTOOLS_SORT }       from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
+include { SAMTOOLS_INDEX }      from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
+include { BOWTIE2 }             from './nf_modules/bowtie2.mod.nf'   params(genome: genome, no_output: params.no_output)
 // params(genome: genome, local: "--local")
 include { UMIBAM2 }              from './nf_modules/umibam2.mod.nf' // new umibam needs putting into nextflow pipeline
 include { MULTIQC }              from './nf_modules/multiqc.mod.nf' 
@@ -115,8 +117,11 @@ process CHECK_BAMFILE_NOT_EMPTY {
 workflow {
 
     main:
-        FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
-        FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
+
+        if (! params.no_qc ) {
+            FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
+            FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
+        }
 
         if ( params.no_index ) {
             TRAEL_PREPROCESSING  (file_ch, params.outdir, params.trael_preprocessing_args, params.verbose)
@@ -151,9 +156,13 @@ workflow {
             // only keep the selected indexes
             trael_ch = SORT_TRAEL_NAMES.out.reads.filter( ~ /${matcher_string}/ )
         }
-        FASTQC2     (trael_ch, params.outdir, params.fastqc_args, params.verbose)
+        if (! params.no_qc ) {
+            FASTQC2     (trael_ch, params.outdir, params.fastqc_args, params.verbose)
+        }
         TRIM_GALORE (trael_ch, params.outdir, params.trim_galore_args, params.verbose)
-        FASTQC3     (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        if (! params.no_qc ) {
+            FASTQC3     (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        }
         BOWTIE2     (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)
 
         // we just need the bam files for SAMTOOLS_SORT and INDEX, not a tuple of the name and the bam
@@ -169,15 +178,23 @@ workflow {
         // Deduplication
         UMIBAM2 (SAMTOOLS_SORT.out.bam, SAMTOOLS_INDEX.out.bai, params.outdir, params.umibam2_args, params.verbose)
 
-        // merging channels for MultiQC
-        multiqc_ch = FASTQC.out.report.mix(
-            FASTQ_SCREEN.out.report.ifEmpty([]),
-            FASTQC2.out.report.ifEmpty([]),
-            FASTQC3.out.report.ifEmpty([]),
-            TRIM_GALORE.out.report.ifEmpty([]),
-            BOWTIE2.out.stats.ifEmpty([]),
-            UMIBAM2.out.report.ifEmpty([]),
-        ).collect()
+        if (! params.no_qc ) {
+              // merging channels for MultiQC
+            multiqc_ch = FASTQC.out.report.mix(
+                FASTQ_SCREEN.out.report.ifEmpty([]),
+                FASTQC2.out.report.ifEmpty([]),
+                FASTQC3.out.report.ifEmpty([]),
+                TRIM_GALORE.out.report.ifEmpty([]),
+                BOWTIE2.out.stats.ifEmpty([]),
+                UMIBAM2.out.report.ifEmpty([]),
+            ).collect()
+        } else {
+            // merging channels for MultiQC
+            multiqc_ch = TRIM_GALORE.out.report.mix(
+                BOWTIE2.out.stats.ifEmpty([]),
+                UMIBAM2.out.report.ifEmpty([]),
+            ).collect()
+        }
 
         //multiqc_ch.subscribe {  println "Got: $it"  }
 
