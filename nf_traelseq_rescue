@@ -1,7 +1,5 @@
 #!/usr/bin/env nextflow
 
-// Last modified  13 April 2021
-
 // Enable modules
 nextflow.enable.dsl=2
 
@@ -22,7 +20,6 @@ params.index = '123456789' // we want to supply the indexes to use
 params.no_index = false
 params.multiqc_args = ''
 params.no_output = false
-params.no_qc = false
 
 params.help = false
 // Show help message and exit
@@ -56,16 +53,16 @@ if (params.list_genomes){
 }
 genome = getGenome(params.genome)
 
-include { TRAEL_PREPROCESSING_INDEXING } from './nf_modules/trael_preprocessing.mod.nf' params(no_output: params.no_output)
-include { TRAEL_PREPROCESSING } from './nf_modules/trael_preprocessing.mod.nf' params(no_output: params.no_output)
+include { TRAEL_PREPROCESSING_INDEXING } from './nf_modules/trael_preprocessing.mod.nf'
+include { TRAEL_PREPROCESSING } from './nf_modules/trael_preprocessing.mod.nf'
 include { SORT_TRAEL_NAMES }    from './nf_modules/trael_preprocessing.mod.nf'
-include { FASTQC }              from './nf_modules/fastqc.mod.nf'    params(nogroup: true, no_output: params.no_output)
-include { FASTQC as FASTQC2 }   from './nf_modules/fastqc.mod.nf'    params(nogroup: true, no_output: params.no_output)
-include { FASTQC as FASTQC3 }   from './nf_modules/fastqc.mod.nf'    params(nogroup: true, no_output: params.no_output)
-include { FASTQ_SCREEN }        from './nf_modules/fastq_screen.mod.nf' params(no_output: params.no_output)
-include { TRIM_GALORE }         from './nf_modules/trim_galore.mod.nf' params(single_end: '--single_end', no_output: params.no_output)
-include { SAMTOOLS_SORT }       from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
-include { SAMTOOLS_INDEX2 }      from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
+include { FASTQC }              from './nf_modules/fastqc.mod.nf'    params(nogroup: true)
+include { FASTQC as FASTQC2 }   from './nf_modules/fastqc.mod.nf'    params(nogroup: true)
+include { FASTQC as FASTQC3 }   from './nf_modules/fastqc.mod.nf'    params(nogroup: true)
+include { FASTQ_SCREEN }        from './nf_modules/fastq_screen.mod.nf'
+include { TRIM_GALORE }         from './nf_modules/trim_galore.mod.nf' params(single_end: '--single_end')
+include { SAMTOOLS_SORT }       from './nf_modules/samtools.mod.nf'  
+include { SAMTOOLS_INDEX2 }      from './nf_modules/samtools.mod.nf' 
 include { BOWTIE2 }             from './nf_modules/bowtie2.mod.nf'   params(genome: genome, no_output: params.no_output)
 // params(genome: genome, local: "--local")
 include { UMIBAM2 }              from './nf_modules/umibam2.mod.nf' // new umibam needs putting into nextflow pipeline
@@ -113,15 +110,46 @@ process CHECK_BAMFILE_NOT_EMPTY {
     """
 }
 
+process TRAEL_PREPROCESSING_INDEXING_RESCUE {
+	
+	tag "$name" // Adds name to job submission instead of (1), (2) etc.
+		
+    input:
+	    tuple val(name), path(reads)
+		val (outputdir)
+		val (trael_preprocessing_args)
+		val (verbose)
+
+	output:
+		path "*.txt", optional: true, emit: stats 
+        path ("*UMIed*.fastq.gz"), emit: reads
+
+	publishDir "$outputdir",
+		mode: "link", overwrite: true, enabled: !params.no_output
+
+	script:
+		if (verbose){
+			println ("[MODULE] TrAEL-PREPROCESSING ARGS: " + trael_preprocessing_args)
+		}
+
+		/* Run the TrAELseq_preprocessing_UMIplusBarcode script
+			This splits the input fastq file by the 9 TrAEL barcodes and T or no T at position 13, 
+			so produces 20 output fastq files (9 + unassigned)*2 for T and noT. 
+		*/
+		"""
+		module load python
+		/bi/group/bioinf/Jon_Houseley/trael_rescue_lane8526/TrAELseq_UMIplusBarcode_rescue_lane8526.py	${reads}
+        #/bi/group/bioinf/Jon_Houseley/trael_rerescue/sample5693_lane8149_8160/TrAELseq_preprocessing_UMIplusBarcode_rerescue_lane8149_8160.py	${reads}
+		"""
+
+}
+
 
 workflow {
 
     main:
-
-        if (! params.no_qc ) {
-            FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
-            FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
-        }
+        //FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
+        //FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
 
         if ( params.no_index ) {
             TRAEL_PREPROCESSING  (file_ch, params.outdir, params.trael_preprocessing_args, params.verbose)
@@ -129,8 +157,8 @@ workflow {
 
         }
         else  {
-            TRAEL_PREPROCESSING_INDEXING  (file_ch, params.outdir, params.trael_preprocessing_args, params.verbose)
-            CHECK_FQ_GZ_NOT_EMPTY(TRAEL_PREPROCESSING_INDEXING.out.reads.flatten())
+            TRAEL_PREPROCESSING_INDEXING_RESCUE  (file_ch, params.outdir, params.trael_preprocessing_args, params.verbose)
+            CHECK_FQ_GZ_NOT_EMPTY(TRAEL_PREPROCESSING_INDEXING_RESCUE.out.reads.flatten())
         }       
 
         /* The TRAEL_PREPROCESSING scripts produce a set of fastq files for each name, but some may be empty. 
@@ -156,13 +184,9 @@ workflow {
             // only keep the selected indexes
             trael_ch = SORT_TRAEL_NAMES.out.reads.filter( ~ /${matcher_string}/ )
         }
-        if (! params.no_qc ) {
-            FASTQC2     (trael_ch, params.outdir, params.fastqc_args, params.verbose)
-        }
+        //FASTQC2     (trael_ch, params.outdir, params.fastqc_args, params.verbose)
         TRIM_GALORE (trael_ch, params.outdir, params.trim_galore_args, params.verbose)
-        if (! params.no_qc ) {
-            FASTQC3     (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
-        }
+        FASTQC3     (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
         BOWTIE2     (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)
 
         // we just need the bam files for SAMTOOLS_SORT and INDEX, not a tuple of the name and the bam
@@ -173,31 +197,35 @@ workflow {
         filt_sam_bam = CHECK_BAMFILE_NOT_EMPTY.out.bam.filter { it.first().countLines() > 0 }
         filt_bam = filt_sam_bam.map { it.last() }
         SAMTOOLS_SORT  (filt_bam, params.outdir, params.samtools_sort_args, params.verbose)
+        //SAMTOOLS_INDEX (SAMTOOLS_SORT.out.bam, params.outdir, params.samtools_index_args, params.verbose)
+      				        
+        // Deduplication
+        //UMIBAM2 (SAMTOOLS_SORT.out.bam, SAMTOOLS_INDEX.out.bai, params.outdir, params.umibam2_args, params.verbose)
+
         SAMTOOLS_INDEX2 (SAMTOOLS_SORT.out.bam, params.outdir, params.samtools_index_args, params.verbose)
       				        
         // Deduplication
         //UMIBAM2 (SAMTOOLS_SORT.out.bam, SAMTOOLS_INDEX.out.bai, params.outdir, params.umibam2_args, params.verbose)
         UMIBAM2 (SAMTOOLS_INDEX2.out.bam, SAMTOOLS_INDEX2.out.bai, params.outdir, params.umibam2_args, params.verbose)
 
-        if (! params.no_qc ) {
-              // merging channels for MultiQC
-            multiqc_ch = FASTQC.out.report.mix(
-                FASTQ_SCREEN.out.report.ifEmpty([]),
-                FASTQC2.out.report.ifEmpty([]),
-                FASTQC3.out.report.ifEmpty([]),
-                TRIM_GALORE.out.report.ifEmpty([]),
-                BOWTIE2.out.stats.ifEmpty([]),
-                UMIBAM2.out.report.ifEmpty([]),
-            ).collect()
-        } else {
-            // merging channels for MultiQC
-            multiqc_ch = TRIM_GALORE.out.report.mix(
-                BOWTIE2.out.stats.ifEmpty([]),
-                UMIBAM2.out.report.ifEmpty([]),
-            ).collect()
-        }
 
+        // merging channels for MultiQC
+      /*  multiqc_ch = FASTQC.out.report.mix(
+            FASTQ_SCREEN.out.report.ifEmpty([]),
+            FASTQC2.out.report.ifEmpty([]),
+            FASTQC3.out.report.ifEmpty([]),
+            TRIM_GALORE.out.report.ifEmpty([]),
+            BOWTIE2.out.stats.ifEmpty([]),
+            UMIBAM2.out.report.ifEmpty([]),
+        ).collect()
+        */
         //multiqc_ch.subscribe {  println "Got: $it"  }
+
+        multiqc_ch = FASTQC3.out.report.mix( 
+            TRIM_GALORE.out.report.ifEmpty([]),
+            BOWTIE2.out.stats.ifEmpty([]),
+            UMIBAM2.out.report.ifEmpty([]),
+        ).collect()
 
         MULTIQC  (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
         
@@ -286,16 +314,6 @@ def helpMessage() {
 
     Optional arguments:
     ====================
-
-      --no_output                    If specified, the only files produced in the output directory will be *umibam2.1.bam, *umibam2.1_dedup_report.txt 
-                                     and multiqc_report.html.
-                                     The output files from fastqc, fastq_screen, bowtie, trim_galore, samtools sort and index can be found 
-                                     in the nf work/ directory but will not be written into the output directory. 
-                                     This option was implemented when reprocessing a load of samples, where intermediate files were not required.
-                                     [Default: false] 
-
-      --no_index                     For samples that do not contain TrAEL indexes and so do not need to be demultiplexed. 
-                                     Cannot be used with --index [int] below. [Default: false] 
 
       --index [int]                  TrAEL indexes that are expected to be present. Provide the index numbers without spaces, 
                                         e.g. --index 245 for indexes 2,4 and 5.  [Default: all indexes, equivalent to --index 123456789]

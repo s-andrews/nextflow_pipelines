@@ -1,6 +1,7 @@
 nextflow.enable.dsl=2
 params.bisulfite = ''
 params.single_end = false
+params.no_output = false
 
 process FASTQ_SCREEN {
 	
@@ -26,7 +27,7 @@ process FASTQ_SCREEN {
 		path "*txt",  emit: report
 
 	publishDir "$outputdir",
-		mode: "link", overwrite: true
+		mode: "link", overwrite: true, enabled: !params.no_output
 
     script:
 

@@ -1,4 +1,5 @@
 nextflow.enable.dsl=2
+params.no_output = false
 
 
 // This is for the early versions of the TrAEL method did not incorporate the inline TrAEL barcodes. 
@@ -17,7 +18,7 @@ process TRAEL_PREPROCESSING {
         path ("*UMIed*.fastq.gz"), emit: reads
 
 	publishDir "$outputdir",
-		mode: "link", overwrite: true
+		mode: "link", overwrite: true, enabled: !params.no_output
 
 	script:
 		if (verbose){
@@ -48,7 +49,7 @@ process TRAEL_PREPROCESSING_INDEXING {
         path ("*UMIed*.fastq.gz"), emit: reads
 
 	publishDir "$outputdir",
-		mode: "link", overwrite: true
+		mode: "link", overwrite: true, enabled: !params.no_output
 
 	script:
 		if (verbose){

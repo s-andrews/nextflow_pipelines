@@ -8,6 +8,7 @@ params.single_end = false
 // For Epigenetic Clock Processing
 params.three_prime_clip_R1 = ''
 params.three_prime_clip_R2 = ''
+params.no_output = false
 
 
 process TRIM_GALORE {	
@@ -32,7 +33,7 @@ process TRIM_GALORE {
 		path "*trimming_report.txt", optional: true, emit: report
 		
 	publishDir "$outputdir",
-		mode: "link", overwrite: true
+		mode: "link", overwrite: true, enabled: !params.no_output
 
 
     script:
