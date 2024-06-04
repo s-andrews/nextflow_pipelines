@@ -1,0 +1,4 @@
+name	GRCm38_rRNA_ROSA26
+species	Mouse
+fasta	/bi/scratch/Genomes/Mouse/GRCm38_rRNA_ROSA26/
+bowtie2	/bi/scratch/Genomes/Mouse/GRCm38_rRNA_ROSA26/GRCm38_rRNA_ROSA
