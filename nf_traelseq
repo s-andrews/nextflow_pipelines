@@ -65,7 +65,7 @@ include { FASTQC as FASTQC3 }   from './nf_modules/fastqc.mod.nf'    params(nogr
 include { FASTQ_SCREEN }        from './nf_modules/fastq_screen.mod.nf' params(no_output: params.no_output)
 include { TRIM_GALORE }         from './nf_modules/trim_galore.mod.nf' params(single_end: '--single_end', no_output: params.no_output)
 include { SAMTOOLS_SORT }       from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
-include { SAMTOOLS_INDEX }      from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
+include { SAMTOOLS_INDEX2 }      from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
 include { BOWTIE2 }             from './nf_modules/bowtie2.mod.nf'   params(genome: genome, no_output: params.no_output)
 // params(genome: genome, local: "--local")
 include { UMIBAM2 }              from './nf_modules/umibam2.mod.nf' // new umibam needs putting into nextflow pipeline
@@ -173,10 +173,11 @@ workflow {
         filt_sam_bam = CHECK_BAMFILE_NOT_EMPTY.out.bam.filter { it.first().countLines() > 0 }
         filt_bam = filt_sam_bam.map { it.last() }
         SAMTOOLS_SORT  (filt_bam, params.outdir, params.samtools_sort_args, params.verbose)
-        SAMTOOLS_INDEX (SAMTOOLS_SORT.out.bam, params.outdir, params.samtools_index_args, params.verbose)
+        SAMTOOLS_INDEX2 (SAMTOOLS_SORT.out.bam, params.outdir, params.samtools_index_args, params.verbose)
       				        
         // Deduplication
-        UMIBAM2 (SAMTOOLS_SORT.out.bam, SAMTOOLS_INDEX.out.bai, params.outdir, params.umibam2_args, params.verbose)
+        //UMIBAM2 (SAMTOOLS_SORT.out.bam, SAMTOOLS_INDEX.out.bai, params.outdir, params.umibam2_args, params.verbose)
+        UMIBAM2 (SAMTOOLS_INDEX2.out.bam, SAMTOOLS_INDEX2.out.bai, params.outdir, params.umibam2_args, params.verbose)
 
         if (! params.no_qc ) {
               // merging channels for MultiQC

@@ -38,7 +38,7 @@ process UMIBAM2 {
 		}
 			
 		"""
-		sleep 2
+		sleep 5
 		module load python3
 		python /bi/apps/TrAELseq/latest/TrAEL-seq/umibam2.py $bam
 		"""
