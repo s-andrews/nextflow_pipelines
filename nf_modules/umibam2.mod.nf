@@ -39,8 +39,8 @@ process UMIBAM2 {
 			
 		"""
 		sleep 5
-		module load python3
-		python /bi/apps/TrAELseq/latest/TrAEL-seq/umibam2.py $bam
+		module load python
+		python3 /bi/apps/TrAELseq/latest/TrAEL-seq/umibam2.py $bam
 		"""
 		
 		// The output files should be renamed so that they bismark2report picks up everything
