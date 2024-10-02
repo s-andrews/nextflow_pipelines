@@ -12,11 +12,18 @@ def getGenome(name) {
     def fileName = scriptDir.toString() + "/genomes.d/" + name + ".genome"
     def testFile = new File(fileName)
     if (!testFile.exists()) {
-        println("\nFile >>$fileName<< does not exist. Listing available genomes...\n")
-        listGenomes()
-    }   
-    else { 
-        // println ("File $fileName exists.")
+
+        // We'll try the users home genomes directory
+
+        scriptDir = new File(System.getProperty("user.home") + "/genomes.d/")
+
+        // die gracefully if the user specified an incorrect genome
+        fileName = scriptDir.toString() + "/" + name + ".genome"
+        testFile = new File(fileName)
+        if (!testFile.exists()) {
+            println("\nFile >>$fileName<< does not exist. Listing available genomes...\n")
+            listGenomes()
+        }
     }
 
     genomeFH = new File (fileName).newInputStream()
@@ -55,6 +62,32 @@ def listGenomes(){
             }
         }
     }
+
+    // We'll repeat this for the genomes.d directory in the users home directory 
+    scriptDir = new File(System.getProperty("user.home") + "/genomes.d/")
+    // println (scriptDir) // last slash is consumed
+
+    if (scriptDir.exists()) {
+        allFiles = scriptDir.list()
+        
+        for( def file : allFiles.sort() ) {
+            
+            if( file =~ /.genome$/){
+
+                genomeFH = new File(scriptDir.toString() + "/$file").newInputStream()
+                name = file.replaceFirst(/.genome/, "")
+            
+                println (name)
+                genomeFH.eachLine {
+                    if (params.verbose){
+                        println ("\t$it")
+                    }
+                }
+            }
+        }
+    }
+ 
+
     println ("\nTo see this list of available genomes with more detailed information about paths and indexes,\nplease re-run the command including '--list_genomes --verbose'\n\n")
 
     System.exit(1)
