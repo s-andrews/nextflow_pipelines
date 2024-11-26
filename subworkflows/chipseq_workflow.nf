@@ -1,0 +1,234 @@
+#!/usr/bin/env nextflow
+
+// Last modified 13 October 2020
+
+// Enable modules
+nextflow.enable.dsl=2
+
+params.outdir = "."
+params.genome = ""
+params.verbose = false
+params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically 
+
+params.fastqc_args = ''
+params.fastq_screen_args = ''
+params.trim_galore_args = ''
+params.bowtie2_args = ''
+params.multiqc_args = ''
+params.prefix = ''
+
+params.help = false
+// Show help message and exit
+if (params.help){
+    helpMessage()
+    exit 0
+}
+
+//println ("[CHIPSEQ WORKFLOW] Genome is: "   + params.genome)
+
+
+// params.list_genomes = false;
+// if (params.list_genomes){
+//     println ("[WORKFLOW] List genomes selected")
+// }
+
+if (params.verbose){
+    println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
+    println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
+    println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
+    println ("[WORKFLOW] BOWTIE2 ARGS: "          + params.bowtie2_args)
+    println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
+}
+
+
+// include { makeFilesChannel; getFileBaseNames } from '../nf_modules/files.mod.nf'
+// include { getGenome }                          from '../nf_modules/genomes.mod.nf'
+// include { listGenomes }                        from '../nf_modules/genomes.mod.nf'
+
+// if (params.list_genomes){
+//     listGenomes()  // this lists all available genomes, and exits
+// }
+// genome = getGenome(params.genome)
+
+//genome = params.genome["bowtie2"]
+
+include { FASTQC }            from '../nf_modules/fastqc.mod.nf'
+include { FASTQC as FASTQC2 } from '../nf_modules/fastqc.mod.nf'
+include { FASTQ_SCREEN }      from '../nf_modules/fastq_screen.mod.nf'
+include { TRIM_GALORE }       from '../nf_modules/trim_galore.mod.nf'
+
+include { BOWTIE2 }           from '../nf_modules/bowtie2.mod.nf'   params(genome: params.genome)
+include { MULTIQC }           from '../nf_modules/multiqc.mod.nf' 
+
+//file_ch = makeFilesChannel(args)
+
+workflow CHIPSEQ {
+
+    take:
+        file_ch
+
+    main: 
+        FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
+        FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
+        TRIM_GALORE     (file_ch, params.outdir, params.trim_galore_args, params.verbose)
+        FASTQC2         (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        BOWTIE2         (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)
+    
+        // merging channels for MultiQC
+        multiqc_ch = FASTQC.out.report.mix(
+            TRIM_GALORE.out.report,
+            FASTQ_SCREEN.out.report.ifEmpty([]),
+            FASTQC2.out.report.ifEmpty([]),
+            BOWTIE2.out.stats.ifEmpty([]),
+        ).collect()
+
+    // // multiqc_ch.subscribe {  println "Got: $it"  }
+         MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)  
+
+    emit: 
+        multiqc = MULTIQC.out.html
+        bam = BOWTIE2.out.bam
+        fastqc = FASTQC.out.report
+}
+
+// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+// minimal execution summary report so we at least know what the working directory was...
+workflow.onComplete {
+
+    def msg = """\
+        Pipeline execution summary
+        ---------------------------
+        Jobname     : ${workflow.runName}
+        Completed at: ${workflow.complete}
+        Duration    : ${workflow.duration}
+        Success     : ${workflow.success}
+        workDir     : ${workflow.workDir}
+        exit status : ${workflow.exitStatus}
+        """
+    .stripIndent()
+
+    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+}
+
+def helpMessage() {
+ 
+    log.info"""
+    >>
+
+
+    SYNOPSIS:
+
+    In a nutshell, this workflow runs an entire processing pipeline on FastQ files, including QC, contamination QC,
+    quality-/adapter trimming, alignments to a genome using Bowtie 2, and finally generate an aggregate QC report. The
+    workflow is suitable for e.g. ChIP-seq, ATAC-seq or any other form of sequencing that requires standard alignments
+    to a genome. Here is a graphical representation of the workflow:
+
+    --- FastQC
+    --- FastQ Screen
+    --- Trim Galore
+        |
+        --- FastQC
+        --- Bowtie 2  
+    --- MultiQC*
+        
+    * This step runs only once ALL other jobs have completed.
+     
+    By default all these steps are submitted as jobs to the Babraham stone compute cluster.
+
+    By default, the involved tools are run in the following way:
+    ------------------------------------------------------------
+    FastQC:         defaults (-q)
+    FastQ Screen:   defaults (Bowtie 2; local mode)
+    Trim Galore:    defaults (adapter auto-detection)
+    Bowtie 2:       end-to-end mode; '--no-unal'; for paired-end files: '--no-mixed --no-discordant' (concordant PE alignmnents only)
+                    
+    To add additional parameters to any of the programs, consider supplying tool-specific arguments (see --toolname_args="..." below).
+
+
+            ==============================================================================================================
+
+            
+    USAGE:
+    
+    nf_chipseq [options] --genome <genomeID> <input files>
+    
+    Mandatory arguments:
+    ====================
+
+      <input files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. Files are automatically processed as
+                                      single-end (SE) or paired end (PE) files (if file pairs share the same base-name, and differ only
+                                      by a read number, e.g. 'base_name_R1.fastq.gz' and 'base_name_R2.fastq.gz' (or R3, R4). For
+                                      PE files, only Read 1 is run through FastQ Screen (as typically R1 and R2 produce nearly identical
+                                      contamination profiles). To run PE files in single-end mode, please see '--single_end' below.
+
+      --genome [str]                  Genome build ID to be used for the alignment, e.g. GRCh38 (latest human genome) or GRCm38
+                                      (latest mouse genome build). To list all available genomes, see '--list_genomes' below.
+
+
+    Tool-specific options:
+    ======================
+
+    For all following options, please note that the format: ="your options" needs to be strictly adhered to in order to work correctly.
+
+      --fastqc_args="[str]"           This option can take any number of options that are compatible with FastQC to modify its default
+                                      behaviour. For more detailed information on available options please refer to the FastQC documentation,
+                                      or run 'fastqc --help' on the command line. As an example, to run FastQC without grouping of bases when
+                                      reads are >50bp and use a specific file with non-default adapter sequences, use: 
+                                      ' --fastqc_args="--nogroup --adapters ./non_default_adapter_file.txt" '. [Default: None]
+
+      --fastq_screen_args="[str]"     This option can take any number of options that are compatible with FastQ Screen to modify its
+                                      default behaviour. For more detailed information on available options please refer to the FastQ Screen
+                                      documentation, or run 'fastq_screen --help' on the command line. For instance, to process a bisulfite
+                                      converted library with fairly relaxed parameters, you could use: 
+                                      ' --fastq_screen_args="--bisulfite --score_min L,0,-0.6" '. [Default: None]
+
+      --trim_galore_args="[str]"      This option can take any number of options that are compatible with Trim Galore to modify its
+                                      default trimming behaviour. For more detailed information on available options please refer
+                                      to the Trim Galore User Guide, or run 'trim_galore --help' on the command line. As an example, to trim
+                                      off the first 10bp from the 5' of R1 and 5bp of R2, use: 
+                                      ' --trim_galore_args="--clip_r1 10 --clip_r2 5" '. [Default: None]
+
+    
+      --bowtie2_args="[str]"          This option can take any number of options that are compatible with Bowtie 2 to modify its
+                                      default mapping behaviour. For more detailed information on available options please refer
+                                      to the Bowtie 2 User Guide, or run 'bowtie2 --help' on the command line. As an example, to
+                                      run somewhat more stringent alignments for only 1 million sequences, use:
+                                      ' --bowtie2_args="-u 1000000 --score_min L,0,-0.4" '. [Default: None]
+
+    Other options:
+    ==============
+
+      --outdir [str]                  Path to the output directory. [Default: current working directory]
+
+      --list_genomes                  List all genome builds that are currently available to choose from. To see this list
+                                      of available genomes with more detailed information about paths and indexes, run
+                                      the command as '--list_genomes --verbose'
+    
+      --single_end                    Force files of a read pair to be treated as single-end files. [Default: auto-detect]
+      
+      --verbose                       More verbose status messages. [Default: OFF]
+      --help                          Displays this help message and exits.
+
+    Workflow options:
+    =================
+
+    Please note the single '-' hyphen for the following options!
+
+      -resume                         If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
+                                      this option will attempt to resume the workflow at the point it got interrupted by using
+                                      Nextflow's caching mechanism. This may save a lot of time.
+
+      -bg                             Sends the entire workflow into the background, thus disconnecting it from the terminal session.
+                                      This option launches a daemon process (which will keep running on the headnode) that watches over
+                                      your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
+                                      jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
+                                      pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
+
+      -process.executor=local         Temporarily changes where the workflow is executed to the 'local' machine. See also Nextflow config
+                                      file for more details. [Default: slurm] 
+    
+
+    <<
+    """.stripIndent()
+
+}

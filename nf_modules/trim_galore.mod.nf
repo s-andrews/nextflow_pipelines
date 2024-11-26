@@ -15,7 +15,7 @@ process TRIM_GALORE {
     
 	tag "$name"                         // Adds name to job submission instead of (1), (2) etc.
 
-	label 'quadCore'                    // sets cpus = 4
+	label 'multiCore'                    // sets cpus = 8
 	
 	// dynamic directive
 	memory { 10.GB * task.attempt }  
@@ -50,6 +50,9 @@ process TRIM_GALORE {
 				pairedString = "--paired"
 			}
 		}
+
+                // Set multi-core
+		trim_galore_args += " -j 8 "
 
 		// Specialised Epigenetic Clock Processing		
 		if (params.clock){

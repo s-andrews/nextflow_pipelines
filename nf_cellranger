@@ -5,7 +5,7 @@ nextflow.enable.dsl=2
 params.outdir = "."
 params.genome = ""
 params.verbose = false
-params.cellranger_args = ''
+params.cellranger_args = '--create-bam true'
 params.single_end = false // default mode is auto-detect
 
 params.fastqs_dir = ''
