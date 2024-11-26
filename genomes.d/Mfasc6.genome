@@ -1,0 +1,6 @@
+name	Mfasc6
+species	Macaca_fascicularis
+fasta	/bi/scratch/Genomes/Macaca_facicularis
+cellranger  /bi/scratch/Genomes/Macaca_facicularis/Macaca_fascicularis_10x/
+cellranger_gtf  /bi/scratch/Genomes/Macaca_facicularis/Macaca_fascicularis_6.0.113.filtered.gtf
+gtf	/bi/scratch/Genomes/Macaca_facicularis/Macaca_fascicularis_6.0.113.gtf
