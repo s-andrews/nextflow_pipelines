@@ -1,0 +1,8 @@
+name	GRCg7b
+species	Chicken
+fasta	/bi/scratch/Genomes/Chicken/GRCg7b/
+bismark	/bi/scratch/Genomes/Chicken/GRCg7b/
+bowtie2	/bi/scratch/Genomes/Chicken/GRCg7b/Gallus_gallus.GRCg7b
+hisat2	/bi/scratch/Genomes/Chicken/GRCg7b/Gallus_gallus.GRCg7b
+gtf	/bi/scratch/Genomes/Chicken/GRCg7b/Gallus_gallus.GRCg7b.113.gtf
+hisat2_splices	/bi/scratch/Genomes/Chicken/GRCg7b/Gallus_gallus.GRCg7b_splices.txt
