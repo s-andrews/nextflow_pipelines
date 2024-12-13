@@ -15,6 +15,7 @@ params.multiqc_args = ''
 params.fastqc_args = ''
 params.no_output = false
 params.no_qc = false
+params.dedup = false
 
 params.help = false
 // Show help message and exit
@@ -31,6 +32,7 @@ if (params.list_genomes){
 if (params.verbose){
     println ("[WORKFLOW] UMIBAM ARGS ARE: "       + params.umibam2_args)
     println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
+    println ("[WORKFLOW] DEDUPLICATING: "          + params.dedup)
 }
 
 
@@ -43,16 +45,14 @@ if (params.list_genomes){
 }
 genome = getGenome(params.genome)
 
-include { CHIPSEQ }             from './subworkflows/chipseq_workflow.nf'           params(genome: genome, no_output: params.no_output)
+include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'           params(genome: genome, no_output: params.no_output)
 include { ECCDNA_PREPROCESSING } from './nf_modules/eccDNA_preprocessing.mod.nf'    params(no_output: params.no_output)
-include { FASTQC }              from './nf_modules/fastqc.mod.nf'    params(nogroup: true, no_output: params.no_output)
-include { SAMTOOLS_SORT }       from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
+include { FASTQC }               from './nf_modules/fastqc.mod.nf'    params(nogroup: true, no_output: params.no_output)
+include { SAMTOOLS_SORT }        from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
 include { SAMTOOLS_INDEX2 }      from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
 include { UMIBAM2 }              from './nf_modules/umibam2.mod.nf' 
 
-
 file_ch = makeFilesChannel(args)
-
 
 // copied from nf_traelseq
 process CHECK_BAMFILE_NOT_EMPTY {
@@ -86,11 +86,13 @@ workflow {
         filt_sam_bam = CHECK_BAMFILE_NOT_EMPTY.out.bam.filter { it.first().countLines() > 0 }
         filt_bam = filt_sam_bam.map { it.last() }
 
-        SAMTOOLS_SORT  (filt_bam, params.outdir, params.samtools_sort_args, params.verbose)
-        SAMTOOLS_INDEX2 (SAMTOOLS_SORT.out.bam, params.outdir, params.samtools_index_args, params.verbose)
+        if (params.dedup) { 
+            SAMTOOLS_SORT  (filt_bam, params.outdir, params.samtools_sort_args, params.verbose)
+            SAMTOOLS_INDEX2 (SAMTOOLS_SORT.out.bam, params.outdir, params.samtools_index_args, params.verbose)
       				        
-        // Deduplication
-        UMIBAM2 (SAMTOOLS_INDEX2.out.bam, SAMTOOLS_INDEX2.out.bai, params.outdir, params.umibam2_args, params.verbose)
+            // Deduplication
+            UMIBAM2 (SAMTOOLS_INDEX2.out.bam, SAMTOOLS_INDEX2.out.bai, params.outdir, params.umibam2_args, params.verbose)
+        }
         
 }
 
@@ -178,6 +180,8 @@ def helpMessage() {
                                      in the nf work/ directory but will not be written into the output directory. 
                                      This option was implemented when reprocessing a load of samples, where intermediate files were not required.
                                      [Default: false] 
+
+      --dedup                       If specified, umibam2 will be run to deduplicate the data [Default: false]
 
 
     Tool-specific options:
