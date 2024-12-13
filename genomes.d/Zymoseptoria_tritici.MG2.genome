@@ -1,0 +1,7 @@
+name	Zymoseptoria_tritici_MG2
+species	Zymoseptoria_tritici
+fasta	/bi/scratch/Genomes/Zymoseptoria_tritici
+bowtie2	/bi/scratch/Genomes/Zymoseptoria_tritici/Zymoseptoria_tritici.MG2
+hisat2	/bi/scratch/Genomes/Zymoseptoria_tritici/Zymoseptoria_tritici.MG2
+gtf	/bi/scratch/Genomes/Zymoseptoria_tritici/Zymoseptoria_tritici.MG2.59.gtf
+hisat2_splices	/bi/scratch/Genomes/Zymoseptoria_tritici/Zymoseptoria_tritici.MG2.59.hisat2_splices.txt
