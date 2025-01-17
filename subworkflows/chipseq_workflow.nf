@@ -55,8 +55,7 @@ if (params.verbose){
 include { FASTQC }            from '../nf_modules/fastqc.mod.nf'
 include { FASTQC as FASTQC2 } from '../nf_modules/fastqc.mod.nf'
 include { FASTQ_SCREEN }      from '../nf_modules/fastq_screen.mod.nf'
-include { TRIM_GALORE }       from '../nf_modules/trim_galore.mod.nf'
-
+include { TRIM_GALORE }       from '../nf_modules/trim_galore.mod.nf' params(single_end: params.single_end)
 include { BOWTIE2 }           from '../nf_modules/bowtie2.mod.nf'   params(genome: params.genome)
 include { MULTIQC }           from '../nf_modules/multiqc.mod.nf' 
 
