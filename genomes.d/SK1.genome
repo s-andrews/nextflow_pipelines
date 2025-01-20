@@ -1,0 +1,5 @@
+name	SK1
+species	S_cerevisiae
+fasta	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae_SK1/latest/
+bowtie2	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae_SK1/latest/Saccharomyces_cerevisiae_SK1
+gff	/bi/scratch/Genomes/Yeast/Saccharomyces_cerevisiae_SK1/latest/SK1.all_feature.gff
