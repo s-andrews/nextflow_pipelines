@@ -1,0 +1,104 @@
+#!/usr/bin/env nextflow
+nextflow.enable.dsl=2
+
+params.outdir = "."
+params.genome = ""
+params.verbose = false
+params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically  
+
+params.help = false
+// Show help message and exit
+if (params.help){
+    helpMessage()
+    exit 0
+}
+
+
+include { makeFilesChannel; getFileBaseNames }    from './nf_modules/files.mod.nf'
+include { CALC_MD5 }          from './nf_modules/md5.mod.nf'
+
+file_ch = Channel.fromPath(args)     // UmiBam expects just the path to be passed in
+// file_ch.subscribe{  println "Got: $it"  }
+workflow {
+
+    main:
+        CALC_MD5  (file_ch, params.outdir, params.verbose)
+}
+
+// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+// minimal execution summary report so we at least know what the working directory was...
+workflow.onComplete {
+
+    def msg = """\
+        Pipeline execution summary
+        ---------------------------
+        Jobname     : ${workflow.runName}
+        Completed at: ${workflow.complete}
+        Duration    : ${workflow.duration}
+        Success     : ${workflow.success}
+        workDir     : ${workflow.workDir}
+        exit status : ${workflow.exitStatus}
+        """
+    .stripIndent()
+
+    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+}
+
+def helpMessage() {
+ 
+    log.info"""
+    >>
+
+
+    SYNOPSIS:
+
+    This workflow takes in a list of filenames and calculates their md5 signatures.
+
+    Output files are the input names with .md5 appended to the end.
+
+              ==============================================================================================================
+
+
+    USAGE:
+    
+    nf_calcmd5 [options] <input files>
+    
+    Mandatory arguments:
+    ====================
+
+      <input_files>                   List of input files in any format.
+                                      
+    Tool-specific options:
+    ======================
+
+    Other options:
+    ==============
+
+      --outdir [str]                  Path to the output directory. [Default: current working directory]
+
+      --verbose                       More verbose status messages. [Default: OFF]
+      --help                          Displays this help message and exits.
+
+    Workflow options:
+    =================
+
+    Please note the single '-' hyphen for the following options!
+
+      -resume                         If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
+                                      this option will attempt to resume the workflow at the point it got interrupted by using
+                                      Nextflow's caching mechanism. This may save a lot of time.
+
+      -bg                             Sends the entire workflow into the background, thus disconnecting it from the terminal session.
+                                      This option launches a daemon process (which will keep running on the headnode) that watches over
+                                      your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
+                                      jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
+                                      pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
+
+      -process.executor=local         Temporarily changes where the workflow is executed to the 'local' machine. See also the nextflow.config
+                                      file for more details. [Default: slurm] 
+    
+
+    <<
+    """.stripIndent()
+
+}
