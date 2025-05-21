@@ -1,0 +1,132 @@
+#!/usr/bin/env nextflow
+nextflow.enable.dsl=2
+
+params.outdir = "."
+params.help = false
+params.vcf = '' 
+params.strain = '' // 
+params.strain2 = ''
+
+
+// Show help message and exit
+if (params.help){
+    helpMessage()
+    exit 0
+}
+
+if (params.vcf == "") {
+    println("vcf file required - please specify with --vcf\nExiting...\n")
+    exit 1
+} 
+
+vcf_file = file(params.vcf)
+
+if(vcf_file.exists()) {
+    print "Found vcf: ${vcf_file}"
+    //res = vcf_file.resolve()
+    //println("resolved = ${res}")
+} else {
+    println("Couldn't find vcf file \nExiting...\n")
+    exit 1
+}
+
+strain1 = params.strain
+
+if (strain1 == "") {
+    println("Strain name required!! Please resubmit specifying --strain\nExiting...\n")
+    exit 1
+}
+
+// module load nextflow 
+// nf_SNPsplit_genome_prep -bg --outdir single_strain --vcf mgp_REL2021_snps.vcf.gz --strain C57BL_6NJ
+// nf_SNPsplit_genome_prep -bg --outdir double_strain --vcf mgp_REL2021_snps.vcf.gz --strain CAST_EiJ --strain2 FVB_NJ
+
+include { SNP_SPLIT_GENOME_PREP }               from './nf_modules/SNPsplit_genome_prep.mod.nf'
+
+
+workflow {
+
+    main:
+        SNP_SPLIT_GENOME_PREP(params.outdir, vcf_file, strain1, params.strain2)
+       
+}
+
+workflow.onComplete {
+
+    def msg = """\
+        Pipeline execution summary
+        ---------------------------
+        Completed at: ${workflow.complete}
+        Duration    : ${workflow.duration}
+        Success     : ${workflow.success}
+        workDir     : ${workflow.workDir}
+        exit status : ${workflow.exitStatus}
+        """
+    .stripIndent()
+
+    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+}
+
+def helpMessage() {
+ 
+    log.info"""
+    >>
+    
+    
+    SYNOPSIS:
+    
+    This workflow runs SNPsplit_genome_preparation (by default on the Babraham stone cluster). 
+    It is currently hardcoded to use GRCm39 as the reference genome.
+
+        =========================================================================================================
+
+
+    USAGE:
+    
+    nf_SNPsplit_genome_prep [options] --vcf <vcf.gz file> --strain <strain name>
+    
+
+    Mandatory arguments:
+    ====================
+
+      --vcf                            vcf.gz file to pass to SNPsplit_genome_preparation 
+
+      --strain                         strain name e.g. C57BL_6NJ
+
+    Tool-Specific Options:
+    ======================
+
+      --reference                      Not yet in use - will use GRCm39 as the reference genome
+
+      --strain2                        Optional 2nd strain  [Default: None]
+
+    Other Options:
+    ==============
+
+      --outdir [str]                  Path to the output directory. [Default: current working directory]
+
+      --help                          Displays this help message and exits.
+
+    Workflow Options:
+    =================
+
+    Please note the single '-' hyphen for the following options!
+
+      -resume                         If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
+                                      this option will attempt to resume the workflow at the point it got interrupted by using
+                                      Nextflow's caching mechanism. This may save a lot of time.
+
+      -bg                             Sends the entire workflow into the background, thus disconnecting it from the terminal session.
+                                      This option launches a daemon process (which will keep running on the headnode) that watches over
+                                      your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
+                                      jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
+                                      pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
+
+      -process.executor=local         Temporarily changes where the workflow is executed to the 'local' machine. See also Nextflow config
+                                      file for more details. [Default: slurm] 
+    
+
+    <<
+    """.stripIndent()
+
+}
