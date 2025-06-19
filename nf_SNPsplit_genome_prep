@@ -3,15 +3,54 @@ nextflow.enable.dsl=2
 
 params.outdir = "."
 params.help = false
+params.genome = ""
+params.genome_path = ""
 params.vcf = '' 
 params.strain = '' // 
 params.strain2 = ''
+
+// I've modified this so that the genome needs to be specified, at the moment this can only be GRCm39
+// testing here: /bi/group/bioinf/Christian_Belton/nf_test
+
+// module load nextflow 
+// nf_SNPsplit_genome_prep -bg --outdir double_strain --genome GRCm39 --vcf mgp_REL2021_snps.vcf.gz --strain CAST_EiJ --strain2 FVB_NJ
+// nf_SNPsplit_genome_prep -bg --outdir double_strain --vcf mgp_REL2021_snps.vcf.gz --strain CAST_EiJ --strain2 FVB_NJ --genome_path /bi/scratch/Genomes/Mouse/GRCm39/chromosomes/
+// nf_SNPsplit_genome_prep -bg --outdir single_strain --genome GRCm39 --vcf mgp_REL2021_snps.vcf.gz --strain C57BL_6NJ
+// nf_SNPsplit_genome_prep -bg --outdir single_strain --vcf mgp_REL2021_snps.vcf.gz --strain C57BL_6NJ --genome_path /bi/scratch/Genomes/Mouse/GRCm39/chromosomes/
 
 
 // Show help message and exit
 if (params.help){
     helpMessage()
     exit 0
+}
+
+include { getGenome }                              from './nf_modules/genomes.mod.nf'
+
+if (params.genome != "") {
+
+    if(params.genome == "GRCm39") {
+
+        genome = getGenome(params.genome)
+        snpsplit_genome = genome["snpsplit"]
+        //println("Found the genome, it's ${snpsplit_genome}")
+
+    } else {
+        println("The only genome that can currently be specified with --genome is GRCm39.\n 
+            If an alternative is required, use --genome_path and provide a path to a directory containing fasta files\n 
+            e.g. '--genome_path /bi/scratch/Genomes/Mouse/GRCm39/chromosomes/...\n")
+        exit 1
+    }
+
+} else if (params.genome_path != "") {
+
+    genome_folder = (params.genome_path)
+    snpsplit_genome = genome_folder
+
+} else {
+    println("genome required - specify '--genome GRCm39' or use --genome_path and provide a path to a directory containing fasta files\n 
+        e.g. '--genome_path /bi/scratch/Genomes/Mouse/GRCm39/chromosomes/...\n")
+    exit 1
 }
 
 if (params.vcf == "") {
@@ -26,10 +65,10 @@ if(vcf_file.exists()) {
     //res = vcf_file.resolve()
     //println("resolved = ${res}")
 } else {
-    println("Couldn't find vcf file \nExiting...\n")
+    println("Couldn't find vcf file ${vcf_file} \nExiting...\n")
     exit 1
 }
-
+ 
 strain1 = params.strain
 
 if (strain1 == "") {
@@ -37,17 +76,15 @@ if (strain1 == "") {
     exit 1
 }
 
-// module load nextflow 
-// nf_SNPsplit_genome_prep -bg --outdir single_strain --vcf mgp_REL2021_snps.vcf.gz --strain C57BL_6NJ
-// nf_SNPsplit_genome_prep -bg --outdir double_strain --vcf mgp_REL2021_snps.vcf.gz --strain CAST_EiJ --strain2 FVB_NJ
-
 include { SNP_SPLIT_GENOME_PREP }               from './nf_modules/SNPsplit_genome_prep.mod.nf'
 
 
 workflow {
 
     main:
-        SNP_SPLIT_GENOME_PREP(params.outdir, vcf_file, strain1, params.strain2)
+        println("genome = ${snpsplit_genome}")
+        //println(snpsplit_genome)
+        SNP_SPLIT_GENOME_PREP(params.outdir, vcf_file, snpsplit_genome, strain1, params.strain2)
        
 }
 
@@ -93,10 +130,15 @@ def helpMessage() {
 
       --strain                         strain name e.g. C57BL_6NJ
 
+      --genome                         GRCm39 is currently the only option that can be provided here. If an alternative is required, use --genome_path instead
+      
+        OR
+
+      --genome_path                    path to directory containing fasta files e.g. ' /bi/scratch/Genomes/Mouse/GRCm39/chromosomes/'
+
+
     Tool-Specific Options:
     ======================
-
-      --reference                      Not yet in use - will use GRCm39 as the reference genome
 
       --strain2                        Optional 2nd strain  [Default: None]
 
