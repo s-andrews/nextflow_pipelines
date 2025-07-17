@@ -43,10 +43,7 @@ process SNP_SPLIT_GENOME_PREP {
 			println("\nUsing two strains for genome preparation: " + strain + " and " + strain2)
 			//println("strain args = " + strain_args)
 		}
- 
-
-		//echo "nothing here" > guava.log 
-		//SNPsplit_genome_preparation --vcf_file ${vcf_file_path} --reference_genome /bi/scratch/Genomes/Mouse/GRCm39/chromosomes/ ${strain_args}			
+ 	
 
 		"""
 		module load snpsplit
@@ -54,3 +51,58 @@ process SNP_SPLIT_GENOME_PREP {
 		"""
 }
 
+process SNP_SPLIT {
+
+	label 'bigMem'
+
+	input:
+		val (outputdir)
+		path (snp_file)
+		path (mapped_bam)
+		val (bisulfite)
+		val (hic)
+
+	output:
+		path ("*"),  emit: all
+	
+	publishDir "$outputdir",
+		mode: "link", overwrite: true
+
+	script:
+
+		if(snp_file.exists()) {
+			//snps = file(snp_file)
+			//snp_file_path = snps.resolve()
+			//println("Using snp file ${snp_file_path}")
+			snp_file_path = snp_file
+			println("Using snp file ${snp_file_path}")
+		} else {
+			println("\nCouldn't find snp_file from module, exiting...\n")
+			exit 1
+		}
+
+		if(mapped_bam.exists()) {
+			//bam = file(mapped_bam)
+			//bam_file_path = bam.resolve()
+			//println("Using bam file ${bam_file_path}")
+			bam_file_path = mapped_bam
+		} else {
+			println("\nCouldn't find bam_file from module, exiting...\n")
+			exit 1
+		}
+
+		snpsplit_args = ""
+
+		if (bisulfite) {
+			snpsplit_args += "--bisulfite"
+		}
+		if (hic) {
+			snpsplit_args += "--hic"
+		}
+
+		"""
+		module load snpsplit
+		SNPsplit --snp_file ${snp_file_path} ${bam_file_path} ${snpsplit_args}		
+		"""
+
+}
