@@ -76,7 +76,7 @@ if (strain1 == "") {
     exit 1
 }
 
-include { SNP_SPLIT_GENOME_PREP }               from './nf_modules/SNPsplit_genome_prep.mod.nf'
+include { SNP_SPLIT_GENOME_PREP }               from './nf_modules/snpsplit.mod.nf'
 
 
 workflow {
