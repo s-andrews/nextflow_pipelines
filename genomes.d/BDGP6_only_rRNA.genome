@@ -1,0 +1,4 @@
+name	BDGP6.54_only_rRNA
+species	Drosophila_melanogaster
+fasta	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP6.54_only_rRNA/
+bowtie2	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP6.54_only_rRNA/BDGP6.54.rdna_unique

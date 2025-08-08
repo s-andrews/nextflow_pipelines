@@ -2,5 +2,7 @@ name	rRNA
 species	Mouse
 fasta	/bi/scratch/Genomes/Mouse/GRCm38/rRNA_genome/
 bismark	/bi/scratch/Genomes/Mouse/GRCm38/rRNA_genome/
-bowtie2 /bi/scratch/Genomes/Mouse/GRCm38/rRNA_genome/mouse_rDNA
-bowtie2 /bi/scratch/Genomes/Mouse/GRCm38/rRNA_genome/mouse_rDNA
+
+bowtie2 /bi/scratch/Genomes/rRNA/rRNA_mix
+#bowtie2 /bi/scratch/Genomes/Mouse/GRCm38/rRNA_genome/mouse_rDNA
+#bowtie2 /bi/scratch/Genomes/Mouse/GRCm38/rRNA_genome/mouse_rDNA

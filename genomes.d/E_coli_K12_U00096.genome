@@ -1,0 +1,4 @@
+name	E_coli
+species	Ecoli
+fasta	/bi/scratch/Genomes/E_coli/K12_U00096
+bowtie2	/bi/scratch/Genomes/E_coli/K12_U00096/Ecoli_U00096.3

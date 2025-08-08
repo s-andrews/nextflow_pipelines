@@ -2,3 +2,4 @@ name	GRCm38_rRNA_pBR322
 species	Mouse
 fasta	/bi/scratch/Genomes/Mouse/GRCm38_rRNA_pBR322
 bowtie2	/bi/scratch/Genomes/Mouse/GRCm38_rRNA_pBR322/Mus_musculus.GRCm38_rRNA_pBR322
+bismark /bi/scratch/Genomes/Mouse/GRCm38_rRNA_pBR322

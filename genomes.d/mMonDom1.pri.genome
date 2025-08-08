@@ -1,0 +1,5 @@
+name	mMonDom1.pri
+species	Monodelphis_domestica
+fasta	/bi/scratch/Genomes/Opossum/mMonDom1.pri/
+bismark	/bi/scratch/Genomes/Opossum/mMonDom1.pri/
+bowtie2	/bi/scratch/Genomes/Opossum/mMonDom1.pri/mMonDom1.pri

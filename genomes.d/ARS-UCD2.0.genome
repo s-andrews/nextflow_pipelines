@@ -1,0 +1,5 @@
+name	ARS-UCD2.0
+species	Bos_taurus
+fasta	/bi/scratch/Genomes/Bos_taurus/ARS-UCD2.0/
+bismark	/bi/scratch/Genomes/Bos_taurus/ARS-UCD2.0/
+bowtie2	/bi/scratch/Genomes/Bos_taurus/ARS-UCD2.0/ARS-UCD2.0

@@ -1,0 +1,8 @@
+name	CS10_CQ6
+species	Bipolaris_sorokiniana
+fasta	/bi/scratch/Genomes/Bipolaris_sorokiniana_CS10.CQ_6/
+bismark	/bi/scratch/Genomes/Bipolaris_sorokiniana_CS10.CQ_6/
+bowtie2	/bi/scratch/Genomes/Bipolaris_sorokiniana_CS10.CQ_6/Bipolaris_sorokiniana_CS10.CQ_6
+hisat2	/bi/scratch/Genomes/Bipolaris_sorokiniana_CS10.CQ_6/Bipolaris_sorokiniana_CS10.CQ_6
+gtf	/bi/scratch/Genomes/Bipolaris_sorokiniana_CS10.CQ_6/Bipolaris_sorokiniana_CS10.CQ_6.scaffolds.gff
+hisat2_splices	/bi/scratch/Genomes/Bipolaris_sorokiniana_CS10.CQ_6/Bipolaris_sorokiniana_CS10.CQ_6_splices.txt
