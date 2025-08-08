@@ -37,15 +37,16 @@ if (params.verbose){
 
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
-include { getGenome }                          from './nf_modules/genomes.mod.nf'
-include { listGenomes }                        from './nf_modules/genomes.mod.nf'
+//include { getGenome }                          from './nf_modules/genomes.mod.nf'
+//include { listGenomes }                        from './nf_modules/genomes.mod.nf'
 
 if (params.list_genomes){
     listGenomes()  // this lists all available genomes, and exits
 }
-genome = getGenome(params.genome)
+//genome = getGenome(params.genome)
 
-include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'           params(genome: genome, no_output: params.no_output)
+//include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'           params(genome: genome, no_output: params.no_output)
+include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'           params(genome: params.genome, no_output: params.no_output)
 include { ECCDNA_PREPROCESSING } from './nf_modules/eccDNA_preprocessing.mod.nf'    params(no_output: params.no_output)
 include { FASTQC }               from './nf_modules/fastqc.mod.nf'    params(nogroup: true, no_output: params.no_output)
 include { SAMTOOLS_SORT }        from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
@@ -53,7 +54,7 @@ include { SAMTOOLS_INDEX2 }      from './nf_modules/samtools.mod.nf'  params(no_
 include { UMIBAM2 }              from './nf_modules/umibam2.mod.nf' 
 
 file_ch = makeFilesChannel(args)
-
+ 
 // copied from nf_traelseq
 process CHECK_BAMFILE_NOT_EMPTY {
 

@@ -8,7 +8,7 @@ nextflow.enable.dsl=2
 params.outdir = "."
 params.genome = ""
 params.verbose = false
-params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically 
+//params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically 
 
 params.fastqc_args = ''
 params.fastq_screen_args = ''
@@ -42,21 +42,34 @@ if (params.verbose){
 
 
 // include { makeFilesChannel; getFileBaseNames } from '../nf_modules/files.mod.nf'
-// include { getGenome }                          from '../nf_modules/genomes.mod.nf'
+include { getGenome }                          from '../nf_modules/genomes.mod.nf'
 // include { listGenomes }                        from '../nf_modules/genomes.mod.nf'
 
 // if (params.list_genomes){
 //     listGenomes()  // this lists all available genomes, and exits
 // }
-// genome = getGenome(params.genome)
 
-//genome = params.genome["bowtie2"]
+// genome = getGenome(params.genome) 
+
+//full_genome = getGenome(params.genome) //this works, along with passing it as params(genome: full_genome) to bowtie2 but is deprecated.
+// It's confusing because genome is initially just the string e.g R64-1-1
+// then we get all of the genome info when we run getGenome, and this is passed as a genome parameter when we call the modules.
+// We cannot overwrite params.genome
+// But... this is now deprecated, so choices:
+// change the original --genome parameter which would mess everything up
+// add a full_genome parameter and then change bowtie to use this (and any other mappers). I think this should be doable without breaking everything else. 
+// Though would need to track down anything that used bowtie2 which would include all the bismark pipelines. I might make a bowtie2v2 firstly.
+
+full_genome = getGenome(params.genome)
+//params.full_genome = getGenome(params.genome)
+//println ("Full genome is: "   + params.full_genome) 
 
 include { FASTQC }            from '../nf_modules/fastqc.mod.nf'
 include { FASTQC as FASTQC2 } from '../nf_modules/fastqc.mod.nf'
 include { FASTQ_SCREEN }      from '../nf_modules/fastq_screen.mod.nf'
-include { TRIM_GALORE }       from '../nf_modules/trim_galore.mod.nf' params(single_end: params.single_end)
-include { BOWTIE2 }           from '../nf_modules/bowtie2.mod.nf'   params(genome: params.genome)
+include { TRIM_GALORE }       from '../nf_modules/trim_galore.mod.nf' //params(single_end: params.single_end)
+include { BOWTIE2 }           from '../nf_modules/bowtie2.mod.nf'   params(genome: full_genome) //params(genome: params.genome)
+//include { BOWTIE2 }           from '../nf_modules/bowtie2_v2.mod.nf' 
 include { MULTIQC }           from '../nf_modules/multiqc.mod.nf' 
 
 //file_ch = makeFilesChannel(args)
