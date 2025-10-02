@@ -10,3 +10,5 @@ cellranger  /bi/apps/cellranger/references/refdata-gex-GRCh38-2020-A/
 cellranger_gtf  /bi/apps/cellranger/references/refdata-gex-GRCh38-2020-A/genes/genes.gtf
 gtf	/bi/scratch/Genomes/Human/GRCh38/Homo_sapiens.GRCh38.87.gtf
 hisat2_splices	/bi/scratch/Genomes/Human/GRCh38/Homo_sapiens.GRCh38.87.hisat2_splices.txt
+minimap2_spliced    /bi/scratch/Genomes/Human/GRCh38/minimap/GRCh38_ont_splice.mmi
+minimap2 /bi/scratch/Genomes/Human/GRCh38/minimap/GRCh38_ont.mmi
