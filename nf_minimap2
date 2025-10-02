@@ -1,0 +1,265 @@
+#!/usr/bin/env nextflow
+
+// Enable modules
+nextflow.enable.dsl=2
+
+/**
+TODO: make mmi mouse indices and add to genomes.d
+write up minimap options
+write help docs
+**/
+
+params.outdir = "."
+params.genome = ""
+params.splice = false
+params.single_end = true
+params.verbose = false
+genome_path = ""
+
+params.list_genomes = false;
+if (params.list_genomes){
+    println ("[WORKFLOW] List genomes selected")
+}
+
+params.help = false
+// Show help message and exit
+if (params.help){
+    helpMessage()
+    exit 0
+}
+
+include { getGenome }                              from './nf_modules/genomes.mod.nf'
+include { listGenomes }                            from './nf_modules/genomes.mod.nf'
+include { makeFilesChannel; getFileBaseNames }     from './nf_modules/files.mod.nf'
+include { MINIMAP2 }                               from './nf_modules/minimap2.mod.nf'
+include { SAM2BAM }                                from './nf_modules/samtools.mod.nf'
+
+if (params.list_genomes){
+    listGenomes()  // this lists all available genomes, and exits
+}
+
+genome = getGenome(params.genome) // this gets the list
+
+
+// Check that minimap index exists
+if (params.splice) {
+    index_path = genome["minimap2_spliced"]
+} else {
+    index_path = genome["minimap2"]
+}
+
+if (index_path == null) {
+    if (params.splice) {
+        println ("Couldn't find spliced minimap2 index for " + params.genome + " in genomes.d folder")
+    } else { 
+        println ("Couldn't find unspliced minimap2 index for " + params.genome + " in genomes.d folder")
+    }
+    exit(1)
+} else {
+    genome_path = file(index_path)
+}       
+if (genome_path.exists()){
+    println ("Running minimap2 with index file " + genome_path)
+} else {
+    println ("Couldn't find minimap2 index for " + params.genome)
+    exit(1)
+} 
+
+file_ch = makeFilesChannel(args)
+
+
+workflow {
+
+    main: 
+
+        MINIMAP2(file_ch, params.outdir, genome_path, params.splice)
+        SAM2BAM(MINIMAP2.out.sam, params.outdir)
+
+}
+
+workflow.onComplete {
+
+    def msg = """\
+        Pipeline execution summary
+        ---------------------------
+        Completed at: ${workflow.complete}
+        Duration    : ${workflow.duration}
+        Success     : ${workflow.success}
+        workDir     : ${workflow.workDir}
+        exit status : ${workflow.exitStatus}
+        """
+    .stripIndent()
+
+    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+}
+
+def helpMessage() {
+ 
+    log.info"""
+    >>
+    
+    This workflow takes in a list of filenames (in FastQ format), and aligns these files to a genome using minimap2 on the
+    stone compute cluster at Babraham.
+
+    USAGE:
+    
+    nf_bowtie2 [options] --genome <genomeID> <input files>
+    
+    Mandatory arguments:
+    ====================
+
+      <input files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. 
+
+      --genome [str]                  Genome build ID to be used for the alignment, e.g. GRCh38 (latest human genome) or GRCm39
+                                      (latest mouse genome build). 
+                                      These are currently the only 2 genomes available for using with this pipeline. 
+                                      If others are required, minimap2 indexes will have to be built.
+
+
+    Tool-Specific Options:
+    ======================
+
+      --splice                        For long-read spliced alignment. [Default: OFF]
+                                      In the splice mode: 
+                                      1) long deletions are taken as introns and represented as the `N' CIGAR operator; 
+                                      2) long insertions are disabled; 
+                                      3) deletion and insertion gap costs are different during chaining; 
+                                      4) the computation of the `ms' tag ignores introns to demote hits to pseudogenes.
+
+
+    Other Options:
+    ==============
+
+      --outdir [str]                  Path to the output directory. [Default: current working directory]
+
+      --list_genomes                  List all genome builds that are currently available to choose from. 
+                                      Most genomes will not have indices prepared for minimap2. 
+                                      To see the list of available genomes with more detailed information 
+                                      about paths and indexes, run the command as '--list_genomes --verbose'. 
+         
+      --verbose                       More verbose status messages. [Default: OFF]
+
+      --help                          Displays this help message and exits.
+
+    Workflow Options:
+    =================
+
+    Please note the single '-' hyphen for the following options!
+
+      -resume                         If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
+                                      this option will attempt to resume the workflow at the point it got interrupted by using
+                                      Nextflow's caching mechanism. This may save a lot of time.
+
+      -bg                             Sends the entire workflow into the background, thus disconnecting it from the terminal session.
+                                      This option launches a daemon process (which will keep running on the headnode) that watches over
+                                      your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
+                                      jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
+                                      pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
+
+      -process.executor=local         Temporarily changes where the workflow is executed to the 'local' machine. See also Nextflow config
+                                      file for more details. [Default: slurm] 
+    
+
+    <<
+    """.stripIndent()
+}
+
+
+
+/**
+minimap2 -y -t 32 -ax splice -uf -k 14 ${reference} ${input} > ${id}.sam
+
+-y           copy FASTA/Q comments to output SAM
+-a           output in the SAM format (PAF by default)
+-o FILE      output alignments to FILE [stdout]
+-t INT       number of threads [3]
+-k INT       k-mer size (no larger than 28) [15]
+-u CHAR   How to find canonical splicing sites GT-AG - f: transcript strand; b: both strands; n: no attempt to  match  GT-AG [n]
+samtools complains if we use -y 
+the only difference I could see was at the end of the read where there was this extra info:
+model_version_id=2020-09-07_rna_r9.4.1_minion_256_8f8fc47b mean_qscore=10
+
+From the GitHub page:
+"Importantly, it should be noted that once you build the index, 
+indexing parameters such as -k, -w, -H and -I can't be changed during mapping. 
+If you are running minimap2 for different data types, you will probably need to keep multiple indexes generated with different parameters. 
+This makes minimap2 different from BWA which always uses the same index regardless of query data types."
+
+ -x STR       preset (always applied before other options; see minimap2.1 for details) []
+                 - lr:hq - accurate long reads (error rate <1%) against a reference genome
+                 - splice/splice:hq - spliced alignment for long reads/accurate long reads
+                 - splice:sr - spliced alignment for short RNA-seq reads
+                 - asm5/asm10/asm20 - asm-to-ref mapping, for ~0.1/1/5% sequence divergence
+                 - sr - short reads against a reference
+                 - map-pb/map-hifi/map-ont/map-iclr - CLR/HiFi/Nanopore/ICLR vs reference mapping
+                 - ava-pb/ava-ont - PacBio CLR/Nanopore read overlap
+
+more detail in man page /bi/apps/minimap/2.30/minimap2.1
+
+
+how does map-ont vs splice differ?
+
+ -x STR    Preset  [].  This  option applies multiple options at the same time. It should be applied before other options because options applied later will overwrite the
+                 values set by -x.  
+Available STR are:
+
+    map-ont   Align noisy long reads of ~10% error rate to a reference genome. This is the default mode.
+
+    splice    Long-read spliced alignment (-k15 -w5 --splice -g2k -G200k -A1 -B2 -O2,32 -E1,0 -C9 -z200 -ub --junc-bonus=9 --cap-sw-mem=0 --splice-flank=yes).   In
+                the  splice  mode, 1) long deletions are taken as introns and represented as the `N' CIGAR operator; 2) long insertions are disabled; 3) deletion and
+                insertion gap costs are different during chaining; 4) the computation of the `ms' tag ignores introns to demote hits to pseudogenes.
+
+Presumably, map-ont uses defaults, so there are a few differences between that and splice
+splice parameters
+-k15 default -k INT    Minimizer k-mer length [15]
+-w5 [10] i.e default is 10 /Minimizer window size [10]. A minimizer is the smallest k-mer in a window of w consecutive k-mers.
+-g2k [10k] Stop chain enlongation if there are no minimizers within NUM-bp [10k]
+-G200k default  Maximum gap on the reference (effective with -xsplice/--splice).  This option also changes the chaining and alignment band width to NUM.  Increasing this option slows down spliced alignment. [200k]
+-A1 [2] Matching score [2]
+-B2 [4] Mismatching penalty [4]
+-O2,32 [4,32]  INT1[,INT2]  Gap open penalty [4,24]. If INT2 is not specified, it is set to INT1.
+-E1,0 [2,1] INT1[,INT2] Gap extension  penalty  [2,1].  A gap of length k costs min{O1+k*E1,O2+k*E2}.  In the splice mode, the second gap penalties are not used.
+-C9 [0]  Cost for a non-canonical GT-AG splicing (effective with --splice -J0) [0]
+and there are more... I'm not sure if any of these affect the reference generated
+
+
+Command that Christel used
+minimap2 -t 8 -a -x map-ont -p 1.0 -N 100 --sam-hit-only GRCm39/Annotation/Genes/genome.transcripts.fa file
+
+where
+-a specifies SAM output,
+-x selects the preset for ONT long reads,
+-p sets the minimum secondary-to-primary score ratio to 1.0,
+-N limits the number of reported secondary alignments to 100 and
+--sam-hit-only doesn't report unaligned reads.
+Settings were taken from the Salmon long read tutorial
+
+
+Storing indices 
+HUMAN
+ssub --mem 128G -j minimap_index -o minimap_index.out -e minimap_index.err minimap2 -d GRCh8_splice.mmi -x splice -t 32 ../Homo_sapiens.GRCh38.mfa
+ssub --mem 128G -j minimap_index2 -o minimap_index2.out -e minimap_index2.err minimap2 -d GRCh8.mmi -t 32 ../Homo_sapiens.GRCh38.mfa
+MOUSE
+ssub --mem 128G -j minimap_index -o minimap_index.out -e minimap_index.err minimap2 -d GRCm39_splice.mmi -x splice -t 32 ../Mus_musculus.GRCm39.dna.primary_assembly.fa
+ssub --mem 128G -j minimap_index2 -o minimap_index2.out -e minimap_index2.err minimap2 -d GRCm39.mmi -t 32 ../Mus_musculus.GRCm39.dna.primary_assembly.fa
+
+The file sizes are quite different - 
+11G   GRCh38_splice.mmi
+6.8G  GRCh38.mmi
+The mouse files are quite similar to the human ones:
+11G GRCm39_splice.mmi
+6.2G GRCm39.mmi
+
+I also tried using -uf during index creation, but this produced an identical .mmi file to when -uf was not used.
+ssub --mem 128G -j minimap_index3 -o minimap_index3.out -e minimap_index3.err minimap2 -uf -d GRCh8_splice_uf.mmi -x splice -t 32 ../Homo_sapiens.GRCh38.mfa
+-u CHAR   How to find canonical splicing sites GT-AG - f: transcript strand; b: both strands; n: no attempt to  match  GT-AG [n]
+ 
+
+Index locations
+/bi/scratch/Genomes/Human/GRCh38/minimap/GRCh38_ont.mmi
+/bi/scratch/Genomes/Human/GRCh38/minimap/GRCh38_ont_splice.mmi
+
+/bi/scratch/Genomes/Mouse/GRCm39/minimap/GRCm39_splice.mmi
+/bi/scratch/Genomes/Mouse/GRCm39/minimap/GRCm39.mmi
+
+**/
