@@ -100,3 +100,31 @@ process SAMTOOLS_INDEX2{
 		samtools index $samtools_index_options $bam
 		"""	
 }
+
+
+process SAM2BAM{	
+    
+	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
+	label 'bigMem' // 20GB
+
+	input:
+		tuple val(name), path(sam)
+		val (outputdir)
+
+	output:
+		path "*bam",        emit: bam
+
+	publishDir "$outputdir",
+		mode: "link", overwrite: true, enabled: !params.no_output
+	
+    script:
+
+		// we don't want to use the 'name' field as this probably doesn't have the genome info
+		// so we use baseName to get the filename without the suffix
+		bam = sam.baseName + ".bam" 
+
+		"""
+		module load samtools
+		samtools view -b $sam -o ${bam} 
+    	"""
+}
