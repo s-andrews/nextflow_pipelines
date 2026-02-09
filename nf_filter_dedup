@@ -1,0 +1,52 @@
+#!/usr/bin/env nextflow
+nextflow.enable.dsl=2
+
+params.outdir = "."
+params.genome = ""
+params.verbose = false
+params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically  
+params.blacklist = ""
+params.samtools_sort_args  = ''
+params.samtools_index_args = ''
+
+
+params.help = false
+// Show help message and exit
+if (params.help){
+    helpMessage()
+    exit 0
+}
+
+if (params.verbose){
+    println ("[WORKFLOW] SAMTOOLS SORT ARGS: "           + params.samtools_sort_args)
+    println ("[WORKFLOW] SAMTOOLS INDEX ARGS:"           + params.samtools_index_args)
+
+}
+
+include { makeFilesChannel; getFileBaseNames }    from './nf_modules/files.mod.nf'
+include { SAMTOOLS_SORT;SAMTOOLS_INDEX2;SAMTOOLS_FILT }          from './nf_modules/samtools.mod.nf'
+include { PICARD_ADD_REPLACE; PICARD_DEDUP }          from './nf_modules/picard.mod.nf'
+include { BEDTOOLS_INTERSECT }                  from './nf_modules/bedtools.mod.nf'
+
+file_ch = Channel.fromPath(args) 
+
+if (params.blacklist == "") {
+    println ("blacklist file must be supplied with --blacklist")
+    exit 1
+} else {
+    blacklist_file = file(params.blacklist)
+}
+
+
+workflow {
+
+    main: 
+
+        SAMTOOLS_FILT(file_ch, params.outdir)
+        SAMTOOLS_SORT(SAMTOOLS_FILT.out.bam, params.outdir, params.samtools_sort_args, params.verbose)
+        PICARD_ADD_REPLACE(SAMTOOLS_SORT.out.bam, params.outdir, params.verbose)
+        PICARD_DEDUP(PICARD_ADD_REPLACE.out.bam, params.outdir, params.verbose)
+        SAMTOOLS_INDEX2(PICARD_DEDUP.out.bam, params.outdir, params.samtools_index_args, params.verbose)
+        BEDTOOLS_INTERSECT(SAMTOOLS_INDEX2.out.bam, blacklist_file, params.outdir, params.verbose)
+
+}
