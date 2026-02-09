@@ -48,5 +48,82 @@ workflow {
         PICARD_DEDUP(PICARD_ADD_REPLACE.out.bam, params.outdir, params.verbose)
         SAMTOOLS_INDEX2(PICARD_DEDUP.out.bam, params.outdir, params.samtools_index_args, params.verbose)
         BEDTOOLS_INTERSECT(SAMTOOLS_INDEX2.out.bam, blacklist_file, params.outdir, params.verbose)
+}
+
+def helpMessage() {
+ 
+    log.info"""
+    >>
+
+
+    SYNOPSIS:
+
+    This workflow takes in a list of filenames (in BAM format), and then 
+    - runs quality filtering (retaining mapq > 30)
+    - sorts these files by genomic coordinates (samtools sort)
+    - runs picard AddOrReplaceReadGroups
+    - runs picard MarkDuplicates and removes duplicates
+    - creates a BAM index of the file (samtools index)
+    - runs bedtools intersect using the supplied blacklist file
+    
+    on the Babraham stone compute cluster. 
+
+              ==============================================================================================================
+
+
+    USAGE:
+    
+    nf_filter_dedup [options] --blacklist blacklist_file.bed <input files>
+    
+    Mandatory arguments:
+    ====================
+
+      <input_files>                   List of input files in BAM format, e.g. '*bam'.
+
+      --blacklist [filename]          File of regions to blacklist in BED format.
+                                      
+    Tool-specific options:
+    ======================
+
+      --samtools_sort_args="[str]"    This option can take any number of options that are compatible with 'samtools sort' to modify its default
+                                      behaviour. For more detailed information on available options please refer to the Samtools documentation,
+                                      or run 'samtools sort' on the command line. Please note that the format ="your options" needs to be
+                                      strictly adhered to in order to work correctly. [Default: None]
+
+      --samtools_index_args="[str]"   This option can take any number of options that are compatible with 'samtools index' to modify its
+                                      default behaviour. For more detailed information on available options please refer
+                                      to the Samtools documentation, or run 'samtools index' on the command line. Please note that the format 
+                                      ="your options" needs to be strictly adhered to in order to work correctly. [Default: None]
+
+    Other options:
+    ==============
+
+      --outdir [str]                  Path to the output directory. [Default: current working directory]
+
+      --verbose                       More verbose status messages. [Default: OFF]
+      --help                          Displays this help message and exits.
+
+    Workflow options:
+    =================
+
+    Please note the single '-' hyphen for the following options!
+
+      -resume                         If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
+                                      this option will attempt to resume the workflow at the point it got interrupted by using
+                                      Nextflow's caching mechanism. This may save a lot of time.
+
+      -bg                             Sends the entire workflow into the background, thus disconnecting it from the terminal session.
+                                      This option launches a daemon process (which will keep running on the headnode) that watches over
+                                      your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
+                                      jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
+                                      pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
+
+      -process.executor=local         Temporarily changes where the workflow is executed to the 'local' machine. See also the nextflow.config
+                                      file for more details. [Default: slurm] 
+    
+
+    <<
+    """.stripIndent()
 
 }
+
