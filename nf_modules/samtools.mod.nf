@@ -128,3 +128,29 @@ process SAM2BAM{
 		samtools view -b $sam -o ${bam} 
     	"""
 }
+
+// filter on mapq > 30
+process SAMTOOLS_FILT{	
+    
+	tag "$bamfile" // Adds name to job submission instead of (1), (2) etc.
+	label 'bigMem' // 20GB
+
+	input:
+		path(bamfile)
+		val (outputdir)
+
+	output:
+		path "*bam",        emit: bam
+
+	//publishDir "$outputdir",
+	//	mode: "link", overwrite: true, enabled: !params.no_output  // change this if we wnat the file to be written out rather than just in the work folder
+	
+    script:
+
+		bam_out = bamfile.baseName + "_mapq30.bam" 
+
+		"""
+		module load samtools
+		samtools view -b $bamfile -q 30 -o ${bam_out} 
+    	"""
+}
