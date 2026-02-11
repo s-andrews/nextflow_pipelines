@@ -4,7 +4,7 @@ params.no_output = false
 process PICARD_ADD_REPLACE{	
     
 	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
-	label 'bigMem' // 20GB
+	label 'hugeMem' // 80GB
 
     input:
 		path(bam)
@@ -30,7 +30,7 @@ process PICARD_ADD_REPLACE{
 process PICARD_DEDUP{	
     
 	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
-	label 'bigMem' // 20GB
+	label 'hugeMem' // 80GB
 
     input:
 		path(bam)
