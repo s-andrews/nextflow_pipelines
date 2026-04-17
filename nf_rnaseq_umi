@@ -1,21 +1,18 @@
 #!/usr/bin/env nextflow
-
-// Last modified 13 October 2020
-
-// Enable modules
 nextflow.enable.dsl=2
 
 params.outdir = "."
 params.genome = ""
 params.verbose = false
-//params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically 
+params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically  
 
 params.fastqc_args = ''
 params.fastq_screen_args = ''
 params.trim_galore_args = ''
-params.bowtie2_args = ''
+params.hisat2_args = ''
 params.multiqc_args = ''
-params.prefix = ''
+params.samtools_sort_args  = ''
+params.samtools_index_args = ''
 
 params.help = false
 // Show help message and exit
@@ -24,83 +21,73 @@ if (params.help){
     exit 0
 }
 
-println ("[CHIPSEQ WORKFLOW] Genome is: "   + params.genome)
-
-
-// params.list_genomes = false;
-// if (params.list_genomes){
-//     println ("[WORKFLOW] List genomes selected")
-// }
+params.list_genomes = false;
+if (params.list_genomes){
+    println ("[WORKFLOW] List genomes selected")
+}
 
 if (params.verbose){
     println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
     println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
     println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
-    println ("[WORKFLOW] BOWTIE2 ARGS: "          + params.bowtie2_args)
+    println ("[WORKFLOW] HISAT2 ARGS ARE: "       + params.hisat2_args)
     println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
 }
 
+include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include { getGenome }    from './nf_modules/genomes.mod.nf'
+include { listGenomes }  from './nf_modules/genomes.mod.nf'
 
-// include { makeFilesChannel; getFileBaseNames } from '../nf_modules/files.mod.nf'
-include { getGenome }                          from '../nf_modules/genomes.mod.nf'
-// include { listGenomes }                        from '../nf_modules/genomes.mod.nf'
+if (params.list_genomes){
+    listGenomes()  // this lists all available genomes, and exits
+}
+genome = getGenome(params.genome)
 
-// if (params.list_genomes){
-//     listGenomes()  // this lists all available genomes, and exits
-// }
+//include { WHITESPACE_TO_UNDERSCORE }        from './nf_modules/umi_utils.mod.nf' 
+include { EMBED_UMI_PE;EMBED_UMI_SE }        from './nf_modules/umi_utils.mod.nf' 
+include { FASTQC }       from './nf_modules/fastqc.mod.nf'
+include { FASTQC as FASTQC2 } from './nf_modules/fastqc.mod.nf'
+include { FASTQ_SCREEN } from './nf_modules/fastq_screen.mod.nf'
+include { TRIM_GALORE }  from'./nf_modules/trim_galore.mod.nf'
+include { HISAT2 }       from './nf_modules/hisat2.mod.nf' params(genome: genome)
+include { SAMTOOLS_SORT;SAMTOOLS_INDEX2 }          from './nf_modules/samtools.mod.nf'
+include { UMI_TOOLS_DEDUP }           from './nf_modules/umi_utils.mod.nf'     
 
-// genome = getGenome(params.genome) 
+// include { MULTIQC }      from './nf_modules/multiqc.mod.nf' 
 
-//full_genome = getGenome(params.genome) //this works, along with passing it as params(genome: full_genome) to bowtie2 but is deprecated.
-// It's confusing because genome is initially just the string e.g R64-1-1
-// then we get all of the genome info when we run getGenome, and this is passed as a genome parameter when we call the modules.
-// We cannot overwrite params.genome
-// But... this is now deprecated, so choices:
-// change the original --genome parameter which would mess everything up
-// add a full_genome parameter and then change bowtie to use this (and any other mappers). I think this should be doable without breaking everything else. 
-// Though would need to track down anything that used bowtie2 which would include all the bismark pipelines. I might make a bowtie2v2 firstly.
 
-full_genome = getGenome(params.genome)
-//params.full_genome = getGenome(params.genome)
-//println ("Full genome is: "   + params.full_genome) 
+file_ch = makeFilesChannel(args)   
 
-include { FASTQC }            from '../nf_modules/fastqc.mod.nf'
-include { FASTQC as FASTQC2 } from '../nf_modules/fastqc.mod.nf'
-include { FASTQ_SCREEN }      from '../nf_modules/fastq_screen.mod.nf'
-include { TRIM_GALORE }       from '../nf_modules/trim_galore.mod.nf' //params(single_end: params.single_end)
-include { BOWTIE2 }           from '../nf_modules/bowtie2.mod.nf'   params(genome: full_genome) //params(genome: params.genome)
-//include { BOWTIE2 }           from '../nf_modules/bowtie2_v2.mod.nf' 
-include { MULTIQC }           from '../nf_modules/multiqc.mod.nf' 
+workflow {
 
-//file_ch = makeFilesChannel(args)
+    main:
+        if (params.single_end) {
+            EMBED_UMI_SE  (file_ch)
+            embed_umi_out = EMBED_UMI_SE.out.reads
+        }
+        else {       
+            EMBED_UMI_PE  (file_ch)
+            embed_umi_out = EMBED_UMI_PE.out.reads
+        }
+        FASTQC         (embed_umi_out, params.outdir, params.fastqc_args, params.verbose)
+        FASTQ_SCREEN   (embed_umi_out, params.outdir, params.fastq_screen_args, params.verbose)
+        TRIM_GALORE    (embed_umi_out, params.outdir, params.trim_galore_args, params.verbose)
+        FASTQC2        (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        HISAT2         (TRIM_GALORE.out.reads, params.outdir, params.hisat2_args, params.verbose)
+        SAMTOOLS_SORT  (HISAT2.out.bam, params.outdir, params.samtools_sort_args, params.verbose)
+        SAMTOOLS_INDEX2 (SAMTOOLS_SORT.out.bam, params.outdir, params.samtools_sort_args, params.verbose)
+        UMI_TOOLS_DEDUP (SAMTOOLS_INDEX2.out.bam, SAMTOOLS_INDEX2.out.bai, params.outdir)
+        // // merging channels for MultiQC
+        // multiqc_ch = FASTQC.out.report.mix(
+        //     TRIM_GALORE.out.report,
+        //     FASTQ_SCREEN.out.report.ifEmpty([]),
+        //     FASTQC2.out.report.ifEmpty([]),
+        //     HISAT2.out.stats.ifEmpty([]),
+        // ).collect()
 
-workflow CHIPSEQ {
+        // // multiqc_ch.subscribe {  println "Got: $it"  }
 
-    take:
-        file_ch
-
-    main: 
-        FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
-        FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
-        TRIM_GALORE     (file_ch, params.outdir, params.trim_galore_args, params.verbose)
-        FASTQC2         (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
-        BOWTIE2         (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)
-    
-        // merging channels for MultiQC
-        multiqc_ch = FASTQC.out.report.mix(
-            TRIM_GALORE.out.report,
-            FASTQ_SCREEN.out.report.ifEmpty([]),
-            FASTQC2.out.report.ifEmpty([]),
-            BOWTIE2.out.stats.ifEmpty([]),
-        ).collect()
-
-    // // multiqc_ch.subscribe {  println "Got: $it"  }
-         MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)  
-
-    emit: 
-        multiqc = MULTIQC.out.html
-        bam = BOWTIE2.out.bam
-        fastqc = FASTQC.out.report
+        // MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 }
 
 // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
@@ -119,7 +106,7 @@ workflow.onComplete {
         """
     .stripIndent()
 
-    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    //sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
 }
 
 def helpMessage() {
@@ -130,39 +117,40 @@ def helpMessage() {
 
     SYNOPSIS:
 
-    In a nutshell, this workflow runs an entire processing pipeline on FastQ files, including QC, contamination QC,
-    quality-/adapter trimming, alignments to a genome using Bowtie 2, and finally generate an aggregate QC report. The
-    workflow is suitable for e.g. ChIP-seq, ATAC-seq or any other form of sequencing that requires standard alignments
-    to a genome. Here is a graphical representation of the workflow:
+    In a nutshell, this workflow runs an entire RNA-seq processing pipeline on FastQ files, including QC, contamination QC,
+    quality-/adapter trimming, splice -aware alignments to a genome using HISAT2, and finally generate an aggregate QC report.
+    The workflow is suitable for RNA-seq data, or any other form of sequencing that requires standard alignments to a genome
+    when you would like to use HISAT2 as the underlying aligner (in such a case you might want to consider turning off spliced
+    alignments). Here is a graphical representation of the workflow:
 
     --- FastQC
     --- FastQ Screen
     --- Trim Galore
         |
         --- FastQC
-        --- Bowtie 2  
+        --- HISAT2 
     --- MultiQC*
         
     * This step runs only once ALL other jobs have completed.
      
-    By default all these steps are submitted as jobs to the Babraham stone compute cluster.
+    All these steps are submitted as jobs to the Babraham stone compute cluster.
 
     By default, the involved tools are run in the following way:
     ------------------------------------------------------------
     FastQC:         defaults (-q)
     FastQ Screen:   defaults (Bowtie 2; local mode)
     Trim Galore:    defaults (adapter auto-detection)
-    Bowtie 2:       end-to-end mode; '--no-unal'; for paired-end files: '--no-mixed --no-discordant' (concordant PE alignmnents only)
+    HISAT2:         end-to-end mode ('--no-softclip'); '--no-unal'; for PE files: '--no-mixed --no-discordant' (concordant PE alignmnents only)
                     
     To add additional parameters to any of the programs, consider supplying tool-specific arguments (see --toolname_args="..." below).
 
-
+            
             ==============================================================================================================
 
-            
+
     USAGE:
     
-    nf_chipseq [options] --genome <genomeID> <input files>
+    nf_rnaseq [options] --genome <genomeID> <input files>
     
     Mandatory arguments:
     ====================
@@ -200,13 +188,12 @@ def helpMessage() {
                                       off the first 10bp from the 5' of R1 and 5bp of R2, use: 
                                       ' --trim_galore_args="--clip_r1 10 --clip_r2 5" '. [Default: None]
 
-    
-      --bowtie2_args="[str]"          This option can take any number of options that are compatible with Bowtie 2 to modify its
+      --hisat2_args="[str]"           This option can take any number of options that are compatible with HISAT2 to modify its
                                       default mapping behaviour. For more detailed information on available options please refer
-                                      to the Bowtie 2 User Guide, or run 'bowtie2 --help' on the command line. As an example, to
-                                      run somewhat more stringent alignments for only 1 million sequences, use:
-                                      ' --bowtie2_args="-u 1000000 --score_min L,0,-0.4" '. [Default: None]
-
+                                      to the HISAT2 User Guide, or run 'hisat2 --help' on the command line. As an example, to disable
+                                      spliced alignments and tolerate a miximum fragment length of 1500 bp, use: 
+                                      ' --hisat2_args="--no-spliced-alignment --maxins 1500" '. [Default: None]
+   
     Other options:
     ==============
 
