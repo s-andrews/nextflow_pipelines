@@ -16,6 +16,8 @@ params.trim_galore_args = ''
 params.bowtie2_args = ''
 params.multiqc_args = ''
 params.prefix = ''
+//params.no_multiqc = false
+//run_multiqc = true
 
 params.help = false
 // Show help message and exit
@@ -78,6 +80,7 @@ workflow CHIPSEQ {
 
     take:
         file_ch
+        //run_multiqc
 
     main: 
         FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
@@ -86,6 +89,7 @@ workflow CHIPSEQ {
         FASTQC2         (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
         BOWTIE2         (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)
     
+       // if (run_multiqc) {
         // merging channels for MultiQC
         multiqc_ch = FASTQC.out.report.mix(
             TRIM_GALORE.out.report,
@@ -94,8 +98,8 @@ workflow CHIPSEQ {
             BOWTIE2.out.stats.ifEmpty([]),
         ).collect()
 
-    // // multiqc_ch.subscribe {  println "Got: $it"  }
-         MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)  
+        MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)  
+
 
     emit: 
         multiqc = MULTIQC.out.html
