@@ -9,7 +9,7 @@ params.verbose = false
 params.single_end = true
 params.index_preprocessing_args = ''
 params.index = '135'
-params.trim_galore_args = "single_end: '--single_end'"
+//params.trim_galore_args = "single_end: '--single_end'"
 
 // params.samtools_sort_args = ''
 // params.ecc_preprocessing_args = ''
@@ -20,6 +20,8 @@ params.trim_galore_args = "single_end: '--single_end'"
 params.no_output = false
 //params.no_qc = false
 //params.dedup = false
+
+supplied_indexes = params.index
 
 params.help = false
 // Show help message and exit
@@ -46,10 +48,11 @@ include { listGenomes }                        from './nf_modules/genomes.mod.nf
 if (params.list_genomes){
     listGenomes()  // this lists all available genomes, and exits
 }
-genome = getGenome(params.genome)
+//params.genome = getGenome(params.genome)
+//genome = getGenome(params.genome)
 
-include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'           params(genome: genome, no_output: params.no_output, single_end: params.single_end)
-include { INDEX_4BP_PREPROCESSING } from './nf_modules/WGS_4bpIndex_preprocessing.mod.nf'    params(index: params.index, no_output: params.no_output)
+include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'  //   params(genome: genome)     // params(genome: genome, no_output: params.no_output, single_end: params.single_end)
+include { INDEX_4BP_PREPROCESSING } from './nf_modules/WGS_4bpIndex_preprocessing.mod.nf'   // params(index: params.index, no_output: params.no_output)
 include { SORT_TRAEL_NAMES }    from './nf_modules/trael_preprocessing.mod.nf' 
 //include { FASTQC }               from './nf_modules/fastqc.mod.nf'    params(nogroup: true, no_output: params.no_output)
 // include { SAMTOOLS_SORT }        from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
@@ -100,7 +103,7 @@ workflow {
 
     main:
         //FASTQC( file_ch, params.outdir, params.fastqc_args, params.verbose )
-        INDEX_4BP_PREPROCESSING( file_ch, params.outdir, params.index_preprocessing_args, params.verbose )
+        INDEX_4BP_PREPROCESSING( file_ch, params.outdir, params.index_preprocessing_args, supplied_indexes, params.verbose )
         CHECK_FQ_GZ_NOT_EMPTY(INDEX_4BP_PREPROCESSING.out.reads.flatten())
         filt = CHECK_FQ_GZ_NOT_EMPTY.out.reads.filter { it.first().countLines() > 0 }.map { it.last() }
 
