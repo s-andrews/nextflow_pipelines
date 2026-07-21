@@ -53,7 +53,7 @@ process BISMARK_METHYLATION_EXTRACTOR {
 		isPE = isPairedEnd(bam)
 		if (isPE){
 			// not perform any ignoring behaviour for RRBS or single-cell libraries
-			if (!params.rrbs && !params.singlecell && !params.pbat){
+			if (!params.rrbs && !params.singlecell && !params.pbat && !params.emseq){
 				// default ignore parameters for paired-end libraries
 				methXtract_options +=  " --ignore_r2 2 "
 			}
