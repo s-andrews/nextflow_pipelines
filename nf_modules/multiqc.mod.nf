@@ -13,6 +13,9 @@ process MULTIQC {
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 30 as long); return 'retry' }
 	maxRetries 3
 
+	publishDir { outputdir },
+		mode: "link", overwrite: true
+
     input:
 	    path (file)
 		val (outputdir)
@@ -21,9 +24,6 @@ process MULTIQC {
 
 	output:
 	    path "*html",       emit: html
-		
-	publishDir "$outputdir",
-		mode: "link", overwrite: true
 
 	script:
 

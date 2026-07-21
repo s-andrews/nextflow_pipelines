@@ -15,55 +15,12 @@ params.sample = ''
 params.list_genomes = false;
 
 params.help = false
-// Show help message and exit
-if (params.help){
-    helpMessage()
-    exit 1
-}
-
-if (params.list_genomes){
-    println ("[WORKLFOW] List genomes selected")
-}
-
-if (params.verbose){
-    println ("[WORKFLOW] CELLRANGER ARGS ARE: "       + params.cellranger_args)
-}
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
 include { getGenome }                          from './nf_modules/genomes.mod.nf'
 include { listGenomes }                        from './nf_modules/genomes.mod.nf'
+include { CELLRANGER_COUNT }                   from './nf_modules/cellranger.mod.nf'
 
-if (params.list_genomes){
-    listGenomes()  // this lists all available genomes, and exits
-}
-
-genome = getGenome(params.genome)
-include { CELLRANGER_COUNT }                   from './nf_modules/cellranger.mod.nf'   params(genome: genome)
-
-// Not currently using a file channel for CellRanger runs, but requiring an option --sample sampleID
-// file_ch = makeFilesChannel(args)
-// file_ch.view()
-// absolute_path = ''
-// println("Absolute path:" + absolute_path)
-
-if (params.sample && params.verbose){
-    println ("[WORKFLOW] Cellranger sampleID: "       + params.sample)
-}
-if (params.sample){
-    // fine
-}
-else{
-    println ("\nPlease specify a sample ID with --sample=Sample_Name\n\n(For the sample ID, please no illegal characters! The characters not allowed are the space character and the following: ? ( ) [ ] / \\ = + < > : ; ' \" , * ^ | & . ")
-    exit 1
-}
-
-if (params.fastqs_dir){
-    // fine
-}
-else{
-    println ("\nPlease specify a directory containing the input FastQ files with --fastqs_dir='/path/to/FastQs/'\n\n")
-    exit 1
-}
 // Illumina FASTQ files use the following naming scheme when processed with bcl2fastq:
 // <sample name>_<barcode sequence>_L<lane>_R<read number>_<setnumber>.fastq.gz
 
@@ -88,42 +45,66 @@ else{
 
 workflow {
     main:
-        
+        // Show help message and exit
+        if (params.help){
+            helpMessage()
+            exit 1
+        }
+
+        if (params.list_genomes){
+            println ("[WORKLFOW] List genomes selected")
+            listGenomes()  // this lists all available genomes, and exits
+        }
+
+        if (params.verbose){
+            println ("[WORKFLOW] CELLRANGER ARGS ARE: "       + params.cellranger_args)
+        }
+
+        def genome = getGenome(params.genome)
+
+        // Not currently using a file channel for CellRanger runs, but requiring an option --sample sampleID
+        // file_ch = makeFilesChannel(args)
+
+        if (params.sample && params.verbose){
+            println ("[WORKFLOW] Cellranger sampleID: "       + params.sample)
+        }
+        if (! params.sample){
+            println ("\nPlease specify a sample ID with --sample=Sample_Name\n\n(For the sample ID, please no illegal characters! The characters not allowed are the space character and the following: ? ( ) [ ] / \\ = + < > : ; ' \" , * ^ | & . ")
+            exit 1
+        }
+
+        if (! params.fastqs_dir){
+            println ("\nPlease specify a directory containing the input FastQ files with --fastqs_dir='/path/to/FastQs/'\n\n")
+            exit 1
+        }
+
         // This pipeline is different to our usual pipelines, as it does not necessarily require the input filenames
         // but only a sample name. In the future, we could work on an automation to extract the sample names if there
         // are several different sets of files in the same folder
 
-        CELLRANGER_COUNT (params.sample, params.fastqs_dir ,params.outdir, params.cellranger_args, params.verbose)
+        CELLRANGER_COUNT (params.sample, params.fastqs_dir ,params.outdir, params.cellranger_args, params.verbose, genome)
 
-        // The following code does not work, but I'll it here for the time being
-        // file_ch
-        // subscribe a function to the channel printing the emitted values
-        // .map {absolute_path -> it[1][0]}
-        // .subscribe onNext:{  println "Got: $it\n and PATH: $absolute_path"  }
-        // println("Absolute path now:" + absolute_path)
-        //   CELLRANGER_COUNT (file_ch, params.outdir, params.cellranger_args, params.verbose)
-}
+    // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+    // minimal execution summary report so we at least know what the working directory was...
+    workflow.onComplete = {
 
-// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
-// minimal execution summary report so we at least know what the working directory was...
-workflow.onComplete {
+        def msg = """\
+            Pipeline execution summary
+            ---------------------------
+            Jobname     : ${workflow.runName}
+            Success     : ${workflow.success}
+            Command Line: ${workflow.commandLine}
+            Completed at: ${workflow.complete}
+            Duration    : ${workflow.duration}
+            Success     : ${workflow.success}
+            workDir     : ${workflow.workDir}
+            exit status : ${workflow.exitStatus}
+            Nextflow version: ${workflow.nextflow.version}
+            """
+        .stripIndent()
 
-    def msg = """\
-        Pipeline execution summary
-        ---------------------------
-        Jobname     : ${workflow.runName}
-        Success     : ${workflow.success}
-        Command Line: ${workflow.commandLine}
-        Completed at: ${workflow.complete}
-        Duration    : ${workflow.duration}
-        Success     : ${workflow.success}
-        workDir     : ${workflow.workDir}
-        exit status : ${workflow.exitStatus}
-        Nextflow version: ${workflow.nextflow.version}
-        """
-    .stripIndent()
-
-    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+        sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    }
 }
 
 def helpMessage() {

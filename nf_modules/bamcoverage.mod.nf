@@ -6,6 +6,9 @@ process BAMCOVERAGE{
 	label 'bigMem' // 20GB
 	label 'quadCore'  // 4 CPUs
 
+	publishDir { outputdir },
+		mode: "link", overwrite: true
+
 	input:
 		path(bam)
 		// We don't specifically use these but we need to import the .bai
@@ -18,12 +21,8 @@ process BAMCOVERAGE{
 	output:
 		path "*bw", emit: bw
 
-	publishDir "$outputdir",
-		mode: "link", overwrite: true
-
-	
     script:
-		bamcoverage_options = bamcoverage_args
+		def bamcoverage_options = bamcoverage_args
 		
 		if (verbose){
 			println ("[MODULE] BAMCOVERAGE ARGS: " + bamcoverage_args)

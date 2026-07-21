@@ -17,8 +17,8 @@ process PICARD_ADD_REPLACE{
 
     script:
 		
-        base = bam.baseName
-        bam_out = bam.baseName + "_rg.bam" 
+        def base = bam.baseName
+        def bam_out = bam.baseName + "_rg.bam"
 		
 		"""
 		module load picard
@@ -43,8 +43,8 @@ process PICARD_DEDUP{
 
     script:
 		
-        base = bam.baseName
-        bam_out = bam.baseName + "_dedup.bam" 
+        def base = bam.baseName
+        def bam_out = bam.baseName + "_dedup.bam"
 		
 		"""
 		module load picard

@@ -6,7 +6,10 @@ params.no_output = false
 process ECCDNA_PREPROCESSING {
 	
 	tag "$name" // Adds name to job submission instead of (1), (2) etc.
-		
+
+	publishDir { outputdir },
+		mode: "link", overwrite: true, enabled: !params.no_output
+
     input:
 	    tuple val(name), path(reads)
 		val (outputdir)
@@ -14,11 +17,8 @@ process ECCDNA_PREPROCESSING {
 		val (verbose)
 
 	output:
-		//path "*.txt", optional: true, emit: stats 
+		//path "*.txt", optional: true, emit: stats
         tuple val(name), path ("*UMIed*.fastq.gz"), emit: reads
-
-	publishDir "$outputdir",
-		mode: "link", overwrite: true, enabled: !params.no_output
 
 	script:
 		if (verbose){

@@ -2,7 +2,10 @@ nextflow.enable.dsl=2
 params.prefix = "" 
 
 process BISMARK2SUMMARY {
-    
+
+	publishDir { outputdir },
+		mode: "link", overwrite: true
+
 	input:
 	    file (file)
 		val (outputdir)
@@ -11,10 +14,7 @@ process BISMARK2SUMMARY {
 
 	output:
 	    path "*html",       emit: html
-		path "*txt",        emit: report 
-
-	publishDir "$outputdir",
-		mode: "link", overwrite: true
+		path "*txt",        emit: report
 
     script:
 		// We need to replace single quotes in the arguments so that they are not getting passed in as a single string

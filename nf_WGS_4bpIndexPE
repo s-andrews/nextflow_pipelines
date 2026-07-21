@@ -18,37 +18,18 @@ params.index = '135'
 params.no_output = false
 
 params.help = false
-// Show help message and exit
-if (params.help){
-    helpMessage()
-    exit 0
-}
 
 params.list_genomes = false;
-if (params.list_genomes){
-    println ("[WORKFLOW] List genomes selected")
-}
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
 include { getGenome }                          from './nf_modules/genomes.mod.nf'
 include { listGenomes }                        from './nf_modules/genomes.mod.nf'
 include { get_paired_names }                   from './nf_modules/WGS_4bpIndex_preprocessing.mod.nf'
 
-if (params.list_genomes){
-    listGenomes()  // this lists all available genomes, and exits
-}
-//params.genome = getGenome(params.genome)
-
-// the genome gets passed automatically though it is only the text string, not an object with all the info 
+// the genome gets passed automatically though it is only the text string, not an object with all the info
 include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'
 include { INDEX_4BP_PREPROCESSING_PE } from './nf_modules/WGS_4bpIndex_preprocessing.mod.nf'
 include { SORT_TRAEL_NAMES }    from './nf_modules/trael_preprocessing.mod.nf'
-
-println("=============================")
-println("                                ")
-println("-----------------------------")
-println(args)
-file_ch = makeFilesChannel(args)
 
 
 
@@ -152,7 +133,7 @@ process SORT_SPLIT_NAMES {
     tuple val(name), path(reads)
 
     output:
-    tuple env(sample_id_index), path(reads), emit:reads
+    tuple env('sample_id_index'), path(reads), emit:reads
 
     script:
 
@@ -181,10 +162,27 @@ process SORT_SPLIT_NAMES {
 workflow {
 
     main:
+        if (params.help){
+            helpMessage()
+            exit 0
+        }
+
+        if (params.list_genomes){
+            println ("[WORKFLOW] List genomes selected")
+            listGenomes()  // this lists all available genomes, and exits
+        }
+        //params.genome = getGenome(params.genome)
+
+        println("=============================")
+        println("                                ")
+        println("-----------------------------")
+        println(args)
+        file_ch = makeFilesChannel(args)
+
         //FASTQC( file_ch, params.outdir, params.fastqc_args, params.verbose )
 
-        //SORT_SPLIT_NAMES( file_ch )  
-        
+        //SORT_SPLIT_NAMES( file_ch )
+
         INDEX_4BP_PREPROCESSING_PE( file_ch, params.outdir, params.index_preprocessing_args, params.verbose )
         
         SORT_SPLIT_NAMES( INDEX_4BP_PREPROCESSING_PE.out.reads )
@@ -213,28 +211,26 @@ workflow {
         //CHIPSEQ( paired_files )
         //CHIPSEQ( SORT_TRAEL_NAMES.out.reads )  // !!! Here - we need the paired read files to be passed to the CHIPSEQ workflow !!!
         // can we use the existing filepairs methods??
-        
-}
 
+    // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+    // minimal execution summary report so we at least know what the working directory was...
+    workflow.onComplete = {
 
+        def msg = """\
+            Pipeline execution summary
+            ---------------------------
+            Jobname     : ${workflow.runName}
+            Completed at: ${workflow.complete}
+            Duration    : ${workflow.duration}
+            Success     : ${workflow.success}
+            workDir     : ${workflow.workDir}
+            exit status : ${workflow.exitStatus}
+            """
+        .stripIndent()
 
-// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
-// minimal execution summary report so we at least know what the working directory was...
-workflow.onComplete {
+        sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    }
 
-    def msg = """\
-        Pipeline execution summary
-        ---------------------------
-        Jobname     : ${workflow.runName}
-        Completed at: ${workflow.complete}
-        Duration    : ${workflow.duration}
-        Success     : ${workflow.success}
-        workDir     : ${workflow.workDir}
-        exit status : ${workflow.exitStatus}
-        """
-    .stripIndent()
-
-    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
 }
 
 def helpMessage() {

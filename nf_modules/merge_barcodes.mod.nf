@@ -5,15 +5,15 @@ process MERGE_BARCODES {
 
     tag "$name" // Adds name to job submission instead of (1), (2) etc.
 
-    input: 
+    publishDir { outputdir },
+		mode: "link", overwrite: true
+
+    input:
         tuple val(name), path(reads)
         val (outputdir)
-        
-    output:    
+
+    output:
         tuple val(name), path ("*fastq"), emit: merged_fastq
-        
-    publishDir "$outputdir",
-		mode: "link", overwrite: true
 
     script:
         """

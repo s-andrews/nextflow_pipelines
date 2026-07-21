@@ -18,59 +18,54 @@ params.samtools_sort_args  = ''
 params.samtools_index_args = ''
 
 params.help = false
+params.list_genomes = false;
 
 // the genome handling here is not nice - see notes in nf_WGS_4bpIndex.
 // It needs sorting out but is a bit messy.
-
-// Show help message and exit
-if (params.help){
-    helpMessage()
-    exit 0
-}
-
-if (params.paired){
-    println ("Treating data as paired end")
-} else {
-    println ("!! Treating data as single end. Specify '--paired' if it needs to be treated as paired end !!")
-}
-
-
-params.list_genomes = false;
-if (params.list_genomes){
-    println ("[WORKFLOW] List genomes selected")
-}
-
-if (params.verbose){
-    println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
-    println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
-    println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
-    println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
-}
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
 include { getGenome }    from './nf_modules/genomes.mod.nf'
 include { listGenomes }  from './nf_modules/genomes.mod.nf'
 
-if (params.list_genomes){
-    listGenomes()  // this lists all available genomes, and exits
-}
-//genome = getGenome(params.genome)
-
-//include { WHITESPACE_TO_UNDERSCORE }        from './nf_modules/umi_utils.mod.nf' 
-include { EMBED_UMI_PE;EMBED_UMI_SE }        from './nf_modules/umi_utils.mod.nf' 
+//include { WHITESPACE_TO_UNDERSCORE }        from './nf_modules/umi_utils.mod.nf'
+include { EMBED_UMI_PE;EMBED_UMI_SE }        from './nf_modules/umi_utils.mod.nf'
 include { FASTQC }       from './nf_modules/fastqc.mod.nf'
-include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'  //params(genome: genome)
+include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'
 include { SAMTOOLS_SORT2; SAMTOOLS_INDEX2 }          from './nf_modules/samtools.mod.nf'
-include { UMI_TOOLS_DEDUP }           from './nf_modules/umi_utils.mod.nf'     
+include { UMI_TOOLS_DEDUP }           from './nf_modules/umi_utils.mod.nf'
 
-// include { MULTIQC }      from './nf_modules/multiqc.mod.nf' 
-
-
-file_ch = makeFilesChannel(args)   
+// include { MULTIQC }      from './nf_modules/multiqc.mod.nf'
 
 workflow {
 
     main:
+        // Show help message and exit
+        if (params.help){
+            helpMessage()
+            exit 0
+        }
+
+        if (params.paired){
+            println ("Treating data as paired end")
+        } else {
+            println ("!! Treating data as single end. Specify '--paired' if it needs to be treated as paired end !!")
+        }
+
+        if (params.list_genomes){
+            println ("[WORKFLOW] List genomes selected")
+            listGenomes()  // this lists all available genomes, and exits
+        }
+
+        if (params.verbose){
+            println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
+            println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
+            println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
+            println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
+        }
+
+        //genome = getGenome(params.genome)
+
+        file_ch = makeFilesChannel(args)
 
         if (params.paired) {
             EMBED_UMI_PE  (file_ch)
@@ -99,25 +94,25 @@ workflow {
         // // multiqc_ch.subscribe {  println "Got: $it"  }
 
         //MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
-}
 
-// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
-// minimal execution summary report so we at least know what the working directory was...
-workflow.onComplete {
+    // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+    // minimal execution summary report so we at least know what the working directory was...
+    workflow.onComplete = {
 
-    def msg = """\
-        Pipeline execution summary
-        ---------------------------
-        Jobname     : ${workflow.runName}
-        Completed at: ${workflow.complete}
-        Duration    : ${workflow.duration}
-        Success     : ${workflow.success}
-        workDir     : ${workflow.workDir}
-        exit status : ${workflow.exitStatus}
-        """
-    .stripIndent()
+        def msg = """\
+            Pipeline execution summary
+            ---------------------------
+            Jobname     : ${workflow.runName}
+            Completed at: ${workflow.complete}
+            Duration    : ${workflow.duration}
+            Success     : ${workflow.success}
+            workDir     : ${workflow.workDir}
+            exit status : ${workflow.exitStatus}
+            """
+        .stripIndent()
 
-    //sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+        //sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    }
 }
 
 def helpMessage() {

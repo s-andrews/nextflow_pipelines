@@ -6,7 +6,10 @@ params.no_output = false
 process TRAEL_PREPROCESSING {
 	
 	tag "$name" // Adds name to job submission instead of (1), (2) etc.
-		
+
+	publishDir { outputdir },
+		mode: "link", overwrite: true, enabled: !params.no_output
+
     input:
 	    tuple val(name), path(reads)
 		val (outputdir)
@@ -14,30 +17,30 @@ process TRAEL_PREPROCESSING {
 		val (verbose)
 
 	output:
-		path "*.txt", optional: true, emit: stats 
+		path "*.txt", optional: true, emit: stats
         path ("*UMIed*.fastq.gz"), emit: reads
-
-	publishDir "$outputdir",
-		mode: "link", overwrite: true, enabled: !params.no_output
 
 	script:
 		if (verbose){
 			println ("[MODULE] TrAEL-PREPROCESSING ARGS: " + trael_preprocessing_args)
 		}
 
-		// Run the TrAELseq_preprocessing script	
+		// Run the TrAELseq_preprocessing script
 		"""
 		module load python
-		/bi/apps/TrAELseq/latest/TrAEL-seq/TrAELseq_preprocessing.py ${reads}		
+		/bi/apps/TrAELseq/latest/TrAEL-seq/TrAELseq_preprocessing.py ${reads}
 		"""
-} 
+}
 
 
 // For later versions of the TrAEL method do incorporate the inline TrAEL barcodes. 
 process TRAEL_PREPROCESSING_INDEXING {
 	
 	tag "$name" // Adds name to job submission instead of (1), (2) etc.
-		
+
+	publishDir { outputdir },
+		mode: "link", overwrite: true, enabled: !params.no_output
+
     input:
 	    tuple val(name), path(reads)
 		val (outputdir)
@@ -45,11 +48,8 @@ process TRAEL_PREPROCESSING_INDEXING {
 		val (verbose)
 
 	output:
-		path "*.txt", optional: true, emit: stats 
+		path "*.txt", optional: true, emit: stats
         path ("*UMIed*.fastq.gz"), emit: reads
-
-	publishDir "$outputdir",
-		mode: "link", overwrite: true, enabled: !params.no_output
 
 	script:
 		if (verbose){
@@ -77,7 +77,7 @@ process SORT_TRAEL_NAMES {
     path(reads)
 
     output:
-    tuple env(sample_id_index), path(reads), emit:reads
+    tuple env('sample_id_index'), path(reads), emit:reads
 
     script:
     """

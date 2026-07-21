@@ -9,33 +9,34 @@ params.single_end = false  // default mode is auto-detect. NOTE: params are hand
 params.fastqc_args = ''
 params.fastq_screen_args = ''
 params.multiqc_args = ''
+params.bisulfite = false
 
 params.help = false
-// Show help message and exit
-if (params.help){
-    helpMessage()
-    exit 0
-}
-
-if (params.verbose){
-    println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
-    println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
-    println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
-}
 
 include { makeFilesChannel; getFileBaseNames }    from './nf_modules/files.mod.nf'
 include { FASTQC }                                from './nf_modules/fastqc.mod.nf'
 include { FASTQ_SCREEN }                          from './nf_modules/fastq_screen.mod.nf'
-include { MULTIQC }                               from './nf_modules/multiqc.mod.nf' 
-
-file_ch = makeFilesChannel(args)
+include { MULTIQC }                               from './nf_modules/multiqc.mod.nf'
 
 workflow {
 
     main:
+        if (params.help){
+            helpMessage()
+            exit 0
+        }
+
+        if (params.verbose){
+            println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
+            println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
+            println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
+        }
+
+        file_ch = makeFilesChannel(args)
+
         FASTQC       (file_ch, params.outdir, params.fastqc_args, params.verbose)
-        FASTQ_SCREEN (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
-        
+        FASTQ_SCREEN (file_ch, params.outdir, params.fastq_screen_args, params.verbose, params.bisulfite)
+
         // merging channels for MultiQC
         multiqc_ch = FASTQC.out.report.mix(
             FASTQ_SCREEN.out.report.ifEmpty([]),
@@ -44,25 +45,25 @@ workflow {
         // multiqc_ch.subscribe {  println "Got: $it"  }
         MULTIQC      (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 
-}
+    // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+    // minimal execution summary report so we at least know what the working directory was...
+    workflow.onComplete = {
 
-// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
-// minimal execution summary report so we at least know what the working directory was...
-workflow.onComplete {
+        def msg = """\
+            Pipeline execution summary
+            ---------------------------
+            Jobname     : ${workflow.runName}
+            Completed at: ${workflow.complete}
+            Duration    : ${workflow.duration}
+            Success     : ${workflow.success}
+            workDir     : ${workflow.workDir}
+            exit status : ${workflow.exitStatus}
+            """
+        .stripIndent()
 
-    def msg = """\
-        Pipeline execution summary
-        ---------------------------
-        Jobname     : ${workflow.runName}
-        Completed at: ${workflow.complete}
-        Duration    : ${workflow.duration}
-        Success     : ${workflow.success}
-        workDir     : ${workflow.workDir}
-        exit status : ${workflow.exitStatus}
-        """
-    .stripIndent()
+        sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    }
 
-    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
 }
 
 def helpMessage() {

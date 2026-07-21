@@ -6,20 +6,7 @@ params.project_name = 'project__'
 params.verbose = false
 
 
-if (params.verbose){
-    println ("[WORKFLOW] PYCHOPPER: writing output to "           + params.outdir)
-}
-
 params.help = false
-// Show help message and exit
-if (params.help){
-    helpMessage()
-    exit 0
-}
-
-
-barcode_folders = Channel.fromFilePairs(args)
-
 
 include { PYCHOPPER }                             from './nf_modules/pychopper.mod.nf'
 include { MERGE_BARCODES }                        from './nf_modules/merge_barcodes.mod.nf'
@@ -27,25 +14,36 @@ include { MERGE_BARCODES }                        from './nf_modules/merge_barco
 workflow {
 
     main:
+        if (params.verbose){
+            println ("[WORKFLOW] PYCHOPPER: writing output to "           + params.outdir)
+        }
+
+        if (params.help){
+            helpMessage()
+            exit 0
+        }
+
+        barcode_folders = Channel.fromFilePairs(args)
+
         MERGE_BARCODES(barcode_folders, params.outdir)
         PYCHOPPER     (MERGE_BARCODES.out.merged_fastq, params.outdir, params.project_name)
-     
-}
 
-workflow.onComplete {
+    workflow.onComplete = {
 
-    def msg = """\
-        Pipeline execution summary
-        ---------------------------
-        Completed at: ${workflow.complete}
-        Duration    : ${workflow.duration}
-        Success     : ${workflow.success}
-        workDir     : ${workflow.workDir}
-        exit status : ${workflow.exitStatus}
-        """
-    .stripIndent()
+        def msg = """\
+            Pipeline execution summary
+            ---------------------------
+            Completed at: ${workflow.complete}
+            Duration    : ${workflow.duration}
+            Success     : ${workflow.success}
+            workDir     : ${workflow.workDir}
+            exit status : ${workflow.exitStatus}
+            """
+        .stripIndent()
 
-    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+        sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    }
+
 }
 
 def helpMessage() {

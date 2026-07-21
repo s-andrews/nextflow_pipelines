@@ -6,6 +6,9 @@ process SNP_SPLIT_GENOME_PREP {
 
 	label 'bigMem'
 
+	publishDir { outputdir },
+		mode: "link", overwrite: true
+
 	input:
 		val (outputdir)
 		path (vcf)
@@ -15,14 +18,12 @@ process SNP_SPLIT_GENOME_PREP {
 
 	output:
 		path ("*"),  emit: all
-	
-	publishDir "$outputdir",
-		mode: "link", overwrite: true
 
 	script:
 
+		def vcf_file_path
 		if(vcf.exists()) {
-			vcf_file = file(vcf)
+			def vcf_file = file(vcf)
 			vcf_file_path = vcf_file.resolve()
     		println("Using vcf file ${vcf_file_path}")
 		} else {
@@ -31,29 +32,32 @@ process SNP_SPLIT_GENOME_PREP {
 		}
 
 		// check this again
-		genome_path = "${genome}"
+		def genome_path = "${genome}"
 
-		strain_args = "--strain ${strain}"
+		def strain_args = "--strain ${strain}"
 
 		if (strain2 == ""){
 		 	println ("\nUsing one strain for genome preparation: " + strain)
-			//println("strain args = " + strain_args)	 
+			//println("strain args = " + strain_args)
 		} else {
 			strain_args += " --strain2 ${strain2}"
 			println("\nUsing two strains for genome preparation: " + strain + " and " + strain2)
 			//println("strain args = " + strain_args)
 		}
- 	
+
 
 		"""
 		module load snpsplit
-		SNPsplit_genome_preparation --vcf_file ${vcf_file_path} --reference_genome ${genome_path} ${strain_args}		
+		SNPsplit_genome_preparation --vcf_file ${vcf_file_path} --reference_genome ${genome_path} ${strain_args}
 		"""
 }
 
 process SNP_SPLIT {
 
 	label 'bigMem'
+
+	publishDir { outputdir },
+		mode: "link", overwrite: true
 
 	input:
 		val (outputdir)
@@ -64,12 +68,10 @@ process SNP_SPLIT {
 
 	output:
 		path ("*"),  emit: all
-	
-	publishDir "$outputdir",
-		mode: "link", overwrite: true
 
 	script:
 
+		def snp_file_path
 		if(snp_file.exists()) {
 			//snps = file(snp_file)
 			//snp_file_path = snps.resolve()
@@ -81,6 +83,7 @@ process SNP_SPLIT {
 			exit 1
 		}
 
+		def bam_file_path
 		if(mapped_bam.exists()) {
 			//bam = file(mapped_bam)
 			//bam_file_path = bam.resolve()    //!!! DO THIS !!!!
@@ -91,7 +94,7 @@ process SNP_SPLIT {
 			exit 1
 		}
 
-		snpsplit_args = ""
+		def snpsplit_args = ""
 
 		if (bisulfite) {
 			snpsplit_args += "--bisulfite"
@@ -102,7 +105,7 @@ process SNP_SPLIT {
 
 		"""
 		module load snpsplit
-		SNPsplit --snp_file ${snp_file_path} ${bam_file_path} ${snpsplit_args}		
+		SNPsplit --snp_file ${snp_file_path} ${bam_file_path} ${snpsplit_args}
 		"""
 
 }

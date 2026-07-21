@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 def makeFilesChannel(fileList) {    
     
     // def meta = [:]
-    file_ch = Channel.fromFilePairs( getFileBaseNames(fileList), size:-1)
+    def file_ch = Channel.fromFilePairs( getFileBaseNames(fileList), size:-1)
         //.map { it -> [ [meta.id = it[0]], it[1]] }
             
         // .map { meta.id = it[0]}
@@ -44,12 +44,14 @@ def makeFilesChannel(fileList) {
 
 def getFileBaseNames(fileList) {
 
-    baseNames = [:]
+    def baseNames = [:]
 
-    bareFiles = []
+    def bareFiles = []
 
-    for (String s : fileList) {
-       
+    fileList.each { s ->
+
+        def matcher
+
         if (params.single_end){
             matcher = s =~ /^(.*).(fastq|fq).gz$/
 
@@ -83,7 +85,7 @@ def getFileBaseNames(fileList) {
                         bareFiles.add(matcher[0][1])
                     }
                 }
-            
+
             }
             else{ // not Trim Galore processed
                 matcher = s =~ /^(.*)_(R?[1234]).(fastq|fq).gz$/
@@ -107,15 +109,15 @@ def getFileBaseNames(fileList) {
 
     }
 
-    patterns = []
-    for (s in baseNames) {
+    def patterns = []
+    baseNames.each { s ->
         // println (s)
-        pattern = s.key+"_{"+s.value.join(",")+"}.{fastq,fq}.gz"
+        def pattern = s.key+"_{"+s.value.join(",")+"}.{fastq,fq}.gz"
         patterns.add(pattern)
         // println("$pattern")
     }
-    for (s in bareFiles) {
-        pattern = s+".{fastq,fq}.gz"
+    bareFiles.each { s ->
+        def pattern = s+".{fastq,fq}.gz"
         patterns.add(pattern)
     }
 

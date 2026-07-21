@@ -8,40 +8,6 @@ params.hic = false
 params.snp_file = "" 
 
 
-// Show help message and exit
-if (params.help){
-    helpMessage()
-    exit 0
-}
-
-if (params.snp_file == "" || params.snp_file == null) {
-    println("snp file required - please specify with --snp_file\nExiting...\n")
-    exit 1
-} 
-
-snp_file = file(params.snp_file)
-
-if(snp_file.exists()) {
-    println("Found snp: ${snp_file}")
-} else {
-    println("Couldn't find snp file ${snp_file} \nExiting...\n")
-    exit 1
-}
-
-if (args[0] == "" || args[0] == null) {
-    println("Couldn't find bam file, supply one as the final argument \nExiting...\n")
-    exit 1
-} else {
-    bam_file = file(args[0])
-}
-
-if(bam_file.exists()) {
-    println("Found bam: ${bam_file}")
-} else {
-    println("Couldn't find bam file ${bam_file} \nExiting...\n")
-    exit 1
-}
-
 include { SNP_SPLIT }               from './nf_modules/snpsplit.mod.nf'
 
 
@@ -49,24 +15,59 @@ workflow {
 
     main:
 
+        // Show help message and exit
+        if (params.help){
+            helpMessage()
+            exit 0
+        }
+
+        if (params.snp_file == "" || params.snp_file == null) {
+            println("snp file required - please specify with --snp_file\nExiting...\n")
+            exit 1
+        }
+
+        def snp_file = file(params.snp_file)
+
+        if(snp_file.exists()) {
+            println("Found snp: ${snp_file}")
+        } else {
+            println("Couldn't find snp file ${snp_file} \nExiting...\n")
+            exit 1
+        }
+
+        def bam_file
+        if (args[0] == "" || args[0] == null) {
+            println("Couldn't find bam file, supply one as the final argument \nExiting...\n")
+            exit 1
+        } else {
+            bam_file = file(args[0])
+        }
+
+        if(bam_file.exists()) {
+            println("Found bam: ${bam_file}")
+        } else {
+            println("Couldn't find bam file ${bam_file} \nExiting...\n")
+            exit 1
+        }
+
         SNP_SPLIT(params.outdir, snp_file, bam_file, params.bisulfite, params.hic)
-       
-}
 
-workflow.onComplete {
+    workflow.onComplete = {
 
-    def msg = """\
-        Pipeline execution summary
-        ---------------------------
-        Completed at: ${workflow.complete}
-        Duration    : ${workflow.duration}
-        Success     : ${workflow.success}
-        workDir     : ${workflow.workDir}
-        exit status : ${workflow.exitStatus}
-        """
-    .stripIndent()
+        def msg = """\
+            Pipeline execution summary
+            ---------------------------
+            Completed at: ${workflow.complete}
+            Duration    : ${workflow.duration}
+            Success     : ${workflow.success}
+            workDir     : ${workflow.workDir}
+            exit status : ${workflow.exitStatus}
+            """
+        .stripIndent()
 
-    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+        sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    }
+
 }
 
 def helpMessage() {

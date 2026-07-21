@@ -9,11 +9,14 @@ process UMIBAM2 {
 	tag "$bam" // Adds name to job submission instead of (1), (2) etc.
 
 	// dynamic directive to increase memory as required
-	cpus = 1
-	memory { 20.GB * task.attempt }  
+	cpus 1
+	memory { 20.GB * task.attempt }
 	errorStrategy { sleep(Math.pow(2, task.attempt) * 30 as long); return 'retry' }
   	maxRetries 5
 	// we also have an occasional fail where the index file isn't quite available. I'm just putting in a sleep statement
+
+	publishDir { outputdir },
+		mode: "link", overwrite: true
 
 	input:
 	   // tuple val(name), path(bam)
@@ -27,9 +30,6 @@ process UMIBAM2 {
 		path "*report.txt", emit: report
 		//tuple val(name), path ("*bam"),        emit: bam
 		path ("*bam"),        emit: bam
-
-	publishDir "$outputdir",
-		mode: "link", overwrite: true
 
 
     script:

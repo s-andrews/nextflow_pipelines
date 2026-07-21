@@ -8,15 +8,6 @@ nextflow.enable.dsl=2
 params.outdir = "."
 params.genome = ""
 
-// For reStrainingOrder we start with alignments to the MGP (Mouse Genome Project)
-genome_to_use = "MGP.N-masked";
-if (params.genome){
-    println ("Genome was set on the command line (to "+ params.genome + "), however we will overwrite this with >> " + genome_to_use + " << (required for reStrainingOrder)")
-}
-else{
-    println ("[WORKLFOW] Setting genome for reStrainingOrder manually to >> " + genome_to_use + " << (required)")
-}
-
 params.verbose = false
 params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically 
 
@@ -34,75 +25,77 @@ params.reStrainingOrder_args = ''
 params.aligner = 'bowtie2' // default is Bowtie2
 
 params.help = false
-// Show help message and exit
-if (params.help){
-    helpMessage()
-    exit 0
-}
-
-// Validate inputs
-assert params.aligner == 'bowtie2' || params.aligner == 'hisat2' || params.aligner == 'bismark' : "Invalid aligner option: >>${params.aligner}<<. Valid options are: 'bowtie2', 'hisat2' or 'bismark'\n\n"
-println ("Using aligner: " + params.aligner)
-
 params.list_genomes = false;
-if (params.list_genomes){
-    println ("[WORKLFOW] List genomes selected")
-}
-
-if (params.verbose){
-    println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
-    println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
-    println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
-    println ("[WORKFLOW] BOWTIE2 ARGS: "          + params.bowtie2_args)
-    println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
-}
-
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
 include { getGenome; listGenomes }             from './nf_modules/genomes.mod.nf'
 
-if (params.list_genomes){
-    listGenomes()  // this lists all available genomes, and exits
-}
-
-genome = getGenome(genome_to_use)
-
 include { FASTQC }            from './nf_modules/fastqc.mod.nf'
 include { FASTQC as FASTQC2 } from './nf_modules/fastqc.mod.nf'
-if (params.aligner == "bismark"){
-    include { FASTQ_SCREEN }      from './nf_modules/fastq_screen.mod.nf'   params(bisulfite: '--bisulfite')
-}
-else{
-    include { FASTQ_SCREEN }      from './nf_modules/fastq_screen.mod.nf'
-}
-
+include { FASTQ_SCREEN }      from './nf_modules/fastq_screen.mod.nf'
 include { TRIM_GALORE }       from './nf_modules/trim_galore.mod.nf'
 
-include { BOWTIE2 }           from './nf_modules/bowtie2.mod.nf'   params(genome: genome)
-include { BISMARK }           from './nf_modules/bismark.mod.nf'   params(genome: genome)
-include { HISAT2 }            from './nf_modules/hisat2.mod.nf'    params(genome: genome)
+include { BOWTIE2 }           from './nf_modules/bowtie2.mod.nf'
+include { BISMARK }           from './nf_modules/bismark.mod.nf'
+include { HISAT2 }            from './nf_modules/hisat2.mod.nf'
 
-include { MULTIQC }           from './nf_modules/multiqc.mod.nf' 
+include { MULTIQC }           from './nf_modules/multiqc.mod.nf'
 
-include { RESTRAININGORDER }  from './nf_modules/reStrainingOrder.mod.nf' 
-
-file_ch = makeFilesChannel(args)
+include { RESTRAININGORDER }  from './nf_modules/reStrainingOrder.mod.nf'
 
 workflow {
 
     main:
+        // Show help message and exit
+        if (params.help){
+            helpMessage()
+            exit 0
+        }
+
+        // Validate inputs
+        assert params.aligner == 'bowtie2' || params.aligner == 'hisat2' || params.aligner == 'bismark' : "Invalid aligner option: >>${params.aligner}<<. Valid options are: 'bowtie2', 'hisat2' or 'bismark'\n\n"
+        println ("Using aligner: " + params.aligner)
+
+        if (params.list_genomes){
+            println ("[WORKLFOW] List genomes selected")
+            listGenomes()  // this lists all available genomes, and exits
+        }
+
+        if (params.verbose){
+            println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
+            println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
+            println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
+            println ("[WORKFLOW] BOWTIE2 ARGS: "          + params.bowtie2_args)
+            println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
+        }
+
+        // For reStrainingOrder we start with alignments to the MGP (Mouse Genome Project)
+        def genome_to_use = "MGP.N-masked";
+        if (params.genome){
+            println ("Genome was set on the command line (to "+ params.genome + "), however we will overwrite this with >> " + genome_to_use + " << (required for reStrainingOrder)")
+        }
+        else{
+            println ("[WORKLFOW] Setting genome for reStrainingOrder manually to >> " + genome_to_use + " << (required)")
+        }
+
+        def genome = getGenome(genome_to_use)
+
+        file_ch = makeFilesChannel(args)
+
+        def bisulfite_mode = (params.aligner == "bismark")
+
         FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
-        FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose)
-        TRIM_GALORE     (file_ch, params.outdir, params.trim_galore_args, params.verbose)
+        FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose, bisulfite_mode)
+        TRIM_GALORE     (file_ch, params.outdir, params.trim_galore_args, params.verbose, false, false, false, false, "", "")
         FASTQC2         (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
         if (params.aligner == 'bowtie2'){
-            BOWTIE2     (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose)
+            BOWTIE2     (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose, genome)
         }
         else if (params.aligner == 'hisat2'){
-            HISAT2      (TRIM_GALORE.out.reads, params.outdir, params.hisat2_args, params.verbose)
+            HISAT2      (TRIM_GALORE.out.reads, params.outdir, params.hisat2_args, params.verbose, genome)
         }
         else if (params.aligner == 'bismark'){
-            BISMARK     (TRIM_GALORE.out.reads, params.outdir, params.bismark_args, params.verbose)
+            BISMARK     (TRIM_GALORE.out.reads, params.outdir, params.bismark_args, params.verbose, genome, false, false, false, "")
         }
 
         // merging channels for MultiQC
@@ -136,25 +129,25 @@ workflow {
        
         MULTIQC              (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
         RESTRAININGORDER     (ch_reStrainingIn, params.outdir, params.reStrainingOrder_args, params.verbose)
-}
 
-// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
-// minimal execution summary report so we at least know what the working directory was...
-workflow.onComplete {
+    // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+    // minimal execution summary report so we at least know what the working directory was...
+    workflow.onComplete = {
 
-    def msg = """\
-        Pipeline execution summary
-        ---------------------------
-        Jobname     : ${workflow.runName}
-        Completed at: ${workflow.complete}
-        Duration    : ${workflow.duration}
-        Success     : ${workflow.success}
-        workDir     : ${workflow.workDir}
-        exit status : ${workflow.exitStatus}
-        """
-    .stripIndent()
+        def msg = """\
+            Pipeline execution summary
+            ---------------------------
+            Jobname     : ${workflow.runName}
+            Completed at: ${workflow.complete}
+            Duration    : ${workflow.duration}
+            Success     : ${workflow.success}
+            workDir     : ${workflow.workDir}
+            exit status : ${workflow.exitStatus}
+            """
+        .stripIndent()
 
-    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+        sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    }
 }
 
 def helpMessage() {

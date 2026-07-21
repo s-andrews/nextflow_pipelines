@@ -18,43 +18,19 @@ params.no_qc = false
 params.dedup = false
 
 params.help = false
-// Show help message and exit
-if (params.help){
-    helpMessage()
-    exit 0
-}
-
 params.list_genomes = false;
-if (params.list_genomes){
-    println ("[WORKFLOW] List genomes selected")
-}
-
-if (params.verbose){
-    println ("[WORKFLOW] UMIBAM ARGS ARE: "       + params.umibam2_args)
-    println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
-    println ("[WORKFLOW] DEDUPLICATING: "          + params.dedup)
-}
-
+params.nogroup = true
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
-//include { getGenome }                          from './nf_modules/genomes.mod.nf'
-//include { listGenomes }                        from './nf_modules/genomes.mod.nf'
+include { listGenomes }                        from './nf_modules/genomes.mod.nf'
 
-if (params.list_genomes){
-    listGenomes()  // this lists all available genomes, and exits
-}
-//genome = getGenome(params.genome)
+include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'
+include { ECCDNA_PREPROCESSING } from './nf_modules/eccDNA_preprocessing.mod.nf'
+include { FASTQC }               from './nf_modules/fastqc.mod.nf'
+include { SAMTOOLS_SORT }        from './nf_modules/samtools.mod.nf'
+include { SAMTOOLS_INDEX2 }      from './nf_modules/samtools.mod.nf'
+include { UMIBAM2 }              from './nf_modules/umibam2.mod.nf'
 
-//include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'           params(genome: genome, no_output: params.no_output)
-include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'           params(genome: params.genome, no_output: params.no_output)
-include { ECCDNA_PREPROCESSING } from './nf_modules/eccDNA_preprocessing.mod.nf'    params(no_output: params.no_output)
-include { FASTQC }               from './nf_modules/fastqc.mod.nf'    params(nogroup: true, no_output: params.no_output)
-include { SAMTOOLS_SORT }        from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
-include { SAMTOOLS_INDEX2 }      from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
-include { UMIBAM2 }              from './nf_modules/umibam2.mod.nf' 
-
-file_ch = makeFilesChannel(args)
- 
 // copied from nf_traelseq
 process CHECK_BAMFILE_NOT_EMPTY {
 
@@ -75,6 +51,25 @@ process CHECK_BAMFILE_NOT_EMPTY {
 workflow {
 
     main:
+        // Show help message and exit
+        if (params.help){
+            helpMessage()
+            exit 0
+        }
+
+        if (params.list_genomes){
+            println ("[WORKFLOW] List genomes selected")
+            listGenomes()  // this lists all available genomes, and exits
+        }
+
+        if (params.verbose){
+            println ("[WORKFLOW] UMIBAM ARGS ARE: "       + params.umibam2_args)
+            println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
+            println ("[WORKFLOW] DEDUPLICATING: "          + params.dedup)
+        }
+
+        file_ch = makeFilesChannel(args)
+
         FASTQC( file_ch, params.outdir, params.fastqc_args, params.verbose )
         ECCDNA_PREPROCESSING( file_ch, params.outdir, params.ecc_preprocessing_args, params.verbose )
         CHIPSEQ( ECCDNA_PREPROCESSING.out.reads )
@@ -94,28 +89,25 @@ workflow {
             // Deduplication
             UMIBAM2 (SAMTOOLS_INDEX2.out.bam, SAMTOOLS_INDEX2.out.bai, params.outdir, params.umibam2_args, params.verbose)
         }
-        
-}
 
+    // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+    // minimal execution summary report so we at least know what the working directory was...
+    workflow.onComplete = {
 
+        def msg = """\
+            Pipeline execution summary
+            ---------------------------
+            Jobname     : ${workflow.runName}
+            Completed at: ${workflow.complete}
+            Duration    : ${workflow.duration}
+            Success     : ${workflow.success}
+            workDir     : ${workflow.workDir}
+            exit status : ${workflow.exitStatus}
+            """
+        .stripIndent()
 
-// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
-// minimal execution summary report so we at least know what the working directory was...
-workflow.onComplete {
-
-    def msg = """\
-        Pipeline execution summary
-        ---------------------------
-        Jobname     : ${workflow.runName}
-        Completed at: ${workflow.complete}
-        Duration    : ${workflow.duration}
-        Success     : ${workflow.success}
-        workDir     : ${workflow.workDir}
-        exit status : ${workflow.exitStatus}
-        """
-    .stripIndent()
-
-    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+        sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    }
 }
 
 def helpMessage() {

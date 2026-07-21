@@ -7,41 +7,41 @@ params.verbose = false
 params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically  
 
 params.help = false
-// Show help message and exit
-if (params.help){
-    helpMessage()
-    exit 0
-}
-
 
 include { makeFilesChannel; getFileBaseNames }    from './nf_modules/files.mod.nf'
 include { CALC_MD5 }          from './nf_modules/md5.mod.nf'
 
-file_ch = Channel.fromPath(args)     // UmiBam expects just the path to be passed in
-// file_ch.subscribe{  println "Got: $it"  }
 workflow {
 
     main:
+        if (params.help){
+            helpMessage()
+            exit 0
+        }
+
+        file_ch = Channel.fromPath(args)     // UmiBam expects just the path to be passed in
+        // file_ch.subscribe{  println "Got: $it"  }
         CALC_MD5  (file_ch, params.outdir, params.verbose)
-}
 
-// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
-// minimal execution summary report so we at least know what the working directory was...
-workflow.onComplete {
+    // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+    // minimal execution summary report so we at least know what the working directory was...
+    workflow.onComplete = {
 
-    def msg = """\
-        Pipeline execution summary
-        ---------------------------
-        Jobname     : ${workflow.runName}
-        Completed at: ${workflow.complete}
-        Duration    : ${workflow.duration}
-        Success     : ${workflow.success}
-        workDir     : ${workflow.workDir}
-        exit status : ${workflow.exitStatus}
-        """
-    .stripIndent()
+        def msg = """\
+            Pipeline execution summary
+            ---------------------------
+            Jobname     : ${workflow.runName}
+            Completed at: ${workflow.complete}
+            Duration    : ${workflow.duration}
+            Success     : ${workflow.success}
+            workDir     : ${workflow.workDir}
+            exit status : ${workflow.exitStatus}
+            """
+        .stripIndent()
 
-    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+        sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    }
+
 }
 
 def helpMessage() {

@@ -16,62 +16,61 @@ params.bismark2report_args= ''
 params.multiqc_args = ''
 
 params.help = false
-// Show help message and exit
-if (params.help){
-    helpMessage()
-    exit 0
-}
-
 params.list_genomes = false;
-if (params.list_genomes){
-    println ("[WORKLFOW] List genomes selected")
-}
-
-if (params.verbose){
-    println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
-    println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
-    println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
-    println ("[WORKFLOW] BISMARK ARGS ARE: "      + params.bismark_args)
-     println ("[WORKFLOW] BISMARK METHYLATION EXTRACTOR ARGS ARE: " + params.bismark_methylation_extractor_args)}
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
 include { getGenome }                            from './nf_modules/genomes.mod.nf'
 include { listGenomes }                          from './nf_modules/genomes.mod.nf'
 
-if (params.list_genomes){
-    listGenomes()  // this lists all available genomes, and exits
-}
-
-genome = getGenome(params.genome)
-
-include { FASTQC }                                from './nf_modules/fastqc.mod.nf' 
+include { FASTQC }                                from './nf_modules/fastqc.mod.nf'
 include { FASTQC as FASTQC2 }                     from './nf_modules/fastqc.mod.nf'
 
-include { FASTQ_SCREEN }                          from './nf_modules/fastq_screen.mod.nf'   params(bisulfite: '--bisulfite')
+include { FASTQ_SCREEN }                          from './nf_modules/fastq_screen.mod.nf'
 
-// Removing flag for RRBS processing 
-include { TRIM_GALORE }                           from './nf_modules/trim_galore.mod.nf' //   params(rrbs: true)
-include { BISMARK }                               from './nf_modules/bismark.mod.nf'        params(genome: genome)
+// Removing flag for RRBS processing
+include { TRIM_GALORE }                           from './nf_modules/trim_galore.mod.nf'
+include { BISMARK }                               from './nf_modules/bismark.mod.nf'
 
 // Adding flag for RRBS processing - I think we want to leave this one in - it just affects whether R2 gets ignored.
-include { BISMARK_METHYLATION_EXTRACTOR }          from './nf_modules/bismark_methylation_extractor.mod.nf'   params(rrbs: true)
+include { BISMARK_METHYLATION_EXTRACTOR }          from './nf_modules/bismark_methylation_extractor.mod.nf'
 include { BISMARK2REPORT }                        from './nf_modules/bismark2report.mod.nf'
 include { BISMARK2SUMMARY }                       from './nf_modules/bismark2summary.mod.nf'
 
-include { MULTIQC }                               from './nf_modules/multiqc.mod.nf' 
-
-file_ch = makeFilesChannel(args)
+include { MULTIQC }                               from './nf_modules/multiqc.mod.nf'
 
 workflow {
 
     main:
+        // Show help message and exit
+        if (params.help){
+            helpMessage()
+            exit 0
+        }
+
+        if (params.list_genomes){
+            println ("[WORKLFOW] List genomes selected")
+            listGenomes()  // this lists all available genomes, and exits
+        }
+
+        if (params.verbose){
+            println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
+            println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
+            println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
+            println ("[WORKFLOW] BISMARK ARGS ARE: "      + params.bismark_args)
+            println ("[WORKFLOW] BISMARK METHYLATION EXTRACTOR ARGS ARE: " + params.bismark_methylation_extractor_args)
+        }
+
+        def genome = getGenome(params.genome)
+
+        file_ch = makeFilesChannel(args)
+
         FASTQC                         (file_ch, params.outdir, params.fastqc_args, params.verbose)
-        TRIM_GALORE                    (file_ch, params.outdir, params.trim_galore_args, params.verbose)
-        FASTQ_SCREEN                   (TRIM_GALORE.out.reads, params.outdir, params.fastq_screen_args, params.verbose)
+        TRIM_GALORE                    (file_ch, params.outdir, params.trim_galore_args, params.verbose, false, false, false, false, "", "")
+        FASTQ_SCREEN                   (TRIM_GALORE.out.reads, params.outdir, params.fastq_screen_args, params.verbose, true)
         FASTQC2                        (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
-        BISMARK                        (TRIM_GALORE.out.reads, params.outdir, params.bismark_args, params.verbose)
+        BISMARK                        (TRIM_GALORE.out.reads, params.outdir, params.bismark_args, params.verbose, genome, false, false, false, "")
         // Skipping deduplication step
-        BISMARK_METHYLATION_EXTRACTOR  (BISMARK.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose)
+        BISMARK_METHYLATION_EXTRACTOR  (BISMARK.out.bam, params.outdir, params.bismark_methylation_extractor_args, params.verbose, false, true, false, false, false)
 
         // merging channels for MultiQC
         multiqc_ch = FASTQC.out.report.mix(
@@ -96,24 +95,24 @@ workflow {
         BISMARK2SUMMARY                  (bismark_report_ch, params.outdir, params.bismark2summary_args, params.verbose)
         MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 
-}
+    // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+    // minimal execution summary report so we at least know what the working directory was...
+    workflow.onComplete = {
 
-// Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
-// minimal execution summary report so we at least know what the working directory was...
-workflow.onComplete {
+        def msg = """\
+            Pipeline execution summary
+            ---------------------------
+            Completed at: ${workflow.complete}
+            Duration    : ${workflow.duration}
+            Success     : ${workflow.success}
+            workDir     : ${workflow.workDir}
+            exit status : ${workflow.exitStatus}
+            """
+        .stripIndent()
 
-    def msg = """\
-        Pipeline execution summary
-        ---------------------------
-        Completed at: ${workflow.complete}
-        Duration    : ${workflow.duration}
-        Success     : ${workflow.success}
-        workDir     : ${workflow.workDir}
-        exit status : ${workflow.exitStatus}
-        """
-    .stripIndent()
+        sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    }
 
-    sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
 }
 
 def helpMessage() {
