@@ -1,0 +1,6 @@
+name	GRCh38_rRNA_lambda
+species	Human
+fasta	/bi/scratch/Genomes/Human/GRCh38_rRNA_lambda
+bowtie2	/bi/scratch/Genomes/Human/GRCh38_rRNA_lambda
+bismark /bi/scratch/Genomes/Human/GRCh38_rRNA_lambda
+hisat2	/bi/scratch/Genomes/Human/GRCh38_rRNA_lambda

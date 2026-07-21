@@ -1,0 +1,4 @@
+name	BDGP6.54_custom_rRNA_WL
+species	Drosophila_melanogaster
+fasta	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP6.54_custom_rRNA_WL/Drosophila_melanogaster.NAKB.rdna_repeatremoved.fa
+bowtie2	/bi/scratch/Genomes/Drosophila_melanogaster/BDGP6.54_custom_rRNA_WL/BDGP6.54_custom_rRNA_WL

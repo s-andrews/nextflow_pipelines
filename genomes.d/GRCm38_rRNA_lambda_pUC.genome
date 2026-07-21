@@ -1,0 +1,5 @@
+name	GRCm38_rRNA_lambda_pUC
+species	Mouse
+fasta	/bi/scratch/Genomes/Mouse/GRCm38_rRNA_lambda_pUC/
+bismark	/bi/scratch/Genomes/Mouse/GRCm38_rRNA_lambda_pUC/
+bowtie2	/bi/scratch/Genomes/Mouse/GRCm38_rRNA/GRCm38_rRNA_lambda_pUC

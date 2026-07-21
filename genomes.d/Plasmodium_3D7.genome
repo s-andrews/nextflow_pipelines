@@ -1,0 +1,4 @@
+name	Plasmodium_3D7
+species	Plasmodium_falciparum
+fasta	/bi/scratch/Genomes/Plasmodium_falciparum/3D7
+bowtie2	/bi/scratch/Genomes/Plasmodium_falciparum/3D7/GCA_000002765_3

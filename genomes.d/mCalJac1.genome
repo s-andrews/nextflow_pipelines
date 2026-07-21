@@ -1,0 +1,7 @@
+name	Callithrix_jacchus_mCalJac1
+species	Marmoset
+fasta	/bi/scratch/Genomes/Callithrix_jacchus/Callithrix_jacchus_mCalJac1/
+bowtie2	/bi/scratch/Genomes/Callithrix_jacchus/Callithrix_jacchus_mCalJac1/mCalJac1
+hisat2	/bi/scratch/Genomes/Callithrix_jacchus/Callithrix_jacchus_mCalJac1/mCalJac1
+gtf     /bi/scratch/Genomes/Callithrix_jacchus/Callithrix_jacchus_mCalJac1/Callithrix_jacchus.mCalJac1.pat.X.115.gtf
+hisat2_splices /bi/scratch/Genomes/Callithrix_jacchus/Callithrix_jacchus_mCalJac1/mCalJac1_splices.txt

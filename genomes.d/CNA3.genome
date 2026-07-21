@@ -1,0 +1,4 @@
+name	CNA3
+species	Cryptococcus_neoformans
+fasta	/bi/scratch/Genomes/Cryptococcus_neoformans/
+bowtie2	/bi/scratch/Genomes/Cryptococcus_neoformans/CNA3

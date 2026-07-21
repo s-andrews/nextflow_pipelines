@@ -1,0 +1,9 @@
+name	GRCm39_ub_g76v_mclover_t2b_scarlet
+species	Mouse
+bowtie2	/bi/scratch/Genomes/Mouse/GRCm39_Ub_g76v_mclover_t2b_scarlet/GRCm39_ub_g76v_mclover_t2b_scarlet
+hisat2	/bi/scratch/Genomes/Mouse/GRCm39_Ub_g76v_mclover_t2b_scarlet/GRCm39_ub_g76v_mclover_t2b_scarlet
+gtf	/bi/scratch/Genomes/Mouse/GRCm39_Ub_g76v_mclover_t2b_scarlet/GRCm39.115_ub_g76v_mclover_t2b_scarlet.gtf
+hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm39_Ub_g76v_mclover_t2b_scarlet/GRCm39.115_ub_g76v_mclover_t2b_scarlet_splice_sites.txt
+#hisat2	/bi/scratch/Genomes/Mouse/GRCm39_Ub-G76v-mclover-t2b-scarlet/plasmid/plasmid
+#gtf	/bi/scratch/Genomes/Mouse/GRCm39_Ub-G76v-mclover-t2b-scarlet/plasmid/ub-g76v-mclover-t2b-scarlet-dna-seq.gtf
+#hisat2_splices	/bi/scratch/Genomes/Mouse/GRCm39_Ub-G76v-mclover-t2b-scarlet/plasmid/splice_sites.txt
