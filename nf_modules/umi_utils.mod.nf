@@ -94,6 +94,7 @@ process UMI_TOOLS_DEDUP {
 		path(bam)
 		path(index) // so it's in the work folder for umi_tools to access
 		val (outputdir)
+		val (paired_end)
 
 	output:
         path ("*bam"), emit: bam
@@ -105,15 +106,20 @@ process UMI_TOOLS_DEDUP {
 
 	script:
 
+	options = ""
+	if (paired_end) {
+		options += "--paired"
+	}
+
 	bam_out = bam.baseName + "_dedup.bam" 
 
 	"""
 	module load umitools
-	umi_tools dedup --log ${bam}_dedup.log --umi-separator="_" -I ${bam} > ${bam_out}
+	umi_tools dedup --log ${bam}_dedup.log ${options} --umi-separator="_" -I ${bam} > ${bam_out}
 	"""
 
 }
-
+  
 // I think we need to capture the output
 
 //for i in *_sorted.bam; do INFILE=$i; OUTFILE=$(sed 's/_sorted.bam/_sorted_dedup.bam/' <<< $INFILE); ssub --mem 20G -o ${OUTFILE} -e ${OUTFILE}.err umi_tools dedup --log ${INFILE}_dedup.log --umi-separator=":" -I $INFILE; done
