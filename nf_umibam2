@@ -31,7 +31,7 @@ include { SAMTOOLS_SORT }                       from './nf_modules/samtools.mod.
 include { SAMTOOLS_INDEX2 }                     from './nf_modules/samtools.mod.nf'  params(no_output: params.no_output)
 
 // file_ch = makeFilesChannel(args)
-file_ch = Channel .fromPath(args)    // UmiBam expects just the path to be passed in
+file_ch = Channel.fromPath(args)    // UmiBam expects just the path to be passed in
     
 workflow {
 
