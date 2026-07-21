@@ -83,7 +83,7 @@ process SNP_SPLIT {
 
 		if(mapped_bam.exists()) {
 			//bam = file(mapped_bam)
-			//bam_file_path = bam.resolve()
+			//bam_file_path = bam.resolve()    //!!! DO THIS !!!!
 			//println("Using bam file ${bam_file_path}")
 			bam_file_path = mapped_bam
 		} else {
