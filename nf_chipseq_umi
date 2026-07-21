@@ -5,6 +5,10 @@ params.outdir = "."
 params.genome = ""
 params.verbose = false
 params.single_end = false  // default mode is auto-detect. NOTE: params are handed over automatically  
+// we need to leave in the params.single_end option as it's used in trim_galore etc so would be a big 
+// job to remove it. That should be done at some point as they've deprecated the auto hand over.
+// But - this 'paired' parameter is really what we need in this workflow for umi tools.
+params.paired = false
 
 params.fastqc_args = ''
 params.fastq_screen_args = ''
@@ -23,6 +27,13 @@ if (params.help){
     helpMessage()
     exit 0
 }
+
+if (params.paired){
+    println ("Treating data as paired end")
+} else {
+    println ("!! Treating data as single end. Specify '--paired' if it needs to be treated as paired end !!")
+}
+
 
 params.list_genomes = false;
 if (params.list_genomes){
@@ -60,33 +71,34 @@ file_ch = makeFilesChannel(args)
 workflow {
 
     main:
-        //WHITESPACE_TO_UNDERSCORE  (file_ch)
-        if (params.single_end) {
-            EMBED_UMI_SE  (file_ch)
-            embed_umi_out = EMBED_UMI_SE.out.reads
-        }
-        else {       
+
+        if (params.paired) {
             EMBED_UMI_PE  (file_ch)
             embed_umi_out = EMBED_UMI_PE.out.reads
         }
+        else {       
+            EMBED_UMI_SE  (file_ch)
+            embed_umi_out = EMBED_UMI_SE.out.reads
+        }
 
-        CHIPSEQ( embed_umi_out )
+        CHIPSEQ( embed_umi_out )//, false )
         // the output from the bowtie2 module is a tuple of name, reads, whereas the output from the hisat2 module is just the bam,
         // so have used the temporary extra function SAMTOOLS_SORT2 which accepts that. Seems like overkill but maybe not.
         SAMTOOLS_SORT2  (CHIPSEQ.out.bam, params.outdir, params.samtools_sort_args, params.verbose)
         SAMTOOLS_INDEX2 (SAMTOOLS_SORT2.out.bam, params.outdir, params.samtools_sort_args, params.verbose)
-        UMI_TOOLS_DEDUP (SAMTOOLS_INDEX2.out.bam, SAMTOOLS_INDEX2.out.bai, params.outdir)
-        // // merging channels for MultiQC
+        UMI_TOOLS_DEDUP (SAMTOOLS_INDEX2.out.bam, SAMTOOLS_INDEX2.out.bai, params.outdir, params.paired)
+        // merging channels for MultiQC
         // multiqc_ch = FASTQC.out.report.mix(
         //     TRIM_GALORE.out.report,
         //     FASTQ_SCREEN.out.report.ifEmpty([]),
         //     FASTQC2.out.report.ifEmpty([]),
         //     HISAT2.out.stats.ifEmpty([]),
+        //     UMI_TOOLS_DEDUP.out.log.ifEmpty([]),
         // ).collect()
 
         // // multiqc_ch.subscribe {  println "Got: $it"  }
 
-        // MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
+        //MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 }
 
 // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
