@@ -6,6 +6,9 @@ process FASTQC {
 
 	tag "$name" // Adds name to job submission instead of (1), (2) etc.
 
+	// paired-end files get 8 cores, single-end files get 4
+	cpus { reads instanceof List ? 8 : 4 }
+
 	publishDir { outputdir },
 		mode: "link", overwrite: true, enabled: !params.no_output
 
@@ -25,13 +28,13 @@ process FASTQC {
 			// println ("ADDING --nogroup: " + fastqc_args)
 			fastqc_args += " --nogroup "
 		}
-		
+
 		if (verbose){
 			println ("[MODULE] FASTQC ARGS: "+ fastqc_args)
 		}
 
 		"""
 		module load fastqc
-		fastqc $fastqc_args -q -t 2 ${reads}
+		fastqc $fastqc_args -q -t ${task.cpus} ${reads}
 		"""
 }
