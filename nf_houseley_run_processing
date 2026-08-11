@@ -1,0 +1,324 @@
+#!/usr/bin/env nextflow
+
+// Enable modules
+nextflow.enable.dsl=2
+
+params.base_dir = "/bi/scratch/run_processing"
+params.runfolder = ""
+params.samplesheet = ""
+params.verbose = false
+params.dry_run = false
+
+// Passed through verbatim on every nested 'nextflow run <pipeline> ...' dispatch call, e.g.
+// "-process.executor=local -c /path/to/override.config" to force local execution and/or
+// suppress notification emails during testing. Left empty, dispatched pipelines behave exactly
+// as if invoked directly (i.e. real SLURM submission, real notification emails per nextflow.config).
+params.nested_extra_args = ""
+
+params.help = false
+
+// Run type (as it appears in the sample sheet, after space -> underscore normalisation) ->
+// which existing pipeline handles it, and whether it needs the Vazyme ssDNA pre-trim first.
+def runTypePipelineMap() {
+    return [
+        "WGS":                [pipeline: "nf_chipseq",              pretrim: false],
+        "WGS_UMI":            [pipeline: "nf_chipseq_umi",          pretrim: false],
+        "RRBS_no_trimming":   [pipeline: "nf_bisulfite_RRBS_noTrim", pretrim: false],
+        "Vazyme_ssDNA_WGSBS": [pipeline: "nf_bisulfite_WGBS",        pretrim: true],
+        "Vazyme_ssDNA_WGS":   [pipeline: "nf_chipseq_umi",           pretrim: true],
+    ]
+}
+
+include { parseHouseleySamplesheet } from './nf_modules/houseley_samplesheet.mod.nf'
+include { resolveGenome }            from './nf_modules/genomes.mod.nf'
+
+process RUN_PRETRIM {
+
+    tag "$dirName"
+    executor 'local'
+    errorStrategy 'ignore'
+
+    input:
+        tuple val(dirName), val(dirPath)
+
+    output:
+        tuple val(dirName), val("${dirPath}/trim_galore")
+
+    script:
+        """
+        set +u
+        source /etc/profile.d/lmod.sh
+        module load nextflow/testing
+        set -u
+        cd '${dirPath}'
+        # run nextflow's own work/ dir alongside the fastqs (same filesystem as --outdir), so
+        # publishDir's hardlinks can never fail by crossing a filesystem boundary.
+        nextflow run '${workflow.projectDir}/nf_trim_galore' ${params.nested_extra_args} \
+            --trim_galore_args="--three_prime_clip_R1 10 --clip_R2 10" \
+            --outdir trim_galore \
+            *.fastq.gz > houseley_pretrim.log 2>&1
+        """
+}
+
+process RUN_SUBPIPELINE {
+
+    tag "$dirName"
+    executor 'local'
+    errorStrategy 'ignore'
+
+    input:
+        tuple val(dirName), val(outDir), val(fastqGlob), val(pipeline), val(genome)
+
+    script:
+        """
+        set +u
+        source /etc/profile.d/lmod.sh
+        module load nextflow/testing
+        set -u
+        cd '${outDir}'
+        # run nextflow's own work/ dir alongside the fastqs (same filesystem as --outdir), so
+        # publishDir's hardlinks can never fail by crossing a filesystem boundary.
+        nextflow run '${workflow.projectDir}/${pipeline}' ${params.nested_extra_args} \
+            --genome '${genome}' \
+            --outdir . \
+            ${fastqGlob} > houseley_dispatch.log 2>&1
+        """
+}
+
+workflow {
+
+    main:
+        // Show help message and exit
+        if (params.help){
+            helpMessage()
+            exit 0
+        }
+
+        if (! params.runfolder){
+            println("\nPlease specify the run folder name with --runfolder\n")
+            exit 1
+        }
+        if (! params.samplesheet){
+            println("\nPlease specify the sample sheet filename (inside the run folder) with --samplesheet\n")
+            exit 1
+        }
+
+        def runDir = new File(params.base_dir, params.runfolder)
+        if (! runDir.exists()){
+            println("\nRun folder not found: ${runDir}\n")
+            exit 1
+        }
+
+        def samplesheetFile = new File(runDir, params.samplesheet)
+        if (! samplesheetFile.exists()){
+            println("\nSample sheet not found: ${samplesheetFile}\n")
+            exit 1
+        }
+
+        // Step 1: create the per-experiment subfolders + fastq symlinks (reuses the group's
+        // existing script as-is; runs synchronously here, not as a Nextflow process, so we can
+        // rely on its exit code and its side effects being on disk before we look for them).
+        println("[HOUSELEY] Setting up per-experiment subfolders in ${runDir} ...")
+
+        def setupScript = "${workflow.projectDir}/bin/houseley_group_setup_multirun_structure.py"
+        def setupCommand = ["bash", "-c",
+            "source /etc/profile.d/lmod.sh && module load python && " +
+            "python3 '${setupScript}' '${params.runfolder}' '${samplesheetFile}'"]
+
+        def setupProcess = new ProcessBuilder(setupCommand)
+            .directory(runDir)
+            .redirectErrorStream(true)
+            .start()
+        setupProcess.inputStream.eachLine { println("[HOUSELEY SETUP] ${it}") }
+        def setupExit = setupProcess.waitFor()
+
+        if (setupExit != 0){
+            println("\nhouseley_group_setup_multirun_structure.py failed (exit code ${setupExit}) -- aborting.\n")
+            exit 1
+        }
+
+        // Step 2: parse the same sample sheet ourselves so we know, for each subfolder the
+        // script just created, which run type and genome it's for.
+        def groups = parseHouseleySamplesheet(samplesheetFile.toString())
+
+        def processed = []
+        def skipped = []
+        def runTypeMap = runTypePipelineMap()
+
+        groups.each { dirName, info ->
+
+            def dirPath = new File(runDir, dirName)
+            def fileCount = dirPath.exists() ? dirPath.list().findAll { it.endsWith(".fastq.gz") }.size() : 0
+
+            def mapping = runTypeMap[info.runType]
+            if (! mapping){
+                skipped.add([dirName: dirName, fileCount: fileCount,
+                    reason: "Unknown run type '${info.runType}'. Known types: ${runTypeMap.keySet().join(', ')}"])
+                return
+            }
+
+            if (! dirPath.exists()){
+                skipped.add([dirName: dirName, fileCount: fileCount,
+                    reason: "Expected subfolder '${dirPath}' wasn't created (no matching fastq files found?)."])
+                return
+            }
+
+            def resolved = resolveGenome(info.genome)
+            if (! resolved.resolved){
+                skipped.add([dirName: dirName, fileCount: fileCount, reason: resolved.message])
+                return
+            }
+
+            processed.add([
+                dirName:   dirName,
+                dirPath:   dirPath.toString(),
+                pipeline:  mapping.pipeline,
+                pretrim:   mapping.pretrim,
+                genome:    resolved.name,
+                fileCount: fileCount,
+            ])
+        }
+
+        println("\n[HOUSELEY] ${processed.size()} group(s) will be processed:")
+        processed.each {
+            println("  - ${it.dirName}  [${it.fileCount} fastq file(s)]  ->  ${it.pretrim ? 'trim_galore (custom) + ' : ''}${it.pipeline}  (genome: ${it.genome})")
+        }
+        if (skipped){
+            println("\n[HOUSELEY] ${skipped.size()} group(s) SKIPPED:")
+            skipped.each { println("  - ${it.dirName}  [${it.fileCount} fastq file(s)]: ${it.reason}") }
+        }
+        println("")
+
+        if (params.dry_run){
+            println("[HOUSELEY] --dry_run specified: stopping here, nothing was dispatched.\n")
+        } else {
+            // Step 3: dispatch each processed group to its target pipeline via a real Nextflow
+            // process, so Nextflow's own scheduling/reporting applies to the (potentially long
+            // running) actual data processing.
+            def jobs_ch = Channel.fromList(processed)
+
+            def direct_jobs = jobs_ch.filter { ! it.pretrim }.map {
+                [it.dirName, it.dirPath, "*.fastq.gz", it.pipeline, it.genome]
+            }
+
+            RUN_PRETRIM(jobs_ch.filter { it.pretrim }.map { [it.dirName, it.dirPath] })
+
+            def pretrimmed_jobs = RUN_PRETRIM.out
+                .join(jobs_ch.filter { it.pretrim }.map { [it.dirName, it] })
+                .map { dirName, trimmedDir, jobInfo ->
+                    [dirName, jobInfo.dirPath, "trim_galore/*.fq.gz", jobInfo.pipeline, jobInfo.genome]
+                }
+
+            RUN_SUBPIPELINE(direct_jobs.mix(pretrimmed_jobs))
+        }
+
+    workflow.onComplete = {
+
+        def msg = """\
+            Pipeline execution summary
+            ---------------------------
+            Jobname     : ${workflow.runName}
+            Completed at: ${workflow.complete}
+            Duration    : ${workflow.duration}
+            Success     : ${workflow.success}
+            workDir     : ${workflow.workDir}
+            exit status : ${workflow.exitStatus}
+            """
+        .stripIndent()
+
+        sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    }
+
+}
+
+def helpMessage() {
+
+    log.info"""
+    >>
+
+
+    SYNOPSIS:
+
+    This workflow is a wrapper for processing Houseley group sequencing runs, which typically
+    mix several different experiment types in a single run folder. It:
+
+      1) runs bin/houseley_group_setup_multirun_structure.py to split the run folder's fastq
+         files into one subfolder per experiment group (based on the sample sheet), symlinking
+         the matching fastq files into each;
+      2) works out, from the same sample sheet, which existing nf_* pipeline each subfolder
+         needs, resolving genome names against genomes.d (see 'Genome name correction' below);
+      3) dispatches each subfolder to that pipeline (each as its own independent Nextflow run).
+
+    Run type -> pipeline mapping:
+    ------------------------------
+    WGS                   -> nf_chipseq
+    WGS UMI               -> nf_chipseq_umi
+    RRBS no trimming      -> nf_bisulfite_RRBS_noTrim
+    Vazyme ssDNA WGSBS    -> trim_galore (10bp off the 3' end of R1, 10bp off the 5' start of R2),
+                             then nf_bisulfite_WGBS
+    Vazyme ssDNA WGS      -> same trim_galore step, then nf_chipseq_umi
+
+    Note: nf_bisulfite_WGBS and nf_chipseq_umi both run their own internal Trim Galore step too,
+    so Vazyme groups are trimmed twice. This is harmless (the second pass finds nothing left to
+    trim) and is a direct consequence of dispatching to the existing pipelines unmodified.
+
+    Genome name correction:
+    ------------------------
+    Sample sheet genome names are checked against genomes.d. An exact match is used directly.
+    An 'rDNA' <-> 'rRNA' substitution that produces an exact match is applied automatically
+    (this specific typo is common). Otherwise, the closest available genome name (by edit
+    distance) is suggested -- if you're running this interactively you'll be asked to confirm
+    it; if not (e.g. with -bg), or if nothing close enough is found, that group is SKIPPED
+    (the rest of the run is not affected) and reported in the final summary.
+
+
+            ==============================================================================================================
+
+
+    USAGE:
+
+    nf_houseley_run_processing --runfolder <run folder name> --samplesheet <sample sheet filename>
+
+    Mandatory arguments:
+    ====================
+
+      --runfolder [str]                Name of the run folder under --base_dir (this is also used to
+                                       locate the raw fastq files under /bi/seqfac/seqfac/<runfolder>/).
+
+      --samplesheet [str]              Filename of the sample sheet CSV, expected to already be inside
+                                       <base_dir>/<runfolder>/.
+
+    Other Options:
+    ==============
+
+      --base_dir [str]                 Parent directory containing run folders. [Default: /bi/scratch/run_processing]
+
+      --dry_run                        Run the subfolder setup + genome resolution and print the summary of what
+                                       would be processed, but don't actually dispatch any pipelines. [Default: OFF]
+
+      --nested_extra_args [str]        Extra arguments appended verbatim to every nested 'nextflow run <pipeline>'
+                                       dispatch call, e.g. --nested_extra_args '-process.executor=local' to force
+                                       local execution instead of the default SLURM submission (useful for testing
+                                       on a single small group). [Default: none]
+
+      --verbose                        More verbose status messages. [Default: OFF]
+      --help                           Displays this help message and exits.
+
+    Workflow Options:
+    =================
+
+    Please note the single '-' hyphen for the following options!
+
+      -resume                         If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
+                                      this option will attempt to resume the workflow at the point it got interrupted by using
+                                      Nextflow's caching mechanism. This may save a lot of time.
+
+      -bg                             Sends the entire workflow into the background, thus disconnecting it from the terminal session.
+                                      Note: genome-name typo suggestions can't be confirmed interactively in this mode -- any group
+                                      whose genome name isn't an exact (or rDNA/rRNA-corrected) match will be skipped.
+
+
+    <<
+    """.stripIndent()
+
+}
