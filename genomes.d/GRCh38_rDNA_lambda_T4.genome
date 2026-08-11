@@ -1,0 +1,4 @@
+name	GRCh38_T4_lambda
+species	Human
+fasta	/bi/scratch/Genomes/Human/GRCh38_rRNA_lambda_T4/
+bismark	/bi/scratch/Genomes/Human/GRCh38_rRNA_lambda_T4/
