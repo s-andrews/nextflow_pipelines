@@ -25,12 +25,51 @@ def runTypePipelineMap() {
         "WGS_UMI":            [pipeline: "nf_chipseq_umi",          pretrim: false],
         "RRBS_no_trimming":   [pipeline: "nf_bisulfite_RRBS_noTrim", pretrim: false],
         "Vazyme_ssDNA_WGSBS": [pipeline: "nf_bisulfite_WGBS",        pretrim: true],
-        "Vazyme_ssDNA_WGS":   [pipeline: "nf_chipseq_umi",           pretrim: true],
+        "Vazyme_ssDNA_WGS":   [pipeline: "nf_chipseq",               pretrim: true],
+        "TrAEL":              [pipeline: "nf_traelseq",              pretrim: false],
     ]
 }
 
 include { parseHouseleySamplesheet } from './nf_modules/houseley_samplesheet.mod.nf'
+include { houseleyIsPairedEnd }     from './nf_modules/houseley_samplesheet.mod.nf'
 include { resolveGenome }            from './nf_modules/genomes.mod.nf'
+
+// Pipelines that -- unlike nf_chipseq -- can't infer single-end vs paired-end from the fastq
+// files themselves, and so need to be told explicitly via '--paired'.
+def pipelinesNeedingExplicitPaired() {
+    return ["nf_chipseq_umi", "nf_rnaseq_umi"]
+}
+
+// Reads the exit-code status file RUN_PRETRIM/RUN_SUBPIPELINE always leave behind (via a bash
+// EXIT trap, so it's written even on early/unexpected failures), and turns it into a short,
+// human-readable status for the consolidated processing log.
+def readHouseleyStatus(File statusFile) {
+    if (! statusFile.exists()) {
+        return "UNKNOWN (no status file found -- check the log directly)"
+    }
+    def text = statusFile.text.trim()
+    def m = text =~ /exit code:\s*(\d+)/
+    if (m.find()) {
+        def code = m.group(1)
+        return code == "0" ? "SUCCESS" : "FAILED (exit ${code})"
+    }
+    return "UNKNOWN (${text})"
+}
+
+// Builds the exact 'nextflow run ...' command line RUN_SUBPIPELINE will execute for a group, so
+// the summary report can show it verbatim rather than just naming the pipeline.
+def buildDispatchCommand(String pipeline, String genome, boolean pairedEnd, String fastqGlob, String extraArgs = "") {
+    // Boolean flags MUST use the explicit '=true' form here, not the bare '--flag' form. A bare
+    // boolean flag immediately followed by a positional argument (the fastq glob) gets Nextflow's
+    // CLI parser to swallow that first positional token as the flag's own value instead -- this
+    // was confirmed to be the actual cause of the "first fastq file goes missing" issue seen
+    // across several real runs, not a Nextflow engine race as originally suspected.
+    def pairedFlag = pairedEnd ? "--paired=true " : ""
+    def extra = params.nested_extra_args ? "${params.nested_extra_args} " : ""
+    def extraArgsPrefixed = extraArgs ? "${extraArgs} " : ""
+    return "nextflow run ${workflow.projectDir}/${pipeline} ${extra}-c ${workflow.projectDir}/nf_modules/houseley_throttle.config " +
+        "--genome '${genome}' --outdir . --robust_file_pairing=true --expect_paired=true ${pairedFlag}${extraArgsPrefixed}${fastqGlob}"
+}
 
 process RUN_PRETRIM {
 
@@ -46,17 +85,49 @@ process RUN_PRETRIM {
 
     script:
         """
+        cd '${dirPath}' || { echo "[HOUSELEY] ERROR: could not cd to '${dirPath}'" >&2; exit 1; }
+
+        # Redirect EVERYTHING from here on (not just the trim_galore calls) into the log, and
+        # always record an exit status on the way out -- even module-load or other early
+        # failures used to leave nothing useful behind, since errorStrategy 'ignore' on this
+        # process meant a failure here was otherwise silent to the outer wrapper.
+        exec > houseley_pretrim.log 2>&1
+        # Absolute path here (not relative) since the script cd's into trim_galore/ later and
+        # never cd's back -- the trap must still land the status file in '${dirPath}' regardless
+        # of the working directory at the point the script actually exits.
+        trap 'echo "[HOUSELEY] RUN_PRETRIM exit code: \$?" > '${dirPath}'/houseley_pretrim_status.txt' EXIT
+        set -x
+
         set +u
         source /etc/profile.d/lmod.sh
-        module load nextflow/testing
+        module load trim_galore
         set -u
-        cd '${dirPath}'
-        # run nextflow's own work/ dir alongside the fastqs (same filesystem as --outdir), so
-        # publishDir's hardlinks can never fail by crossing a filesystem boundary.
-        nextflow run '${workflow.projectDir}/nf_trim_galore' ${params.nested_extra_args} \
-            --trim_galore_args="--three_prime_clip_R1 10 --clip_R2 10" \
-            --outdir trim_galore \
-            *.fastq.gz > houseley_pretrim.log 2>&1
+
+        mkdir -p trim_galore
+
+        # Vazyme ssDNA reads need the last 10bp of R1 and the first 10bp of R2 removed, keeping
+        # everything else untouched -- no quality/adapter trimming at this stage (the downstream
+        # pipeline runs its own Trim Galore pass for that). Read length is taken from the data
+        # itself (2nd line of the first R1 fastq.gz) rather than assumed, since it varies by run.
+        first_r1=\$(ls *_R1.fastq.gz | head -1)
+        read_len=\$(zcat "\$first_r1" | head -2 | tail -1 | tr -d '\\n' | wc -c)
+        keep_len=\$((read_len - 10))
+
+        trim_galore --hardtrim5 \$keep_len --output_dir trim_galore *_R1.fastq.gz
+        trim_galore --hardtrim3 \$keep_len --output_dir trim_galore *_R2.fastq.gz
+
+        # Trim Galore's hardtrim mode names its output '..._R1.<N>bp_5prime.fq.gz' /
+        # '..._R2.<N>bp_3prime.fq.gz', which downstream pipelines' R1/R2 auto-pairing (in
+        # nf_modules/files.mod.nf) doesn't recognise as a pair -- each file would be treated as
+        # its own single-end sample. Strip the hardtrim suffix back down to a plain '_R1.fq.gz' /
+        # '_R2.fq.gz' so pairing works exactly as it would for any other fastq file.
+        cd trim_galore
+        for f in *_R1.*bp_5prime.fq.gz; do
+            mv "\$f" "\$(echo "\$f" | sed -E 's/_R1\\.[0-9]+bp_5prime\\.fq\\.gz\$/_R1.fq.gz/')"
+        done
+        for f in *_R2.*bp_3prime.fq.gz; do
+            mv "\$f" "\$(echo "\$f" | sed -E 's/_R2\\.[0-9]+bp_3prime\\.fq\\.gz\$/_R2.fq.gz/')"
+        done
         """
 }
 
@@ -67,21 +138,85 @@ process RUN_SUBPIPELINE {
     errorStrategy 'ignore'
 
     input:
-        tuple val(dirName), val(outDir), val(fastqGlob), val(pipeline), val(genome)
+        tuple val(dirName), val(outDir), val(fastqGlob), val(pipeline), val(genome), val(pairedFlag), val(extraArgs), val(traelRenames)
 
     script:
+        // TrAEL groups need their index-demultiplexed files renamed with sample names from the
+        // sample sheet (one houseley_rename_trael_indexes.py call per sample sharing this
+        // folder, scoped by that sample's own barcode -- see the module's own comments for why)
+        // *before* MultiQC runs, so nf_traelseq's own MultiQC was skipped via --skip_multiqc=true
+        // in extraArgs and is run here instead, once renaming is done.
+        def renameCommands = ""
+        if (traelRenames) {
+            // set +u/-u here too: 'module load' (via lmod.sh) references its own unset shell
+            // variables internally, which is fatal under this script's default 'bash -ue' unless
+            // guarded -- every other module load in this file already does this; this one was
+            // missed initially and caused every TrAEL group's dispatch to fail immediately here,
+            // right after the main pipeline had already finished successfully.
+            renameCommands += "set +u\n"
+            renameCommands += "module load python\n"
+            renameCommands += "set -u\n"
+            traelRenames.each { r ->
+                renameCommands += "python3 '${workflow.projectDir}/bin/houseley_rename_trael_indexes.py' " +
+                    "--barcode '${r.barcode}' --index '${r.index}' --sample_names '${r.names}'\n"
+            }
+            renameCommands += "set +u\n"
+            renameCommands += "module load multiqc\n"
+            renameCommands += "set -u\n"
+            renameCommands += "multiqc -x work --filename multiqc_report.html .\n"
+        }
+
         """
+        cd '${outDir}' || { echo "[HOUSELEY] ERROR: could not cd to '${outDir}'" >&2; exit 1; }
+
+        # Redirect EVERYTHING from here on into the log, and always record an exit status on the
+        # way out -- even module-load or nested-pipeline-launch failures used to leave nothing
+        # useful behind, since errorStrategy 'ignore' on this process meant a failure here was
+        # otherwise silent to the outer wrapper.
+        exec > houseley_dispatch.log 2>&1
+        trap 'echo "[HOUSELEY] RUN_SUBPIPELINE exit code: \$?" > houseley_dispatch_status.txt' EXIT
+        set -x
+
         set +u
         source /etc/profile.d/lmod.sh
         module load nextflow/testing
+        module load copy_back_files
         set -u
-        cd '${outDir}'
+
         # run nextflow's own work/ dir alongside the fastqs (same filesystem as --outdir), so
         # publishDir's hardlinks can never fail by crossing a filesystem boundary.
+        # Boolean flags below MUST use the explicit '=true' form, never the bare '--flag' form.
+        # A bare boolean flag immediately followed by a positional argument (the fastq glob) gets
+        # Nextflow's CLI parser to swallow that first positional token as the flag's own value
+        # instead, silently dropping it from the actual fastq file list -- this was confirmed to
+        # be the real cause of the "first fastq file goes missing" issue seen across several real
+        # runs, not a Nextflow engine race as originally suspected.
         nextflow run '${workflow.projectDir}/${pipeline}' ${params.nested_extra_args} \
+            -c '${workflow.projectDir}/nf_modules/houseley_throttle.config' \
             --genome '${genome}' \
             --outdir . \
-            ${fastqGlob} > houseley_dispatch.log 2>&1
+            --robust_file_pairing=true \
+            --expect_paired=true \
+            ${pairedFlag} \
+            ${extraArgs} \
+            ${fastqGlob}
+
+        ${renameCommands}
+
+        # Rename the group's MultiQC report to include the group name (so reports from different
+        # groups don't collide once collected together), then copy just that file back via
+        # copy_back_files -- not the rest of the group's output, which stays here for now.
+        # copy_back_files needs an '_L<NNN>_' pattern in the filename to work out the destination,
+        # so the lane number is read off one of this group's original fastq files rather than
+        # assumed.
+        if [ -f multiqc_report.html ]; then
+            lane=\$(ls *_L*_R1.fastq.gz 2>/dev/null | head -1 | grep -oE '_L[0-9]+_' | tr -d '_')
+            if [ -n "\$lane" ]; then
+                renamed="${dirName}_\${lane}_multiqc_report.html"
+                mv multiqc_report.html "\$renamed"
+                copy_back_files '${params.runfolder}' "\$renamed"
+            fi
+        fi
         """
 }
 
@@ -169,25 +304,105 @@ workflow {
                 return
             }
 
+            // Some pipelines (UMI dedup steps) can't infer single-end vs paired-end from the
+            // fastq files the way nf_chipseq can, so they need to be told explicitly.
+            def pairedEnd = pipelinesNeedingExplicitPaired().contains(mapping.pipeline) ? houseleyIsPairedEnd(dirPath) : false
+
+            // nf_traelseq needs --index (which TrAEL indexes are present, e.g. "567"), read from
+            // column 7 of the sample sheet. Without it, don't silently fall back to nf_traelseq's
+            // own default (all indexes) -- skip the group instead, since that default is unlikely
+            // to be what was actually intended for a specific TrAEL sample.
+            def extraArgs = ""
+            if (mapping.pipeline == "nf_traelseq") {
+                if (! info.traelIndex) {
+                    skipped.add([dirName: dirName, fileCount: fileCount,
+                        reason: "TrAEL run type but no index list found in column 7 of the sample sheet (e.g. '5,6,7')."])
+                    return
+                }
+                // --skip_multiqc=true: this group's files get renamed (per sample, see
+                // traelRenames below) after nf_traelseq finishes but before MultiQC runs, so
+                // nf_traelseq's own internal MultiQC step is skipped here and run separately by
+                // RUN_SUBPIPELINE once renaming is done.
+                extraArgs = "--index ${info.traelIndex} --skip_multiqc=true"
+            }
+
             processed.add([
-                dirName:   dirName,
-                dirPath:   dirPath.toString(),
-                pipeline:  mapping.pipeline,
-                pretrim:   mapping.pretrim,
-                genome:    resolved.name,
-                fileCount: fileCount,
+                dirName:      dirName,
+                dirPath:      dirPath.toString(),
+                pipeline:     mapping.pipeline,
+                pretrim:      mapping.pretrim,
+                genome:       resolved.name,
+                fileCount:    fileCount,
+                pairedEnd:    pairedEnd,
+                extraArgs:    extraArgs,
+                traelRenames: info.traelRenames ?: [],
             ])
         }
 
         println("\n[HOUSELEY] ${processed.size()} group(s) will be processed:")
         processed.each {
-            println("  - ${it.dirName}  [${it.fileCount} fastq file(s)]  ->  ${it.pretrim ? 'trim_galore (custom) + ' : ''}${it.pipeline}  (genome: ${it.genome})")
+            def pairedNote = pipelinesNeedingExplicitPaired().contains(it.pipeline) ? ", paired: ${it.pairedEnd ? 'yes' : 'no'}" : ""
+            def extraNote = it.extraArgs ? ", ${it.extraArgs}" : ""
+            def renameNote = it.traelRenames ? ", ${it.traelRenames.size()} sample(s) to rename before MultiQC" : ""
+            println("  - ${it.dirName}  [${it.fileCount} fastq file(s)]  ->  ${it.pretrim ? 'trim_galore (custom) + ' : ''}${it.pipeline}  (genome: ${it.genome}${pairedNote}${extraNote}${renameNote})")
         }
         if (skipped){
             println("\n[HOUSELEY] ${skipped.size()} group(s) SKIPPED:")
             skipped.each { println("  - ${it.dirName}  [${it.fileCount} fastq file(s)]: ${it.reason}") }
         }
         println("")
+
+        // Write a summary report file naming, for every group, the exact pipeline(s)/command(s)
+        // that will be (or were) run -- written regardless of --dry_run, so it's also a record of
+        // what actually happened on a real dispatch.
+        def reportLines = []
+        reportLines << "Houseley run processing summary"
+        reportLines << "================================"
+        reportLines << "Run folder   : ${params.runfolder}"
+        reportLines << "Sample sheet : ${params.samplesheet}"
+        reportLines << "Generated at : ${new Date()}"
+        reportLines << "Mode         : ${params.dry_run ? 'DRY RUN (nothing dispatched)' : 'DISPATCHED'}"
+        reportLines << ""
+        reportLines << "${processed.size()} group(s) to be processed:"
+        reportLines << "-----------------------------------------"
+        processed.each { job ->
+            reportLines << ""
+            reportLines << job.dirName
+            reportLines << "  fastq files : ${job.fileCount}"
+            reportLines << "  genome      : ${job.genome}"
+            reportLines << "  pipeline    : ${job.pipeline}"
+            if (pipelinesNeedingExplicitPaired().contains(job.pipeline)) {
+                reportLines << "  paired      : ${job.pairedEnd ? 'yes' : 'no'}"
+            }
+            if (job.extraArgs) {
+                reportLines << "  extra args  : ${job.extraArgs}"
+            }
+            if (job.pretrim) {
+                reportLines << "  step 1 (pre-trim) : trim_galore --hardtrim5/--hardtrim3 <read length - 10>" +
+                    " on R1/R2 (Vazyme ssDNA hard-trim; length auto-detected from this group's data)"
+                reportLines << "  step 2 (dispatch) : ${buildDispatchCommand(job.pipeline, job.genome, job.pairedEnd, 'trim_galore/*.fq.gz', job.extraArgs)}"
+            } else if (job.traelRenames) {
+                reportLines << "  step 1 (dispatch) : ${buildDispatchCommand(job.pipeline, job.genome, job.pairedEnd, '*.fastq.gz', job.extraArgs)}"
+                reportLines << "  step 2 (rename)   : bin/houseley_rename_trael_indexes.py, once per sample sharing this" +
+                    " folder, scoped by that sample's own barcode:"
+                job.traelRenames.each { r ->
+                    reportLines << "                        --barcode ${r.barcode} --index ${r.index} --sample_names \"${r.names}\""
+                }
+                reportLines << "  step 3 (multiqc)  : multiqc -x work --filename multiqc_report.html ."
+            } else {
+                reportLines << "  command     : ${buildDispatchCommand(job.pipeline, job.genome, job.pairedEnd, '*.fastq.gz', job.extraArgs)}"
+            }
+        }
+        if (skipped){
+            reportLines << ""
+            reportLines << "${skipped.size()} group(s) SKIPPED:"
+            reportLines << "-----------------------------------------"
+            skipped.each { reportLines << "  - ${it.dirName}  [${it.fileCount} fastq file(s)]: ${it.reason}" }
+        }
+
+        def reportFile = new File(runDir, "houseley_summary_report.txt")
+        reportFile.text = reportLines.join("\n") + "\n"
+        println("[HOUSELEY] Summary report written to ${reportFile}\n")
 
         if (params.dry_run){
             println("[HOUSELEY] --dry_run specified: stopping here, nothing was dispatched.\n")
@@ -197,8 +412,22 @@ workflow {
             // running) actual data processing.
             def jobs_ch = Channel.fromList(processed)
 
+            // '=true' here, not the bare flag -- see buildDispatchCommand() for why.
+            //
+            // TrAEL groups get a narrower glob that excludes '*UMIed*' files: TRAEL_PREPROCESSING_INDEXING
+            // publishes its own demultiplexed output as '*UMIed*.fastq.gz' into this same group folder
+            // (same '.fastq.gz' extension as the raw input, unlike other pipelines' Trim Galore output
+            // which is '*.fq.gz'), so a plain '*.fastq.gz' glob re-scanning an already-completed TrAEL
+            // group on a re-run would feed nf_traelseq its own previous output as if it were raw data.
+            // Excluding by the '*UMIed*' tag (rather than e.g. only-symlinks) is the reliable
+            // discriminator here, since UMIed files can also end up as symlinks themselves once copied
+            // to backup and re-linked back in.
             def direct_jobs = jobs_ch.filter { ! it.pretrim }.map {
-                [it.dirName, it.dirPath, "*.fastq.gz", it.pipeline, it.genome]
+                def glob = (it.pipeline == "nf_traelseq")
+                    ? '$(find . -maxdepth 1 -name "*.fastq.gz" ! -name "*UMIed*")'
+                    : "*.fastq.gz"
+                [it.dirName, it.dirPath, glob, it.pipeline, it.genome, it.pairedEnd ? "--paired=true" : "",
+                 it.extraArgs, it.traelRenames]
             }
 
             RUN_PRETRIM(jobs_ch.filter { it.pretrim }.map { [it.dirName, it.dirPath] })
@@ -206,13 +435,48 @@ workflow {
             def pretrimmed_jobs = RUN_PRETRIM.out
                 .join(jobs_ch.filter { it.pretrim }.map { [it.dirName, it] })
                 .map { dirName, trimmedDir, jobInfo ->
-                    [dirName, jobInfo.dirPath, "trim_galore/*.fq.gz", jobInfo.pipeline, jobInfo.genome]
+                    [dirName, jobInfo.dirPath, "trim_galore/*.fq.gz", jobInfo.pipeline, jobInfo.genome,
+                     jobInfo.pairedEnd ? "--paired=true" : "", jobInfo.extraArgs, jobInfo.traelRenames]
                 }
 
             RUN_SUBPIPELINE(direct_jobs.mix(pretrimmed_jobs))
         }
 
     workflow.onComplete = {
+
+        // Consolidated processing log: one place to check every group's outcome, since
+        // errorStrategy 'ignore' on RUN_PRETRIM/RUN_SUBPIPELINE means a failed group doesn't
+        // show up anywhere else in the wrapper's own output.
+        if (! params.dry_run) {
+            def logLines = []
+            logLines << "Houseley run processing log"
+            logLines << "============================="
+            logLines << "Run folder   : ${params.runfolder}"
+            logLines << "Completed at : ${workflow.complete}"
+            logLines << "Duration     : ${workflow.duration}"
+            logLines << ""
+
+            processed.each { job ->
+                logLines << job.dirName
+                if (job.pretrim) {
+                    def pretrimStatus = readHouseleyStatus(new File(job.dirPath, "houseley_pretrim_status.txt"))
+                    logLines << "  pre-trim : ${pretrimStatus}  (log: ${job.dirPath}/houseley_pretrim.log)"
+                }
+                def dispatchStatus = readHouseleyStatus(new File(job.dirPath, "houseley_dispatch_status.txt"))
+                logLines << "  dispatch : ${dispatchStatus}  (log: ${job.dirPath}/houseley_dispatch.log)"
+                logLines << ""
+            }
+
+            if (skipped){
+                logLines << "${skipped.size()} group(s) SKIPPED before dispatch:"
+                skipped.each { logLines << "  - ${it.dirName}: ${it.reason}" }
+                logLines << ""
+            }
+
+            def logFile = new File(runDir, "houseley_processing_log.txt")
+            logFile.text = logLines.join("\n") + "\n"
+            println("[HOUSELEY] Processing log written to ${logFile}")
+        }
 
         def msg = """\
             Pipeline execution summary
@@ -254,13 +518,76 @@ def helpMessage() {
     WGS                   -> nf_chipseq
     WGS UMI               -> nf_chipseq_umi
     RRBS no trimming      -> nf_bisulfite_RRBS_noTrim
-    Vazyme ssDNA WGSBS    -> trim_galore (10bp off the 3' end of R1, 10bp off the 5' start of R2),
+    Vazyme ssDNA WGSBS    -> hard-trim 10bp off the 3' end of R1 and 10bp off the 5' start of R2
+                             (Trim Galore --hardtrim5/--hardtrim3, no quality/adapter trimming),
                              then nf_bisulfite_WGBS
-    Vazyme ssDNA WGS      -> same trim_galore step, then nf_chipseq_umi
+    Vazyme ssDNA WGS      -> same hard-trim step, then nf_chipseq
+    TrAEL                 -> nf_traelseq, with --index <digits> read from column 7 of the sample
+                             sheet (e.g. '5,6,7' becomes --index 567). A TrAEL group with nothing
+                             in column 7 is skipped rather than silently using nf_traelseq's own
+                             default of all indexes. TrAEL's own internal MultiQC step is skipped
+                             (--skip_multiqc=true); afterwards, each TrAEL index-demultiplexed
+                             file is renamed to include the sample name from column 8 (e.g. index
+                             '5,6,7' with names 'Alg70bp1, 70 in ESAG8, TbCas9' turns 'index5'
+                             into 'index5_Alg70bp1', and so on) -- scoped to each sample's own
+                             barcode (column 2), so multiple TrAEL samples sharing one group
+                             folder don't get each other's names -- and only then is MultiQC run.
 
-    Note: nf_bisulfite_WGBS and nf_chipseq_umi both run their own internal Trim Galore step too,
-    so Vazyme groups are trimmed twice. This is harmless (the second pass finds nothing left to
-    trim) and is a direct consequence of dispatching to the existing pipelines unmodified.
+    The hard-trim length is derived from the actual read length in each group's data (read
+    length minus 10), not assumed, so it adapts automatically to the run's read length.
+
+    Note: nf_bisulfite_WGBS and nf_chipseq both run their own internal Trim Galore step too
+    (quality/adapter trimming), so Vazyme groups get that on top of the hard-trim. This is
+    intentional and a direct consequence of dispatching to the existing pipelines unmodified.
+
+    Note: some pipelines (currently nf_chipseq_umi, and nf_rnaseq_umi if it's ever added to the
+    mapping above) can't infer paired-end vs single-end from the fastq files the way nf_chipseq
+    does, so they're told explicitly -- any group dispatched to one of these is checked for an
+    R2 fastq file, and '--paired' is passed automatically if one is found.
+
+    Resolved bug and remaining safeguards:
+    ----------------------------------------
+    Real runs previously and repeatedly lost the first fastq file of a group's glob (almost
+    always R1), traced to a Nextflow CLI parsing ambiguity: a bare boolean flag (e.g.
+    '--robust_file_pairing') immediately followed by a positional argument gets its next token
+    swallowed as the flag's own value instead. Every boolean flag passed to a dispatched pipeline
+    now uses the explicit '=true' form, which resolved it. Two extra safeguards remain in place
+    from diagnosing this, kept as cheap insurance rather than removed:
+      1) '-c nf_modules/houseley_throttle.config' caps how many tasks get submitted to SLURM at
+         once.
+      2) '--expect_paired' tells the dispatched pipeline's TRIM_GALORE/BOWTIE2/BISMARK steps that
+         a sample is genuinely paired-end, so if one ever only receives a single file, it fails
+         loudly and retries (then gives up on just that sample, via the existing retry/ignore
+         behaviour) instead of silently aligning as single-end and reporting success with quietly
+         wrong output.
+
+    MultiQC report:
+    ----------------
+    Once a group's dispatched pipeline finishes, its multiqc_report.html is renamed to
+    '<group name>_L<lane>_multiqc_report.html' (the lane number is read off the group's own
+    fastq files) and copied back to the run folder via copy_back_files -- just that one file,
+    not the rest of the group's output, which is left where the dispatched pipeline wrote it.
+
+    Summary report:
+    ----------------
+    A 'houseley_summary_report.txt' file is written into the run folder (base_dir/runfolder,
+    alongside the sample data) every time this pipeline runs, whether or not --dry_run was used.
+    For each group it lists the pipeline, genome, fastq file count, and the exact command that
+    was (or would be) run, plus any pre-trim step for Vazyme groups -- and lists any skipped
+    groups and why. It's overwritten on each run, so it always reflects the most recent one.
+
+    Processing log:
+    ----------------
+    A 'houseley_processing_log.txt' file is written into the run folder once dispatch finishes
+    (real runs only, not --dry_run), listing every group's actual outcome -- SUCCESS or FAILED
+    (with its exit code) for the pre-trim step (Vazyme groups) and the main dispatch, plus a
+    pointer to that group's own detailed log file (houseley_pretrim.log / houseley_dispatch.log,
+    in the group's own folder). Because RUN_PRETRIM/RUN_SUBPIPELINE ignore individual failures so
+    one bad group doesn't stop the rest, this is the one place that shows which groups actually
+    succeeded -- checking each group's own folder is no longer necessary. Every step's full
+    output (module loads, the dispatched pipeline's own log, renaming, MultiQC, copy_back_files)
+    is captured in that group's log file now, including failures that happen before the
+    dispatched pipeline even starts, which previously left nothing behind to diagnose.
 
     Genome name correction:
     ------------------------

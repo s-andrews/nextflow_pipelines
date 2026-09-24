@@ -1,5 +1,10 @@
 nextflow.enable.dsl=2
 
+params.single_end = false
+
+// See nf_modules/trim_galore.mod.nf for why this exists (opt-in, used by nf_houseley_run_processing).
+params.expect_paired = false
+
 process BISMARK {
 
 	tag "$name" // Adds name to job submission instead of (1), (2) etc.
@@ -9,7 +14,16 @@ process BISMARK {
 
 	cpus 5
   	memory { 20.GB * task.attempt }
-	errorStrategy { sleep(Math.pow(2, task.attempt) * 30 as long); return 'retry' }
+	// Retries with backoff as before; once exhausted this now 'ignore's rather than aborting the
+	// whole run, so one bad sample (e.g. hitting the SLURM multi-file-staging issue documented in
+	// nf_modules/umi_utils.mod.nf's EMBED_UMI_PE) doesn't take the rest of the group down with it.
+	errorStrategy {
+		if (task.attempt <= 3) {
+			sleep(Math.pow(2, task.attempt) * 30 as long)
+			return 'retry'
+		}
+		return 'ignore'
+	}
   	maxRetries 3
 
 	// label 'mem40G'
@@ -64,11 +78,23 @@ process BISMARK {
 			bismark_options += " --pbat "
 		}
 
+		def pairingCheck = ""
 		if (reads instanceof List) {
 			readString = "-1 "+reads[0]+" -2 "+reads[1]
 		}
 		else {
 			readString = reads
+			// Only applies when the caller hasn't already said single-end is expected (e.g.
+			// nf_traelseq defaults params.single_end = true for its R1-only TrAEL data) --
+			// otherwise this would wrongly flag genuinely single-end samples as corrupted pairs.
+			if (params.expect_paired && ! params.single_end) {
+				// See nf_modules/trim_galore.mod.nf for why this is a real exit in the submitted
+				// script rather than a Groovy-level throw -- lets it retry-then-ignore normally.
+				pairingCheck = """
+				echo "[PAIRING ERROR] BISMARK (${name}) expected paired-end input but only received one file (${reads}). This looks like the known Nextflow/SLURM issue where one read of a pair goes missing during task preparation -- not a genuine single-end sample." >&2
+				exit 1
+				""".stripIndent()
+			}
 		}
 
 		def index = "--genome " + genome["bismark"]
@@ -103,6 +129,7 @@ process BISMARK {
 		// println ("Output basename: $bismark_name")
 
 		"""
+		${pairingCheck}
 		module load bismark
 		bismark --parallel $cores --basename $bismark_name $index $bismark_options $readString
 		"""

@@ -43,7 +43,7 @@ workflow CHIPSEQ {
 
     take:
         file_ch
-        //run_multiqc
+        run_multiqc
 
     main:
         // Show help message and exit
@@ -69,8 +69,7 @@ workflow CHIPSEQ {
         TRIM_GALORE     (file_ch, params.outdir, params.trim_galore_args, params.verbose, false, false, false, false, "", "")
         FASTQC2         (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
         BOWTIE2         (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose, full_genome)
-    
-       // if (run_multiqc) {
+
         // merging channels for MultiQC
         multiqc_ch = FASTQC.out.report.mix(
             TRIM_GALORE.out.report,
@@ -79,13 +78,21 @@ workflow CHIPSEQ {
             BOWTIE2.out.stats.ifEmpty([]),
         ).collect()
 
-        MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)  
-
+        // Callers that deduplicate the alignment afterwards (e.g. nf_chipseq_umi) want their own
+        // MultiQC report built AFTER dedup, so they pass run_multiqc = false here: MULTIQC is
+        // handed an empty channel, so it never actually runs (MULTIQC.out.html is just empty
+        // below, not an error) and they build their own multiqc_ch downstream instead, using the
+        // individual report channels emitted below.
+        MULTIQC (run_multiqc ? multiqc_ch : Channel.empty(), params.outdir, params.multiqc_args, params.verbose)
 
     emit:
-        multiqc = MULTIQC.out.html
-        bam = BOWTIE2.out.bam
-        fastqc = FASTQC.out.report
+        multiqc       = MULTIQC.out.html
+        bam           = BOWTIE2.out.bam
+        fastqc        = FASTQC.out.report
+        fastq_screen  = FASTQ_SCREEN.out.report
+        trim_galore   = TRIM_GALORE.out.report
+        fastqc2       = FASTQC2.out.report
+        bowtie2_stats = BOWTIE2.out.stats
 }
 
 def helpMessage() {

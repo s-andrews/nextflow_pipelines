@@ -104,7 +104,7 @@ workflow {
         filt = CHECK_FQ_GZ_NOT_EMPTY.out.reads.filter { it.first().countLines() > 0 }.map { it.last() }
 
         SORT_TRAEL_NAMES( filt )
-        CHIPSEQ( SORT_TRAEL_NAMES.out.reads )
+        CHIPSEQ( SORT_TRAEL_NAMES.out.reads, true )
 
     // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
     // minimal execution summary report so we at least know what the working directory was...

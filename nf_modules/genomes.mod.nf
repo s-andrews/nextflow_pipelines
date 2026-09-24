@@ -31,6 +31,7 @@ def getGenome(name) {
     def genomeValues = [:]  // initialising map. name is also part of each .genome file
 
     genomeFH.eachLine {
+        if (it.trim().isEmpty()) { return }  // skip blank lines (e.g. stray trailing newlines)
         def sections =  it.split("\\s+",2)
         genomeValues[sections[0]] = sections[1]
     }

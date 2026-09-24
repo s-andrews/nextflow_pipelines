@@ -50,33 +50,41 @@ def main():
     seqfac_path="/bi/seqfac/seqfac/"+run_folder+"/Unaligned/Project_External/Sample_lane1/"
     
     # create the directory structure in the current working directory
-    run_dict = read_run_info(info_file,no_header)
+    run_dict, run_types = read_run_info(info_file,no_header)
 
-    # create links to fastq files within the appropriate sub-directories 
-    make_multi_run_structure(run_dict,working_dir,seqfac_path)
+    # create links to fastq files within the appropriate sub-directories
+    make_multi_run_structure(run_dict,working_dir,seqfac_path,run_types)
 
-def make_multi_run_structure(run_dict, working_dir,seqfac_path):
-    for run_type, barcodes in run_dict.items():
-        dir_path = os.path.join(working_dir, run_type)
+# Run types that should only ever get their R1 fastq files symlinked (never R2) -- TrAEL data is
+# only ever processed from R1, so R2 shouldn't even be linked into the group's subfolder.
+R1_ONLY_RUN_TYPES = {"TrAEL"}
+
+def make_multi_run_structure(run_dict, working_dir,seqfac_path,run_types):
+    for dir_name, barcodes in run_dict.items():
+        dir_path = os.path.join(working_dir, dir_name)
         make_dir(dir_path)
-        make_links(seqfac_path, dir_path, run_type,barcodes)
+        make_links(seqfac_path, dir_path, dir_name, barcodes, run_types.get(dir_name))
 
-def make_links(seqfac_path, dest_dir, run_type,barcodes):
-    
+def make_links(seqfac_path, dest_dir, dir_name, barcodes, run_type):
+
     #the barcodes to search for
     # added a fix here to handle lower case bases in barcode sheet
     patterns = [re.compile(barcode.upper()) for barcode in barcodes]
 
-    # Extract the unique ID from the dir_name (i.e. run_type)
-    ID = run_type.split('_')[0]
-    
+    # Extract the unique ID from the dir_name
+    ID = dir_name.split('_')[0]
+
+    r1_only = run_type in R1_ONLY_RUN_TYPES
+
     # for the fastq files in the seqfac run folder look for a barcode match and create link in subdirectory
     for root,dirs,files in os.walk(seqfac_path):
         for file in files:
             if not file.endswith(".fastq.gz"):
                 continue
+            if r1_only and not re.search(r"_R1\.fastq\.gz$", file):
+                continue
             file_path = os.path.join(root, file)
-            
+
             if any(pattern.search(file) for pattern in patterns):
                 ending = r"(_L\d{3}_R\d\.fastq\.gz)$"
                 # create the link name from the first entry in barcodes which is the reduced run_info
@@ -94,40 +102,45 @@ def make_dir(path):
         os.makedirs(path)
 
 def read_run_info(file,no_header):
-    
+
     run_dict = {}
-    
+    run_types = {}  # dir_name -> run type (e.g. "TrAEL"), used by make_links() to decide
+                     # whether R2 fastq files should even be symlinked
 
     with open(file, mode='r', newline='') as infile:
         reader = csv.reader(infile)
         #they dont always put a header line
         if not no_header:
-            next(reader)    
-        
+            next(reader)
+
         for row in reader:
             #remove empty cells & then also check for commas or spaces within cells
             line = [format_cell(cell) for cell in row if format_cell(cell)]
-            
+
             if check_if_dual(line[2]):
                 dual_barcode = True
             else:
                 dual_barcode = False
 
             # check if the barcode is dual indexed if so join these together
+            # dir_name is bounded to groupID/run type/genome only -- any columns after genome
+            # (e.g. TrAEL indexes, names) are for other purposes and must not end up in the name
             if dual_barcode:
-                dir_name = '_'.join(line[3:])
+                dir_name = '_'.join(line[3:6])
                 barcode = '_'.join(line[1:3])
+                run_type = line[4] if len(line) > 4 else None
             else:
-                dir_name = '_'.join(line[2:])
+                dir_name = '_'.join(line[2:5])
                 barcode = line[1]
-                
+                run_type = line[3] if len(line) > 3 else None
 
             if dir_name in run_dict:
                 run_dict[dir_name].append(barcode)
             else:
                 run_dict[dir_name] = [barcode]
+            run_types[dir_name] = run_type
 
-    return(run_dict)
+    return(run_dict, run_types)
 
 def check_if_dual(second_entry):
     pattern = r'^[CATG]*$'

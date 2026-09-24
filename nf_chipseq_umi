@@ -20,10 +20,17 @@ params.samtools_index_args = ''
 params.help = false
 params.list_genomes = false;
 
+// Opt-in only: builds file pairs directly from the input filenames instead of handing off to
+// Channel.fromFilePairs' own filesystem glob, which has repeatedly dropped one read of a pair
+// on real Houseley wrapper runs. Off by default so every other use of this pipeline is
+// unaffected.
+params.robust_file_pairing = false
+
 // the genome handling here is not nice - see notes in nf_WGS_4bpIndex.
 // It needs sorting out but is a bit messy.
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include { makeFilesChannelRobust }             from './nf_modules/files_robust.mod.nf'
 include { getGenome }    from './nf_modules/genomes.mod.nf'
 include { listGenomes }  from './nf_modules/genomes.mod.nf'
 
@@ -34,7 +41,7 @@ include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'
 include { SAMTOOLS_SORT2; SAMTOOLS_INDEX2 }          from './nf_modules/samtools.mod.nf'
 include { UMI_TOOLS_DEDUP }           from './nf_modules/umi_utils.mod.nf'
 
-// include { MULTIQC }      from './nf_modules/multiqc.mod.nf'
+include { MULTIQC }      from './nf_modules/multiqc.mod.nf'
 
 workflow {
 
@@ -65,7 +72,7 @@ workflow {
 
         //genome = getGenome(params.genome)
 
-        file_ch = makeFilesChannel(args)
+        file_ch = params.robust_file_pairing ? makeFilesChannelRobust(args) : makeFilesChannel(args)
 
         if (params.paired) {
             EMBED_UMI_PE  (file_ch)
@@ -76,24 +83,26 @@ workflow {
             embed_umi_out = EMBED_UMI_SE.out.reads
         }
 
-        CHIPSEQ( embed_umi_out )//, false )
+        // run_multiqc = false: the subworkflow's own MultiQC is skipped since it would run
+        // before dedup; we build our own multiqc_ch below, once dedup has actually happened.
+        CHIPSEQ( embed_umi_out, false )
         // the output from the bowtie2 module is a tuple of name, reads, whereas the output from the hisat2 module is just the bam,
         // so have used the temporary extra function SAMTOOLS_SORT2 which accepts that. Seems like overkill but maybe not.
         SAMTOOLS_SORT2  (CHIPSEQ.out.bam, params.outdir, params.samtools_sort_args, params.verbose)
         SAMTOOLS_INDEX2 (SAMTOOLS_SORT2.out.bam, params.outdir, params.samtools_sort_args, params.verbose)
         UMI_TOOLS_DEDUP (SAMTOOLS_INDEX2.out.bam, SAMTOOLS_INDEX2.out.bai, params.outdir, params.paired)
-        // merging channels for MultiQC
-        // multiqc_ch = FASTQC.out.report.mix(
-        //     TRIM_GALORE.out.report,
-        //     FASTQ_SCREEN.out.report.ifEmpty([]),
-        //     FASTQC2.out.report.ifEmpty([]),
-        //     HISAT2.out.stats.ifEmpty([]),
-        //     UMI_TOOLS_DEDUP.out.log.ifEmpty([]),
-        // ).collect()
 
-        // // multiqc_ch.subscribe {  println "Got: $it"  }
+        // merging channels for MultiQC -- built after dedup, so the report reflects the final
+        // deduplicated data, not the pre-dedup alignment.
+        multiqc_ch = CHIPSEQ.out.fastqc.mix(
+            CHIPSEQ.out.trim_galore,
+            CHIPSEQ.out.fastq_screen.ifEmpty([]),
+            CHIPSEQ.out.fastqc2.ifEmpty([]),
+            CHIPSEQ.out.bowtie2_stats.ifEmpty([]),
+            UMI_TOOLS_DEDUP.out.log.ifEmpty([]),
+        ).collect()
 
-        //MULTIQC                          (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
+        MULTIQC (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 
     // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
     // minimal execution summary report so we at least know what the working directory was...

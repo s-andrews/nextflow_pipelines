@@ -3,6 +3,12 @@ nextflow.enable.dsl=2
 params.single_end = false
 params.no_output = false
 
+// Opt-in only (used by nf_houseley_run_processing): when the caller already knows a sample is
+// paired-end, this fails loudly instead of silently aligning as single-end if 'reads' somehow
+// only resolves to one file at this task's own staging time -- a known Nextflow/SLURM issue
+// where a real pair intermittently loses one read during staging, not a genuine SE sample.
+params.expect_paired = false
+
 
 process TRIM_GALORE {
 
@@ -12,7 +18,15 @@ process TRIM_GALORE {
 
 	// dynamic directive
 	memory { 10.GB * task.attempt }
-	errorStrategy { sleep(Math.pow(2, task.attempt) * 30 as long); return 'retry' }
+	// Retries with backoff, then 'ignore's rather than aborting the whole run -- see
+	// params.expect_paired above for why.
+	errorStrategy {
+		if (task.attempt <= 2) {
+			sleep(Math.pow(2, task.attempt) * 30 as long)
+			return 'retry'
+		}
+		return 'ignore'
+	}
 	maxRetries 2
 
 	publishDir { outputdir },
@@ -40,12 +54,22 @@ process TRIM_GALORE {
 		}
 
 		def pairedString = ""
+		def pairingCheck = ""
 		if (params.single_end){
 			// paired-end mode may be overridden, see e.g. TrAEL-seq Indexing
 		}
 		else{
 			if (reads instanceof List) {
 				pairedString = "--paired"
+			}
+			else if (params.expect_paired) {
+				// Fails the actual submitted task (not a Groovy-level throw here), so this goes
+				// through the normal retry-then-ignore errorStrategy above rather than aborting
+				// the whole run outright.
+				pairingCheck = """
+				echo "[PAIRING ERROR] TRIM_GALORE (${name}) expected paired-end input but only received one file (${reads}). This looks like the known Nextflow/SLURM issue where one read of a pair goes missing during task preparation -- not a genuine single-end sample." >&2
+				exit 1
+				""".stripIndent()
 			}
 		}
 
@@ -84,6 +108,7 @@ process TRIM_GALORE {
 		}
 
 		"""
+		${pairingCheck}
 		module load trim_galore
 		module load fastqc
 		trim_galore $trim_galore_opts ${pairedString} ${reads}

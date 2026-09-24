@@ -28,7 +28,18 @@ params.help = false
 params.nogroup = true
 params.list_genomes = false;
 
+// Opt-in only: builds file pairs directly from the input filenames instead of handing off to
+// Channel.fromFilePairs' own filesystem glob, which has repeatedly dropped one read of a pair
+// on real Houseley wrapper runs. Off by default so every other use of this pipeline is
+// unaffected.
+params.robust_file_pairing = false
+
+// Opt-in only (used by nf_houseley_run_processing): skips this pipeline's own MultiQC step, see
+// the MULTIQC call below for why.
+params.skip_multiqc = false
+
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include { makeFilesChannelRobust }             from './nf_modules/files_robust.mod.nf'
 include { getGenome }                          from './nf_modules/genomes.mod.nf'
 include { listGenomes }                        from './nf_modules/genomes.mod.nf'
 
@@ -112,7 +123,7 @@ workflow {
 
         def genome = getGenome(params.genome)
 
-        file_ch = makeFilesChannel(args)
+        file_ch = params.robust_file_pairing ? makeFilesChannelRobust(args) : makeFilesChannel(args)
 
         def matcher_string = ".*index[" + params.index + "].*"
 
@@ -197,7 +208,13 @@ workflow {
 
         //multiqc_ch.subscribe {  println "Got: $it"  }
 
-        MULTIQC  (multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
+        // Opt-in only (used by nf_houseley_run_processing): TrAEL groups need their
+        // index-demultiplexed files renamed with sample names from the sample sheet before
+        // MultiQC runs, so the wrapper skips this pipeline's own MultiQC and runs it separately
+        // once renaming is done. Handing MULTIQC an empty channel means it never actually runs
+        // (rather than a Groovy-level 'if' around the call, which Nextflow processes don't
+        // support skipping that way) -- MULTIQC.out just stays empty, not an error.
+        MULTIQC  (params.skip_multiqc ? Channel.empty() : multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
 
     // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
     // minimal execution summary report so we at least know what the working directory was...

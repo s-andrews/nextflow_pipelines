@@ -1,0 +1,4 @@
+name	TriTrypDB-71
+species	Trypanosoma_brucei
+fasta	/bi/scratch/Genomes/Trypanosoma_brucei/TriTrypDB-71/
+bowtie2	/bi/scratch/Genomes/Trypanosoma_brucei/TriTrypDB-71/TriTrypDB-71

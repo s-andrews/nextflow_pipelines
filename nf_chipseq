@@ -17,9 +17,16 @@ params.bowtie2_args = ''
 params.multiqc_args = ''
 
 params.help = false
+
+// Opt-in only: builds file pairs directly from the input filenames instead of handing off to
+// Channel.fromFilePairs' own filesystem glob, which has repeatedly dropped one read of a pair
+// on real Houseley wrapper runs. Off by default so every other use of this pipeline is
+// unaffected.
+params.robust_file_pairing = false
 params.list_genomes = false;
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include { makeFilesChannelRobust }             from './nf_modules/files_robust.mod.nf'
 include { getGenome }                          from './nf_modules/genomes.mod.nf'
 include { listGenomes }                        from './nf_modules/genomes.mod.nf'
 
@@ -55,7 +62,7 @@ workflow {
 
         def genome = getGenome(params.genome)
 
-        file_ch = makeFilesChannel(args)
+        file_ch = params.robust_file_pairing ? makeFilesChannelRobust(args) : makeFilesChannel(args)
 
         FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
         FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose, false)

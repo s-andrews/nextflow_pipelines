@@ -32,21 +32,56 @@ def parseHouseleySamplesheet(String csvPath, boolean noHeader = false) {
         def genome
         def dirName
 
+        // dirName is bounded to groupID/run type/genome only -- columns after genome (e.g.
+        // TrAEL indexes, names) are for other purposes and must not end up in the directory name.
+        // Must stay in sync with the same bound in houseley_group_setup_multirun_structure.py.
         if (dual) {
-            dirName = line[3..-1].join('_')
             groupId = line[3]
             runType = line.size() > 4 ? line[4] : null
             genome  = line.size() > 5 ? line[5] : null
+            dirName = line[3..Math.min(5, line.size() - 1)].join('_')
         } else {
-            dirName = line[2..-1].join('_')
             groupId = line[2]
             runType = line.size() > 3 ? line[3] : null
             genome  = line.size() > 4 ? line[4] : null
+            dirName = line[2..Math.min(4, line.size() - 1)].join('_')
         }
 
+        // Columns 7/8 (raw, 1-indexed) are the TrAEL index list (e.g. "5,6,7") and the sample
+        // names for those indexes (e.g. "Alg70bp1, 70 in ESAG8, TbCas9"), in the same order.
+        // Read from the raw (unformatted) cells, not the reformatted 'line' array: houseleyFormatCell()
+        // would hyphen-join the index list's commas (e.g. "5-6-7") rather than leaving the plain
+        // concatenated digits nf_traelseq's --index expects (e.g. "567"), and would similarly mangle
+        // the names list, which needs its commas intact for houseley_rename_trael_indexes.py. These
+        // columns' positions in the raw CSV are fixed regardless of dual/non-dual barcoding, since
+        // the sample sheet always has the same number of columns per row (an unused Barcode 2
+        // column is still present, just empty, for non-dual rows).
+        def rawIndexCell = cells.size() > 6 ? cells[6] : null
+        def indexDigits = rawIndexCell ? rawIndexCell.replaceAll(/[,\s]/, "") : null
+        indexDigits = indexDigits ? indexDigits : null  // treat an empty result as absent
+        def rawNamesCell = cells.size() > 7 ? cells[7] : null
+
         if (!groups.containsKey(dirName)) {
-            groups[dirName] = [runType: runType, genome: genome, groupId: groupId]
+            groups[dirName] = [runType: runType, genome: genome, groupId: groupId,
+                                traelIndexDigits: [] as Set, traelRenames: []]
         }
+
+        // Multiple sample sheet rows can share the same dirName (e.g. several TrAEL samples
+        // pooled into one group folder), each with its own barcode/index/names -- so this is
+        // accumulated for every row, not just the first one seen for a dirName like runType/genome
+        // above (which are the same for every row sharing a dirName, by construction of dirName
+        // itself).
+        if (indexDigits) {
+            indexDigits.each { d -> groups[dirName].traelIndexDigits.add(d as String) }
+            groups[dirName].traelRenames.add([barcode: line[1], index: indexDigits, names: rawNamesCell])
+        }
+    }
+
+    // --index for nf_traelseq needs every index digit used by any sample sharing the group's
+    // folder (nf_traelseq just keeps files matching any of them; per-sample renaming afterwards
+    // is scoped separately by barcode via traelRenames).
+    groups.each { dirName, info ->
+        info.traelIndex = info.traelIndexDigits ? info.traelIndexDigits.sort().join("") : null
     }
 
     return groups
@@ -104,4 +139,13 @@ def houseleyFormatCell(String cell) {
 
 def houseleyIsDualBarcode(String s) {
     return s ==~ /^[CATG]*$/
+}
+
+// True if the group's fastq folder contains an R2 file (i.e. the raw data is paired-end).
+// Trim Galore preserves R1/R2 pairing into _val_1/_val_2, so checking the raw files here is
+// valid whether or not the group goes through the Vazyme pre-trim step first.
+def houseleyIsPairedEnd(File dirPath) {
+    if (! dirPath.exists()) { return false }
+    def fastqFiles = dirPath.list().findAll { it.endsWith(".fastq.gz") }
+    return fastqFiles.any { it =~ /_R2\.fastq\.gz$/ }
 }

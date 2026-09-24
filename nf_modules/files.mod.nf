@@ -1,18 +1,48 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 
-def makeFilesChannel(fileList) {    
-    
+def makeFilesChannel(fileList) {
+
+    def patterns = getFileBaseNames(fileList)
+
+    // Channel.fromFilePairs is called with size:-1 because a single call has to handle both
+    // single-end patterns (1 file) and paired-end patterns (2+ files) together. That disables
+    // Nextflow's own "expected N files" check, so a pattern that only matches some of its files
+    // (e.g. a transiently-unreadable symlink on a busy network filesystem) is silently accepted
+    // as a short list rather than raising an error -- which then surfaces much later downstream
+    // as a cryptic failure (e.g. a 'null' file being fed into whatever runs next). We know from
+    // the pattern itself how many files it should have matched, so check that explicitly here
+    // and fail loudly and immediately if it doesn't line up.
+    def expectedCounts = [:]
+    patterns.each { pattern ->
+        def m = pattern =~ /^(.*)_\{([^}]*)\}\./
+        if (m.find()) {
+            expectedCounts[m.group(1)] = m.group(2).split(',').length
+        }
+    }
+
     // def meta = [:]
-    def file_ch = Channel.fromFilePairs( getFileBaseNames(fileList), size:-1)
+    def file_ch = Channel.fromFilePairs( patterns, size:-1)
+        .map { key, files ->
+            def expected = expectedCounts[key]
+            if (expected != null && files.size() != expected) {
+                throw new IllegalStateException(
+                    "[FILE PAIRING ERROR] Expected ${expected} file(s) for '${key}' but only found " +
+                    "${files.size()}: ${files}. This usually means one of a set of paired fastq files " +
+                    "was missing or unreadable when the pipeline started (e.g. a broken symlink, or a " +
+                    "slow/stale network filesystem) -- please check the input files for this sample and re-run."
+                )
+            }
+            [key, files]
+        }
         //.map { it -> [ [meta.id = it[0]], it[1]] }
-            
+
         // .map { meta.id = it[0]}
         //.map { meta.files = it[1]}
         //.view()
         // .subscribe onNext: { println it }, onComplete: { println 'Done' }
 
-    // meta.each { key, val -> 
+    // meta.each { key, val ->
     //   println ("Key: $key = Files: $val")
     // }
     return(file_ch)
