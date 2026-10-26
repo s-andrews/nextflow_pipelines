@@ -1,0 +1,4 @@
+name	TriTrypDB-71_circ
+species	Trypanosoma_brucei_circle
+fasta	/bi/scratch/Genomes/Trypanosoma_brucei/TriTrypDB-71_circles/
+bowtie2	/bi/scratch/Genomes/Trypanosoma_brucei/TriTrypDB-71_circles/TriTrypDB-71_circle
