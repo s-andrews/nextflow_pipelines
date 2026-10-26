@@ -9,6 +9,7 @@ params.single_end = false  // default mode is auto-detect. NOTE: params are hand
 // job to remove it. That should be done at some point as they've deprecated the auto hand over.
 // But - this 'paired' parameter is really what we need in this workflow for umi tools.
 params.paired = false
+params.umi_separator = '_'
 
 params.fastqc_args = ''
 params.fastq_screen_args = ''
@@ -90,7 +91,7 @@ workflow {
         // so have used the temporary extra function SAMTOOLS_SORT2 which accepts that. Seems like overkill but maybe not.
         SAMTOOLS_SORT2  (CHIPSEQ.out.bam, params.outdir, params.samtools_sort_args, params.verbose)
         SAMTOOLS_INDEX2 (SAMTOOLS_SORT2.out.bam, params.outdir, params.samtools_sort_args, params.verbose)
-        UMI_TOOLS_DEDUP (SAMTOOLS_INDEX2.out.bam, SAMTOOLS_INDEX2.out.bai, params.outdir, params.paired)
+        UMI_TOOLS_DEDUP (SAMTOOLS_INDEX2.out.bam, SAMTOOLS_INDEX2.out.bai, params.outdir, params.paired, params.umi_separator)
 
         // merging channels for MultiQC -- built after dedup, so the report reflects the final
         // deduplicated data, not the pre-dedup alignment.

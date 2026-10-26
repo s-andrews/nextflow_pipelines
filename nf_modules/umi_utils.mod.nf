@@ -154,6 +154,7 @@ process UMI_TOOLS_DEDUP {
 		path(index) // so it's in the work folder for umi_tools to access
 		val (outputdir)
 		val (paired_end)
+		val (umi_separator)
 
 	output:
         path ("*bam"), emit: bam
@@ -171,7 +172,7 @@ process UMI_TOOLS_DEDUP {
 
 	"""
 	module load umitools
-	umi_tools dedup --log ${bam}_dedup.log ${options} --umi-separator="_" -I ${bam} > ${bam_out}
+	umi_tools dedup --log ${bam}_dedup.log ${options} --umi-separator="${umi_separator}" -I ${bam} > ${bam_out}
 	"""
 
 }
