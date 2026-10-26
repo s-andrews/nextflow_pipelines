@@ -149,3 +149,20 @@ def houseleyIsPairedEnd(File dirPath) {
     def fastqFiles = dirPath.list().findAll { it.endsWith(".fastq.gz") }
     return fastqFiles.any { it =~ /_R2\.fastq\.gz$/ }
 }
+
+// Names of the group folder's fastq.gz files that contain no reads at all. A sample with zero
+// reads after demultiplexing still gets a (20 byte) fastq.gz file, so file size alone isn't a
+// reliable test -- decompress just far enough to see whether there's a single byte of content.
+// A file that can't be read at all isn't counted as empty: let the dispatched pipeline fail on
+// it loudly instead.
+def houseleyEmptyFastqs(File dirPath) {
+    if (! dirPath.exists()) { return [] }
+    def fastqFiles = dirPath.listFiles().findAll { it.name.endsWith(".fastq.gz") }
+    return fastqFiles.findAll { f ->
+        try {
+            new java.util.zip.GZIPInputStream(new FileInputStream(f)).withCloseable { it.read() == -1 }
+        } catch (IOException e) {
+            false
+        }
+    }.collect { it.name }.sort()
+}

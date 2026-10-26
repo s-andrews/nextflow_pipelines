@@ -19,6 +19,7 @@ params.help = false
 
 // Run type (as it appears in the sample sheet, after space -> underscore normalisation) ->
 // which existing pipeline handles it, and whether it needs the Vazyme ssDNA pre-trim first.
+// 'pipelinePE', where given, replaces 'pipeline' for groups whose fastq files include R2.
 def runTypePipelineMap() {
     return [
         "WGS":                [pipeline: "nf_chipseq",              pretrim: false],
@@ -27,11 +28,28 @@ def runTypePipelineMap() {
         "Vazyme_ssDNA_WGSBS": [pipeline: "nf_bisulfite_WGBS",        pretrim: true],
         "Vazyme_ssDNA_WGS":   [pipeline: "nf_chipseq",               pretrim: true],
         "TrAEL":              [pipeline: "nf_traelseq",              pretrim: false],
+        "RNA-seq":            [pipeline: "nf_rnaseq",                pretrim: false],
+        "RNA_seq":            [pipeline: "nf_rnaseq",                pretrim: false],
+        "RNAseq":             [pipeline: "nf_rnaseq",                pretrim: false],
+        "WGS_with_indexing":  [pipeline: "nf_WGS_4bpIndex", pipelinePE: "nf_WGS_4bpIndexPE", pretrim: false],
     ]
+}
+
+// Pipelines that need --index from column 7 of the sample sheet, and whose index-demultiplexed
+// output then gets renamed with the sample names from column 8 before MultiQC is run.
+def pipelinesNeedingIndexes() {
+    return ["nf_traelseq", "nf_WGS_4bpIndex", "nf_WGS_4bpIndexPE"]
+}
+
+// Extra flag for bin/houseley_rename_trael_indexes.py: the WGS index pipelines tag their files
+// '_L001_AGTC_' rather than TrAEL's '_AGTC_index1_'.
+def renameScriptFlag(String pipeline) {
+    return pipeline.startsWith("nf_WGS_4bpIndex") ? " --wgs_index" : ""
 }
 
 include { parseHouseleySamplesheet } from './nf_modules/houseley_samplesheet.mod.nf'
 include { houseleyIsPairedEnd }     from './nf_modules/houseley_samplesheet.mod.nf'
+include { houseleyEmptyFastqs }     from './nf_modules/houseley_samplesheet.mod.nf'
 include { resolveGenome }            from './nf_modules/genomes.mod.nf'
 
 // Pipelines that -- unlike nf_chipseq -- can't infer single-end vs paired-end from the fastq
@@ -68,7 +86,7 @@ def buildDispatchCommand(String pipeline, String genome, boolean pairedEnd, Stri
     def extra = params.nested_extra_args ? "${params.nested_extra_args} " : ""
     def extraArgsPrefixed = extraArgs ? "${extraArgs} " : ""
     return "nextflow run ${workflow.projectDir}/${pipeline} ${extra}-c ${workflow.projectDir}/nf_modules/houseley_throttle.config " +
-        "--genome '${genome}' --outdir . --robust_file_pairing=true --expect_paired=true ${pairedFlag}${extraArgsPrefixed}${fastqGlob}"
+        "--genome '${genome}' --outdir . --robust_file_pairing=true ${pairedFlag}${extraArgsPrefixed}${fastqGlob}"
 }
 
 process RUN_PRETRIM {
@@ -113,8 +131,14 @@ process RUN_PRETRIM {
         read_len=\$(zcat "\$first_r1" | head -2 | tail -1 | tr -d '\\n' | wc -c)
         keep_len=\$((read_len - 10))
 
+        # Some Houseley runs are genuinely single-end (the sequencer only produced R1 for every
+        # sample), in which case there's nothing to hardtrim on the R2 side -- run it only if R2
+        # files actually exist, otherwise trim_galore is handed its own unexpanded glob pattern
+        # as a literal filename and fails trying to open a file that was never there.
         trim_galore --hardtrim5 \$keep_len --output_dir trim_galore *_R1.fastq.gz
-        trim_galore --hardtrim3 \$keep_len --output_dir trim_galore *_R2.fastq.gz
+        if compgen -G "*_R2.fastq.gz" > /dev/null; then
+            trim_galore --hardtrim3 \$keep_len --output_dir trim_galore *_R2.fastq.gz
+        fi
 
         # Trim Galore's hardtrim mode names its output '..._R1.<N>bp_5prime.fq.gz' /
         # '..._R2.<N>bp_3prime.fq.gz', which downstream pipelines' R1/R2 auto-pairing (in
@@ -125,9 +149,11 @@ process RUN_PRETRIM {
         for f in *_R1.*bp_5prime.fq.gz; do
             mv "\$f" "\$(echo "\$f" | sed -E 's/_R1\\.[0-9]+bp_5prime\\.fq\\.gz\$/_R1.fq.gz/')"
         done
-        for f in *_R2.*bp_3prime.fq.gz; do
-            mv "\$f" "\$(echo "\$f" | sed -E 's/_R2\\.[0-9]+bp_3prime\\.fq\\.gz\$/_R2.fq.gz/')"
-        done
+        if compgen -G "*_R2.*bp_3prime.fq.gz" > /dev/null; then
+            for f in *_R2.*bp_3prime.fq.gz; do
+                mv "\$f" "\$(echo "\$f" | sed -E 's/_R2\\.[0-9]+bp_3prime\\.fq\\.gz\$/_R2.fq.gz/')"
+            done
+        fi
         """
 }
 
@@ -158,7 +184,7 @@ process RUN_SUBPIPELINE {
             renameCommands += "set -u\n"
             traelRenames.each { r ->
                 renameCommands += "python3 '${workflow.projectDir}/bin/houseley_rename_trael_indexes.py' " +
-                    "--barcode '${r.barcode}' --index '${r.index}' --sample_names '${r.names}'\n"
+                    "--barcode '${r.barcode}' --index '${r.index}' --sample_names '${r.names}'${renameScriptFlag(pipeline)}\n"
             }
             renameCommands += "set +u\n"
             renameCommands += "module load multiqc\n"
@@ -196,7 +222,6 @@ process RUN_SUBPIPELINE {
             --genome '${genome}' \
             --outdir . \
             --robust_file_pairing=true \
-            --expect_paired=true \
             ${pairedFlag} \
             ${extraArgs} \
             ${fastqGlob}
@@ -291,10 +316,25 @@ workflow {
                     reason: "Unknown run type '${info.runType}'. Known types: ${runTypeMap.keySet().join(', ')}"])
                 return
             }
+            def pipeline = mapping.pipeline
 
             if (! dirPath.exists()){
                 skipped.add([dirName: dirName, fileCount: fileCount,
                     reason: "Expected subfolder '${dirPath}' wasn't created (no matching fastq files found?)."])
+                return
+            }
+
+            // A group where every sample got zero reads at demultiplexing (e.g. a library that
+            // wasn't actually on the run, or wrong barcodes on the sample sheet) still has its
+            // fastq.gz files, just empty ones. Dispatched anyway, Trim Galore fails on every
+            // sample, those failures are ignored, and the pipeline still exits 0 with a
+            // FastQC-only MultiQC report -- i.e. it shows up as SUCCESS with nothing mapped.
+            // Skip it here instead, so the summary says why. Groups where only some samples are
+            // empty are still dispatched (the rest are fine), but the empty ones are listed.
+            def emptyFastqs = houseleyEmptyFastqs(dirPath)
+            if (fileCount > 0 && emptyFastqs.size() == fileCount) {
+                skipped.add([dirName: dirName, fileCount: fileCount,
+                    reason: "All fastq files are empty (0 reads after demultiplexing) -- check the barcodes on the sample sheet, or whether this library was actually on the run."])
                 return
             }
 
@@ -304,38 +344,61 @@ workflow {
                 return
             }
 
+            // Whether this group's raw fastq files actually include R2 -- computed unconditionally
+            // (not just for pipelines that need to be told explicitly, see pairedEnd below) since
+            // it's also used to decide whether --expect_paired=true is safe to pass at all.
+            def actuallyPaired = houseleyIsPairedEnd(dirPath)
+
+            // e.g. WGS with indexing: nf_WGS_4bpIndex only handles single-end data, so paired-end
+            // groups go to nf_WGS_4bpIndexPE instead.
+            if (actuallyPaired && mapping.pipelinePE) {
+                pipeline = mapping.pipelinePE
+            }
+
             // Some pipelines (UMI dedup steps) can't infer single-end vs paired-end from the
             // fastq files the way nf_chipseq can, so they need to be told explicitly.
-            def pairedEnd = pipelinesNeedingExplicitPaired().contains(mapping.pipeline) ? houseleyIsPairedEnd(dirPath) : false
+            def pairedEnd = pipelinesNeedingExplicitPaired().contains(pipeline) ? actuallyPaired : false
 
-            // nf_traelseq needs --index (which TrAEL indexes are present, e.g. "567"), read from
-            // column 7 of the sample sheet. Without it, don't silently fall back to nf_traelseq's
-            // own default (all indexes) -- skip the group instead, since that default is unlikely
-            // to be what was actually intended for a specific TrAEL sample.
+            // nf_traelseq and the WGS index pipelines need --index (which inline indexes are
+            // present, e.g. "567"), read from column 7 of the sample sheet. Without it, don't
+            // silently fall back to the pipeline's own default index list -- skip the group
+            // instead, since that default is unlikely to be what was actually intended.
             def extraArgs = ""
-            if (mapping.pipeline == "nf_traelseq") {
+            if (pipelinesNeedingIndexes().contains(pipeline)) {
                 if (! info.traelIndex) {
                     skipped.add([dirName: dirName, fileCount: fileCount,
-                        reason: "TrAEL run type but no index list found in column 7 of the sample sheet (e.g. '5,6,7')."])
+                        reason: "Run type '${info.runType}' needs indexes but no index list found in column 7 of the sample sheet (e.g. '5,6,7')."])
                     return
                 }
                 // --skip_multiqc=true: this group's files get renamed (per sample, see
-                // traelRenames below) after nf_traelseq finishes but before MultiQC runs, so
-                // nf_traelseq's own internal MultiQC step is skipped here and run separately by
+                // traelRenames below) after the pipeline finishes but before MultiQC runs, so
+                // the pipeline's own internal MultiQC step is skipped here and run separately by
                 // RUN_SUBPIPELINE once renaming is done.
                 extraArgs = "--index ${info.traelIndex} --skip_multiqc=true"
+            }
+
+            // --expect_paired=true exists purely to catch a known Nextflow/SLURM issue where one
+            // read of a genuinely paired-end sample intermittently goes missing during task
+            // staging -- it only makes sense to pass when a pair was actually expected. Some
+            // Houseley runs are genuinely single-end (the sequencer only produced R1 for every
+            // sample), and passing this unconditionally made those groups' dispatched pipelines
+            // exit immediately, misreading "this sample only has R1, as designed" as the missing-
+            // mate corruption case.
+            if (actuallyPaired) {
+                extraArgs = (extraArgs ? "${extraArgs} " : "") + "--expect_paired=true"
             }
 
             processed.add([
                 dirName:      dirName,
                 dirPath:      dirPath.toString(),
-                pipeline:     mapping.pipeline,
+                pipeline:     pipeline,
                 pretrim:      mapping.pretrim,
                 genome:       resolved.name,
                 fileCount:    fileCount,
                 pairedEnd:    pairedEnd,
                 extraArgs:    extraArgs,
                 traelRenames: info.traelRenames ?: [],
+                emptyFastqs:  emptyFastqs,
             ])
         }
 
@@ -345,6 +408,9 @@ workflow {
             def extraNote = it.extraArgs ? ", ${it.extraArgs}" : ""
             def renameNote = it.traelRenames ? ", ${it.traelRenames.size()} sample(s) to rename before MultiQC" : ""
             println("  - ${it.dirName}  [${it.fileCount} fastq file(s)]  ->  ${it.pretrim ? 'trim_galore (custom) + ' : ''}${it.pipeline}  (genome: ${it.genome}${pairedNote}${extraNote}${renameNote})")
+            if (it.emptyFastqs) {
+                println("      WARNING: ${it.emptyFastqs.size()} empty fastq file(s) (0 reads) -- these samples will fail and be ignored: ${it.emptyFastqs.join(', ')}")
+            }
         }
         if (skipped){
             println("\n[HOUSELEY] ${skipped.size()} group(s) SKIPPED:")
@@ -377,6 +443,10 @@ workflow {
             if (job.extraArgs) {
                 reportLines << "  extra args  : ${job.extraArgs}"
             }
+            if (job.emptyFastqs) {
+                reportLines << "  WARNING     : ${job.emptyFastqs.size()} empty fastq file(s) (0 reads) -- these samples will fail and be ignored:"
+                job.emptyFastqs.each { reportLines << "                  ${it}" }
+            }
             if (job.pretrim) {
                 reportLines << "  step 1 (pre-trim) : trim_galore --hardtrim5/--hardtrim3 <read length - 10>" +
                     " on R1/R2 (Vazyme ssDNA hard-trim; length auto-detected from this group's data)"
@@ -386,7 +456,7 @@ workflow {
                 reportLines << "  step 2 (rename)   : bin/houseley_rename_trael_indexes.py, once per sample sharing this" +
                     " folder, scoped by that sample's own barcode:"
                 job.traelRenames.each { r ->
-                    reportLines << "                        --barcode ${r.barcode} --index ${r.index} --sample_names \"${r.names}\""
+                    reportLines << "                        --barcode ${r.barcode} --index ${r.index} --sample_names \"${r.names}\"${renameScriptFlag(job.pipeline)}"
                 }
                 reportLines << "  step 3 (multiqc)  : multiqc -x work --filename multiqc_report.html ."
             } else {
@@ -422,9 +492,16 @@ workflow {
             // Excluding by the '*UMIed*' tag (rather than e.g. only-symlinks) is the reliable
             // discriminator here, since UMIed files can also end up as symlinks themselves once copied
             // to backup and re-linked back in.
+            //
+            // The WGS index pipelines have the same problem: INDEX_4BP_PREPROCESSING(_PE) publishes
+            // '<sample>_L001_<4bp index>_R1.fastq.gz' (later renamed to '..._L001_AGTC_<name>_R1...')
+            // into the group folder, so those are excluded by the 4bp-after-lane tag. Raw files
+            // always have R1/R2 straight after the lane, so they can never match it.
             def direct_jobs = jobs_ch.filter { ! it.pretrim }.map {
                 def glob = (it.pipeline == "nf_traelseq")
                     ? '$(find . -maxdepth 1 -name "*.fastq.gz" ! -name "*UMIed*")'
+                    : it.pipeline.startsWith("nf_WGS_4bpIndex")
+                    ? '$(find . -maxdepth 1 -name "*.fastq.gz" ! -name "*_L[0-9][0-9][0-9]_[ACGT][ACGT][ACGT][ACGT]_*")'
                     : "*.fastq.gz"
                 [it.dirName, it.dirPath, glob, it.pipeline, it.genome, it.pairedEnd ? "--paired=true" : "",
                  it.extraArgs, it.traelRenames]
@@ -532,6 +609,20 @@ def helpMessage() {
                              into 'index5_Alg70bp1', and so on) -- scoped to each sample's own
                              barcode (column 2), so multiple TrAEL samples sharing one group
                              folder don't get each other's names -- and only then is MultiQC run.
+    RNA-seq / RNA seq /   -> nf_rnaseq
+    RNAseq
+    WGS with indexing     -> nf_WGS_4bpIndex (single-end data) or nf_WGS_4bpIndexPE (if the group has
+                             R2 files). Indexes and sample names are taken from columns 7 and 8
+                             exactly as for TrAEL (--index, --skip_multiqc=true, per-barcode rename,
+                             then MultiQC). Renamed files get the sample name after the 4bp index,
+                             e.g. '..._L001_AGTC_R1.fastq.gz' -> '..._L001_AGTC_rnh_R1.fastq.gz'.
+
+    Empty samples:
+    ---------------
+    A sample that got zero reads at demultiplexing still has fastq.gz files, just empty ones. A
+    group where ALL fastq files are empty is skipped (and listed with the reason in the summary)
+    rather than dispatched, since its pipeline would otherwise exit 0 having mapped nothing. A
+    group where only SOME are empty is still dispatched, with the empty files listed as a warning.
 
     The hard-trim length is derived from the actual read length in each group's data (read
     length minus 10), not assumed, so it adapts automatically to the run's read length.
