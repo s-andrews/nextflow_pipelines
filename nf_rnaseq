@@ -13,12 +13,13 @@ params.fastq_screen_args = ''
 params.trim_galore_args = ''
 params.hisat2_args = ''
 params.multiqc_args = ''
-
+params.robust_file_pairing = false  // opt-in, see nf_chipseq (used by nf_houseley_run_processing)
 
 params.help = false
 params.list_genomes = false;
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include { makeFilesChannelRobust }             from './nf_modules/files_robust.mod.nf'
 include { getGenome }    from './nf_modules/genomes.mod.nf'
 include { listGenomes }  from './nf_modules/genomes.mod.nf'
 
@@ -54,7 +55,7 @@ workflow {
 
         def genome = getGenome(params.genome)
 
-        file_ch = makeFilesChannel(args)
+        file_ch = params.robust_file_pairing ? makeFilesChannelRobust(args) : makeFilesChannel(args)
 
         FASTQC         (file_ch, params.outdir, params.fastqc_args, params.verbose)
         FASTQ_SCREEN   (file_ch, params.outdir, params.fastq_screen_args, params.verbose, false)
