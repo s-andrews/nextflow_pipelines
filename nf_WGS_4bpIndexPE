@@ -1,10 +1,5 @@
 #!/usr/bin/env nextflow
 
-// To get this working I need to just test out some super simple code to work out how to strip a string and pair up files. 
-
-// run this from  /bi/scratch/run_processing/WGS_index/test_processing
-// nf_WGS_4bpIndexPE --genome R64-1-1 lane8778_DSB_small_L001_R*.fastq.gz --index 13
-
 // Enable modules
 nextflow.enable.dsl=2
 
@@ -14,154 +9,51 @@ params.verbose = false
 params.single_end = false
 params.index_preprocessing_args = ''
 params.index = '135'
-
 params.no_output = false
 
-params.help = false
+// Opt-in only (used by nf_houseley_run_processing): skips the final MultiQC step so a wrapper can
+// rename the index-demultiplexed files with sample names first, then run MultiQC itself.
+params.skip_multiqc = false
 
+// See nf_chipseq -- opt-in more robust R1/R2 pairing, used by nf_houseley_run_processing.
+params.robust_file_pairing = false
+
+params.help = false
 params.list_genomes = false;
 
 include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include { makeFilesChannelRobust }             from './nf_modules/files_robust.mod.nf'
 include { getGenome }                          from './nf_modules/genomes.mod.nf'
 include { listGenomes }                        from './nf_modules/genomes.mod.nf'
-include { get_paired_names }                   from './nf_modules/WGS_4bpIndex_preprocessing.mod.nf'
 
-// the genome gets passed automatically though it is only the text string, not an object with all the info
-include { CHIPSEQ }              from './subworkflows/chipseq_workflow.nf'
+include { CHIPSEQ }                    from './subworkflows/chipseq_workflow.nf'
 include { INDEX_4BP_PREPROCESSING_PE } from './nf_modules/WGS_4bpIndex_preprocessing.mod.nf'
-include { SORT_TRAEL_NAMES }    from './nf_modules/trael_preprocessing.mod.nf'
 
-
-
-//copied from nf_traelseq
-process CHECK_BAMFILE_NOT_EMPTY {
-
-    input:
-    path(bam)
-
-    output:
-    tuple path ("*sam"), path (bam), emit: bam
-
-    script:
-    """
-    module load samtools
-    samtools view ${bam} | head -n 1 > first_line.sam
-    """
-}
-
-/* 
-At first this seemed like complete overkill but I couldn't work out a nextflow way of doing this
-The fq.gz files are "not empty" so can't use ifEmpty. Bash also doesn't recognise them 
-as empty so this seems like a reasonable way to check. 
-The line below can be used to filter the output.
-filt = CHECK_FQ_GZ_NOT_EMPTY.out.reads.filter { it.first().countLines() > 0 }
+/*
+Same idea as CHECK_FQ_GZ_NOT_EMPTY in nf_WGS_4bpIndex, but for an R1/R2 pair (copied from
+nf_traelseq_paired). The preprocessing script writes a file pair for every supplied index whether
+or not any reads were assigned to it, and Trim Galore fails on empty files. Only R1 is checked:
+the preprocessing script only ever writes R1 and R2 together.
 */
-process CHECK_FQ_GZ_NOT_EMPTY {
+process CHECK_FQ_GZ_NOT_EMPTY_PE {
 
     input:
-    path(reads)
+    tuple val(key), path(r1), path(r2)
 
     output:
-    tuple path ("*fq"), path (reads), emit: reads
+    tuple val(key), path ("*fq"), path (r1), path (r2), emit: reads
 
     script:
     """
-    zcat ${reads} | head -n 5 > first_line.fq
+    zcat ${r1} | head -n 5 > first_line.fq
     """
 }
 
-process CHECK_FQ_GZ_NOT_EMPTY_PAIRED {
-
-    input:
-    tuple val(name), path(reads)
-
-    output:
-    tuple path ("*fq"), path (reads), emit: reads
-
-    script:
-
-    println ("name: " + name)
-    println ("reads: " + reads)
-
-    """
-   
-    """
-}
-
-// zcat ${reads} | head -n 5 > first_line.fq
-
-
-// def get_paired_names(fileList){
-
-//     println ("fileList = " + fileList)
-
-//     baseNames = [:]
-
-//     for (String s : fileList) {
-//         matcher = s =~ /^(.*)_(R?[1234]).(fastq|fq).gz$/
-//         println ("trying matches")
-//         //println (matcher[0])
-//         if (matcher.matches()) {
-//             if (! baseNames.containsKey(matcher[0][1])) {
-//                 baseNames[matcher[0][1]] = []
-//             }
-//             baseNames[matcher[0][1]].add(matcher[0][2])
-//         }
-//     }
-
-//     patterns = []
-//     println("found anything in baseNames?")
-
-//     for (s in baseNames) {
-//         println("baseNames loop:")
-//         println (s)
-//         pattern = s.key+"_{"+s.value.join(",")+"}.{fastq,fq}.gz"
-//         patterns.add(pattern)
-//         println("#!!!!=============================!")
-//         println(pattern)
-//     }
-
-//     //file_ch = Channel.fromFilePairs(patterns, size:-1)
-//     //return(file_ch)
-//     return(patterns)
-// }
-
-
-process SORT_SPLIT_NAMES {
-
-    input:
-    tuple val(name), path(reads)
-
-    output:
-    tuple env('sample_id_index'), path(reads), emit:reads
-
-    script:
-
-    println("-----------------------------")
-
-    println ("name: " + name)
-    println ("reads: " + reads)
-
-    """
-    sample_id_index=${reads}
-    sample_id_index=\${sample_id_index%_R1.fastq.gz}
-    echo "\$sample_id_index" >> name.log
-    
-    """
-}
-//R1 = \$sample_id_index
-//sample_id_index=${reads}
-//sample_id_index=\${sample_id_index%_R1.fastq.gz}
-//"*fastq.gz"
-
-//sample_id_index=\${sample_id_index%_R[1234].fastq.gz}
-
-
-//test = get_paired_names(args)
 
 workflow {
 
     main:
+        // Show help message and exit
         if (params.help){
             helpMessage()
             exit 0
@@ -171,46 +63,39 @@ workflow {
             println ("[WORKFLOW] List genomes selected")
             listGenomes()  // this lists all available genomes, and exits
         }
-        //params.genome = getGenome(params.genome)
 
-        println("=============================")
-        println("                                ")
-        println("-----------------------------")
-        println(args)
-        file_ch = makeFilesChannel(args)
+        file_ch = params.robust_file_pairing ? makeFilesChannelRobust(args) : makeFilesChannel(args)
 
-        //FASTQC( file_ch, params.outdir, params.fastqc_args, params.verbose )
-
-        //SORT_SPLIT_NAMES( file_ch )
-
+        // INDEX_4BP_PREPROCESSING_PE reads the indexes to keep from params.index itself
         INDEX_4BP_PREPROCESSING_PE( file_ch, params.outdir, params.index_preprocessing_args, params.verbose )
-        
-        SORT_SPLIT_NAMES( INDEX_4BP_PREPROCESSING_PE.out.reads )
-        
-        //(INDEX_4BP_PREPROCESSING_PE.out.reads.flatten())
-        //filt = CHECK_FQ_GZ_NOT_EMPTY.out.reads.filter { it.first().countLines() > 0 }.map { it.last() }
-        //CHIPSEQ(INDEX_4BP_PREPROCESSING_PE.out.reads)
-        //paired_files = get_paired_names(filt.collect())
-        //SORT_SPLIT_NAMES( filt )
-        //SORT_SPLIT_NAMES(INDEX_4BP_PREPROCESSING_PE.out.reads)
-        //SORT_SPLIT_NAMES(paired_files)
-        //SORT_SPLIT_NAMES( filt.collect() )  // this threw an error
-        println("=============================")
-        println("                                ")
-        //println("----- from the workflow ------")
 
-        //println(filt)
-       // file_ch2 = makeFilesChannel(filt.collect())
+        /* INDEX_4BP_PREPROCESSING_PE.out.reads emits [name, list of all demultiplexed R1+R2 files] per
+        input sample. Pairing is done here, from that single list, since every file in it lives in the
+        same task work directory (see nf_traelseq_paired for why re-deriving R2 later doesn't work).
+        Output files are named <sample>_L00N_<4bp index>_R1/R2.fastq.gz, so stripping _R1/_R2 gives the
+        key for each pair. */
+        paired_ch = INDEX_4BP_PREPROCESSING_PE.out.reads.flatMap { name, fileList ->
+            def byKey = [:]
+            fileList.each { f ->
+                def key = f.name.replaceFirst(/_R[12]\.fastq\.gz$/, "")
+                if (! byKey.containsKey(key)) {
+                    byKey[key] = [:]
+                }
+                if (f.name.endsWith("_R1.fastq.gz")) {
+                    byKey[key].r1 = f
+                } else if (f.name.endsWith("_R2.fastq.gz")) {
+                    byKey[key].r2 = f
+                }
+            }
+            byKey.collect { key, pair -> [key, pair.r1, pair.r2] }
+        }
 
-        //CHIPSEQ( SORT_SPLIT_NAMES.out.reads )
+        CHECK_FQ_GZ_NOT_EMPTY_PE(paired_ch)
+        filt = CHECK_FQ_GZ_NOT_EMPTY_PE.out.reads
+            .filter { key, firstLines, r1, r2 -> firstLines.countLines() > 0 }
+            .map    { key, firstLines, r1, r2 -> [key, [r1, r2]] }
 
-
-        //SORT_TRAEL_NAMES( filt )
-       //
-        //file_ch = makeFilesChannel(filt)
-        //CHIPSEQ( paired_files )
-        //CHIPSEQ( SORT_TRAEL_NAMES.out.reads )  // !!! Here - we need the paired read files to be passed to the CHIPSEQ workflow !!!
-        // can we use the existing filepairs methods??
+        CHIPSEQ( filt, ! params.skip_multiqc )
 
     // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
     // minimal execution summary report so we at least know what the working directory was...
@@ -240,16 +125,17 @@ def helpMessage() {
 
     SYNOPSIS:
 
-    This workflow runs a Circle-seq processing pipeline from FastQ files, including QC, contamination QC,
-    quality-/adapter trimming, moving UMI from the sequence and into the read header, alignments to a genome using Bowtie 2, 
-    deduplication based on position and UMI, and finally generates an aggregate QC report. 
+    This workflow processes paired-end WGS libraries that carry a 4bp inline sample index (followed by a T) at the
+    start of both R1 and R2. Read pairs are demultiplexed by index (pairs where the R1 and R2 index disagree are
+    discarded), the index + T are removed from both reads, and each index's read pairs then go through QC,
+    quality-/adapter trimming and paired-end alignment to a genome using Bowtie 2, followed by an aggregate QC report.
+    For single-end data, use nf_WGS_4bpIndex instead.
 
     Here is a graphical representation of the workflow:
 
-    --- FastQC
-    --- WGS_4bp_INDEX_PREPROCESSING
+    --- WGS_4bp_INDEX_PREPROCESSING_PE
         | 
-        --- CHIPSEQ (subworkflow) - trims, QC, maps with bowtie2
+        --- CHIPSEQ (subworkflow) - FastQC, FastQ Screen, trims, maps with bowtie2
     --- MultiQC*
         
     * This step runs only once ALL other jobs have completed.
@@ -270,12 +156,12 @@ def helpMessage() {
             
     USAGE:
     
-    nf_circle [options] --genome <genomeID> <input files>
+    nf_WGS_4bpIndexPE [options] --genome <genomeID> --index <indexes> <input files>
     
     Mandatory arguments:
     ====================
 
-      <input files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. This pipeline will only work with single end files.
+      <input files>                   List of input files, e.g. '*fastq.gz' or '*fq.gz'. Files must be paired-end (R1 and R2).
                                       
       --genome [str]                  Genome build ID to be used for the alignment, e.g. GRCh38 (latest human genome) or GRCm39
                                       (latest mouse genome build). To list all available genomes, see '--list_genomes' below.
@@ -298,12 +184,11 @@ def helpMessage() {
     Optional arguments:
     ====================
 
-      --no_output                    If specified, the only files produced in the output directory will be *umibam2.1.bam, *umibam2.1_dedup_report.txt 
-                                     and multiqc_report.html.
-                                     The output files from fastqc, fastq_screen, bowtie, trim_galore, samtools sort and index can be found 
-                                     in the nf work/ directory but will not be written into the output directory. 
-                                     This option was implemented when reprocessing a load of samples, where intermediate files were not required.
-                                     [Default: false] 
+      --no_output                    If specified, the index-demultiplexed fastq files are not written to the output directory
+                                     (they can still be found in the nf work/ directory). [Default: false]
+
+      --skip_multiqc=true            Skip the final MultiQC step. Used by nf_houseley_run_processing, which renames the
+                                     demultiplexed files with sample names first and then runs MultiQC itself. [Default: false]
 
 
     Tool-specific options:
@@ -345,8 +230,6 @@ def helpMessage() {
                                       of available genomes with more detailed information about paths and indexes, run
                                       the command as '--list_genomes --verbose'
     
-      --single_end                    Force files of a read pair to be treated as single-end files. [Default: auto-detect]
-      
       --verbose                       More verbose status messages. [Default: OFF]
       --help                          Displays this help message and exits.
 

@@ -18,6 +18,10 @@ params.index = '135'
 // params.multiqc_args = ''
 // params.fastqc_args = ''
 params.no_output = false
+
+// Opt-in only (used by nf_houseley_run_processing): skips the final MultiQC step so a wrapper can
+// rename the index-demultiplexed files with sample names first, then run MultiQC itself.
+params.skip_multiqc = false
 //params.no_qc = false
 //params.dedup = false
 
@@ -104,7 +108,7 @@ workflow {
         filt = CHECK_FQ_GZ_NOT_EMPTY.out.reads.filter { it.first().countLines() > 0 }.map { it.last() }
 
         SORT_TRAEL_NAMES( filt )
-        CHIPSEQ( SORT_TRAEL_NAMES.out.reads, true )
+        CHIPSEQ( SORT_TRAEL_NAMES.out.reads, ! params.skip_multiqc )
 
     // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
     // minimal execution summary report so we at least know what the working directory was...
