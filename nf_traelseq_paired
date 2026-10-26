@@ -1,0 +1,448 @@
+#!/usr/bin/env nextflow
+
+// Paired-end variant of nf_traelseq, written for trypanosome TrAEL-seq mapping where read pairs
+// (not just R1) are needed for alignment. The inline UMI/sample-barcode is only present in R1
+// (see nf_modules/trael_preprocessing.mod.nf), so demultiplexing is still driven by R1 alone --
+// but R2 mates are carried through demultiplexing so both ends survive for paired mapping.
+//
+// The other departure from nf_traelseq: deduplication only considers reads that map uniquely
+// once the paired end is taken into account (MAPQ >= params.unique_mapq, properly paired).
+// Multi-mapping reads are dropped before deduplication rather than being kept in a lowqual
+// fallback bucket, since they're awkward to reason about once pairing is involved.
+
+// Enable modules
+nextflow.enable.dsl=2
+
+params.outdir = "."
+params.genome = ""
+params.verbose = false
+params.single_end = false
+params.fastqc_args = ''
+params.trael_preprocessing_args = ''
+params.fastq_screen_args = ''
+params.trim_galore_args = ''
+params.bowtie2_args = ''
+params.samtools_sort_args = ''
+params.samtools_index_args = ''
+// TrAEL PE preprocessing embeds the UMI as the last ':'-delimited field of the read name (see
+// nf_modules/trael_preprocessing.mod.nf), unlike nf_rnaseq_umi/nf_chipseq_umi's '_' convention.
+params.umi_separator = ':'
+params.index = '123456789' // we want to supply the indexes to use
+params.no_index = false
+params.multiqc_args = ''
+params.no_output = false
+params.no_qc = false
+
+// Reads are only kept for deduplication if they map uniquely (this MAPQ or higher) as a properly
+// paired read -- everything else (multi-mappers) is dropped rather than deduplicated separately.
+params.unique_mapq = 20
+
+params.help = false
+params.nogroup = true
+params.list_genomes = false;
+
+// Opt-in only: builds file pairs directly from the input filenames instead of handing off to
+// Channel.fromFilePairs' own filesystem glob, which has repeatedly dropped one read of a pair
+// on real Houseley wrapper runs. Off by default so every other use of this pipeline is
+// unaffected.
+params.robust_file_pairing = false
+
+// Opt-in only (used by nf_houseley_run_processing): skips this pipeline's own MultiQC step, see
+// the MULTIQC call below for why.
+params.skip_multiqc = false
+
+include { makeFilesChannel; getFileBaseNames } from './nf_modules/files.mod.nf'
+include { makeFilesChannelRobust }             from './nf_modules/files_robust.mod.nf'
+include { getGenome }                          from './nf_modules/genomes.mod.nf'
+include { listGenomes }                        from './nf_modules/genomes.mod.nf'
+
+include { TRAEL_PREPROCESSING_INDEXING_PE } from './nf_modules/trael_preprocessing.mod.nf'
+include { FASTQC }              from './nf_modules/fastqc.mod.nf'
+include { FASTQC as FASTQC2 }   from './nf_modules/fastqc.mod.nf'
+include { FASTQC as FASTQC3 }   from './nf_modules/fastqc.mod.nf'
+include { FASTQ_SCREEN }        from './nf_modules/fastq_screen.mod.nf'
+include { TRIM_GALORE }         from './nf_modules/trim_galore.mod.nf'
+include { SAMTOOLS_SORT }       from './nf_modules/samtools.mod.nf'
+include { SAMTOOLS_INDEX2 }     from './nf_modules/samtools.mod.nf'
+include { BOWTIE2 }             from './nf_modules/bowtie2.mod.nf'
+include { FILTER_UNIQUE_PAIRS } from './nf_modules/trael_dedup.mod.nf'
+include { UMI_TOOLS_DEDUP }     from './nf_modules/umi_utils.mod.nf'
+include { MULTIQC }             from './nf_modules/multiqc.mod.nf'
+
+/*
+At first this seemed like complete overkill but I couldn't work out a nextflow way of doing this
+The fq.gz files are "not empty" so can't use ifEmpty. Bash also doesn't recognise them
+as empty so this seems like a reasonable way to check.
+The line below can be used to filter the output.
+filt = CHECK_FQ_GZ_NOT_EMPTY.out.reads.filter { it.first().countLines() > 0 }
+*/
+process CHECK_FQ_GZ_NOT_EMPTY {
+
+    input:
+    path(reads)
+
+    output:
+    tuple path ("*fq"), path (reads), emit: reads
+
+    script:
+    """
+    zcat ${reads} | head -n 5 > first_line.fq
+    """
+}
+
+// Paired-end counterpart to CHECK_FQ_GZ_NOT_EMPTY: only R1's emptiness needs checking, since R1
+// and its R2 mate are written out in lockstep by TRAELseq_preprocessing_UMIplusBarcode_PE.py, so
+// they always end up with identical read counts for a given barcode/T-noT bucket. R2 is passed
+// through as a companion input purely so it gets staged into this same task's work directory --
+// re-deriving its path from a file staged into a *different*, later process's work directory
+// would point at a file that was never staged there.
+process CHECK_FQ_GZ_NOT_EMPTY_PE {
+
+    input:
+    tuple val(key), path(r1), path(r2)
+
+    output:
+    tuple val(key), path ("*fq"), path (r1), path (r2), emit: reads
+
+    script:
+    """
+    zcat ${r1} | head -n 5 > first_line.fq
+    """
+}
+
+// same approach as the CHECK_FQ_GZ_NOT_EMPTY process above but for bam files
+process CHECK_BAMFILE_NOT_EMPTY {
+
+    input:
+    path(bam)
+
+    output:
+    tuple path ("*sam"), path (bam), emit: bam
+
+    script:
+    """
+    module load samtools
+    samtools view ${bam} | head -n 1 > first_line.sam
+    """
+}
+
+
+workflow {
+
+    main:
+        // Show help message and exit
+        if (params.help){
+            helpMessage()
+            exit 0
+        }
+
+        if (params.list_genomes){
+            println ("[WORKFLOW] List genomes selected")
+            listGenomes()  // this lists all available genomes, and exits
+        }
+
+        if (params.verbose){
+            println ("[WORKFLOW] FASTQC ARGS: "           + params.fastqc_args)
+            println ("[WORKFLOW] TrAEL-PREPROCESSING ARGS: " + params.trael_preprocessing_args)
+            println ("[WORKFLOW] FASTQ SCREEN ARGS ARE: " + params.fastq_screen_args)
+            println ("[WORKFLOW] TRIM GALORE ARGS: "      + params.trim_galore_args)
+            println ("[WORKFLOW] BOWTIE2 ARGS: "          + params.bowtie2_args)
+            println ("[WORKFLOW] UNIQUE MAPQ THRESHOLD: " + params.unique_mapq)
+            println ("[WORKFLOW] UMI SEPARATOR: "         + params.umi_separator)
+            println ("[WORKFLOW] MULTIQC ARGS: "          + params.multiqc_args)
+        }
+
+        def genome = getGenome(params.genome)
+
+        file_ch = params.robust_file_pairing ? makeFilesChannelRobust(args) : makeFilesChannel(args)
+
+        def matcher_string = ".*index[" + params.index + "].*"
+
+        if (! params.no_qc ) {
+            FASTQC          (file_ch, params.outdir, params.fastqc_args, params.verbose)
+            FASTQ_SCREEN    (file_ch, params.outdir, params.fastq_screen_args, params.verbose, false)
+        }
+
+        TRAEL_PREPROCESSING_INDEXING_PE (file_ch, params.outdir, params.trael_preprocessing_args, params.verbose)
+
+        /* TRAEL_PREPROCESSING_INDEXING_PE.out.reads emits one full list of UMIed R1+R2 files per
+        task execution (not flattened) -- pairing is done here, from that single list, since every
+        file in it lives in the same task work directory. Re-deriving a sibling R2 path from an R1
+        file staged into a *different* (later) process's own work directory would point at a file
+        that process never received. */
+        paired_umied_ch = TRAEL_PREPROCESSING_INDEXING_PE.out.reads.flatMap { fileList ->
+            def byKey = [:]
+            fileList.each { f ->
+                def key = f.name.replaceFirst(/_R[12]\.fastq\.gz$/, "")
+                if (! byKey.containsKey(key)) {
+                    byKey[key] = [:]
+                }
+                if (f.name.endsWith("_R1.fastq.gz")) {
+                    byKey[key].r1 = f
+                } else if (f.name.endsWith("_R2.fastq.gz")) {
+                    byKey[key].r2 = f
+                }
+            }
+            byKey.collect { key, pair -> [key, pair.r1, pair.r2] }
+        }
+
+        /* The TRAEL preprocessing script produces a set of fastq files for each barcode/T-noT
+        bucket, but most will be empty (only 1 of the 9 indexes + unassigned actually contains this
+        sample's reads). We need to filter these out as some processes e.g. trim_galore will fail if
+        empty files are passed. Also, we don't want to keep processing a load of empty files. */
+
+        CHECK_FQ_GZ_NOT_EMPTY_PE(paired_umied_ch)
+        trael_ch_all = CHECK_FQ_GZ_NOT_EMPTY_PE.out.reads
+            .filter { key, firstLines, r1, r2 -> firstLines.countLines() > 0 }
+            .map    { key, firstLines, r1, r2 -> [key, [r1, r2]] }
+
+        if ( params.no_index ) {
+            trael_ch = trael_ch_all
+        }
+        else {
+            // only keep the selected indexes
+            trael_ch = trael_ch_all.filter { it =~ matcher_string }
+        }
+        if (! params.no_qc ) {
+            FASTQC2     (trael_ch, params.outdir, params.fastqc_args, params.verbose)
+        }
+        TRIM_GALORE (trael_ch, params.outdir, params.trim_galore_args, params.verbose, false, false, false, false, "", "")
+        if (! params.no_qc ) {
+            FASTQC3     (TRIM_GALORE.out.reads, params.outdir, params.fastqc_args, params.verbose)
+        }
+        BOWTIE2     (TRIM_GALORE.out.reads, params.outdir, params.bowtie2_args, params.verbose, genome)
+
+        // we just need the bam files for the rest of the pipeline, not a tuple of the name and the bam
+        mapped_bams = BOWTIE2.out.bam.map { it.last() }
+
+        // need to filter out any empty bam files from the channel
+        CHECK_BAMFILE_NOT_EMPTY(mapped_bams)
+        filt_sam_bam = CHECK_BAMFILE_NOT_EMPTY.out.bam.filter { it.first().countLines() > 0 }
+        filt_bam = filt_sam_bam.map { it.last() }
+        SAMTOOLS_SORT  (filt_bam, params.outdir, params.samtools_sort_args, params.verbose)
+
+        // Drop multi-mapping reads before deduplication -- only reads that map uniquely once the
+        // paired end is taken into account (MAPQ >= params.unique_mapq, properly paired) go through
+        // to UMI_TOOLS_DEDUP. Filtering here preserves the sort order from SAMTOOLS_SORT, so the
+        // result can be indexed directly without a second sort.
+        FILTER_UNIQUE_PAIRS (SAMTOOLS_SORT.out.bam, params.outdir, params.unique_mapq, params.verbose)
+        SAMTOOLS_INDEX2 (FILTER_UNIQUE_PAIRS.out.bam, params.outdir, params.samtools_index_args, params.verbose)
+
+        // Deduplication (unique, properly-paired reads only -- see FILTER_UNIQUE_PAIRS above).
+        // Always paired (true) -- this pipeline is PE-only.
+        UMI_TOOLS_DEDUP (SAMTOOLS_INDEX2.out.bam, SAMTOOLS_INDEX2.out.bai, params.outdir, true, params.umi_separator)
+
+        if (! params.no_qc ) {
+              // merging channels for MultiQC
+            multiqc_ch = FASTQC.out.report.mix(
+                FASTQ_SCREEN.out.report.ifEmpty([]),
+                FASTQC2.out.report.ifEmpty([]),
+                FASTQC3.out.report.ifEmpty([]),
+                TRIM_GALORE.out.report.ifEmpty([]),
+                BOWTIE2.out.stats.ifEmpty([]),
+                UMI_TOOLS_DEDUP.out.log.ifEmpty([]),
+            ).collect()
+        } else {
+            // merging channels for MultiQC
+            multiqc_ch = TRIM_GALORE.out.report.mix(
+                BOWTIE2.out.stats.ifEmpty([]),
+                UMI_TOOLS_DEDUP.out.log.ifEmpty([]),
+            ).collect()
+        }
+
+        // Opt-in only (used by nf_houseley_run_processing): see nf_traelseq for why this exists --
+        // same pattern, so a wrapper-driven rename-then-multiqc step can be inserted between this
+        // pipeline finishing and MultiQC running.
+        MULTIQC  (params.skip_multiqc ? Channel.empty() : multiqc_ch, params.outdir, params.multiqc_args, params.verbose)
+
+    // Since workflows with very long command lines tend to fail to get rendered at all, I was experimenting with a
+    // minimal execution summary report so we at least know what the working directory was...
+    workflow.onComplete = {
+
+        def msg = """\
+            Pipeline execution summary
+            ---------------------------
+            Jobname     : ${workflow.runName}
+            Completed at: ${workflow.complete}
+            Duration    : ${workflow.duration}
+            Success     : ${workflow.success}
+            workDir     : ${workflow.workDir}
+            exit status : ${workflow.exitStatus}
+            """
+        .stripIndent()
+
+        sendMail(to: "${workflow.userName}@babraham.ac.uk", subject: 'Minimal pipeline execution report', body: msg)
+    }
+
+}
+
+def helpMessage() {
+
+    log.info"""
+    >>
+
+    SYNOPSIS:
+
+    This workflow runs a paired-end TrAEL-seq processing pipeline from FastQ file pairs, including
+    QC, contamination QC, splitting by TrAEL barcodes, quality-/adapter trimming, paired-end
+    alignments to a genome using Bowtie 2, and finally generates an aggregate QC report.
+
+    It is a paired-end variant of nf_traelseq, written for trypanosome TrAEL-seq mapping where
+    read pairs (not just R1) are wanted for alignment. The inline UMI/sample-barcode TrAEL-seq
+    relies on is only present in R1, so demultiplexing is still driven entirely by R1 -- but R2
+    mates are carried through demultiplexing so both ends of each pair survive for mapping.
+
+    Deduplication only considers reads that map uniquely once the paired end is taken into account:
+    reads are filtered to properly-paired alignments with MAPQ >= --unique_mapq before
+    deduplication, and multi-mapping reads are dropped rather than being deduplicated separately
+    (unlike nf_traelseq's single-end UMIBAM2, which keeps low-mapq reads in a fallback bucket).
+
+    Here is a graphical representation of the workflow:
+
+    --- FastQC
+    --- FastQ Screen (R1 only)
+    --- TrAEL preprocessing (paired)
+        |
+        --- FastQC
+        --- Trim Galore (paired)
+            |
+            --- FastQC
+            --- Bowtie2 (paired)
+                |
+                --- Samtools sort
+                --- Filter to unique, properly-paired reads (MAPQ >= --unique_mapq)
+                --- Samtools index
+                    |
+                    umi_tools dedup (paired, unique reads only)
+    --- MultiQC*
+
+    * This step runs only once ALL other jobs have completed.
+
+    By default all these steps are submitted as jobs to the Babraham stone compute cluster.
+
+    By default, the involved tools are run in the following way:
+    ------------------------------------------------------------
+    FastQC:         defaults (-q)
+    FastQ Screen:   defaults (Bowtie 2; local mode)
+    Trim Galore:    defaults (adapter auto-detection)
+    Bowtie 2:       end-to-end mode; '--no-unal'; '--no-mixed --no-discordant' (concordant PE alignments only)
+
+    To add additional parameters to any of the programs, consider supplying tool-specific arguments (see --toolname_args="..." below).
+
+            ==============================================================================================================
+
+
+    USAGE:
+
+    nf_traelseq_paired [options] --genome <genomeID> --index <TrAEL indexes> <input file pairs>
+
+    Mandatory arguments:
+    ====================
+
+      <input files>                   List of input files, e.g. '*fastq.gz'. File pairs are automatically
+                                      identified by sharing the same base-name and differing only by a read
+                                      number, e.g. 'base_name_R1.fastq.gz' and 'base_name_R2.fastq.gz'.
+
+      --genome [str]                  Genome build ID to be used for the alignment, e.g. GRCh38 (latest human
+                                      genome) or GRCm38 (latest mouse genome build). To list all available
+                                      genomes, see '--list_genomes' below.
+
+
+    Optional arguments:
+    ====================
+
+      --no_output                    If specified, the only files produced in the output directory will be
+                                     *_dedup.bam, *_dedup.log and multiqc_report.html.
+                                     The output files from fastqc, fastq_screen, bowtie, trim_galore, samtools
+                                     sort and index can be found in the nf work/ directory but will not be
+                                     written into the output directory.
+                                     [Default: false]
+
+      --no_index                     For samples that do not contain TrAEL indexes and so do not need to be
+                                     demultiplexed. Cannot be used with --index [int] below. [Default: false]
+
+      --index [int]                  TrAEL indexes that are expected to be present. Provide the index numbers
+                                        without spaces, e.g. --index 245 for indexes 2,4 and 5.
+                                        [Default: all indexes, equivalent to --index 123456789]
+
+                                     These are the TrAEL indexes:
+                                        barcode_1 = "AGTC"
+                                        barcode_2 = "GACT"
+                                        barcode_3 = "CTTG"
+                                        barcode_4 = "TCGA"
+                                        barcode_5 = "AAGG"
+                                        barcode_6 = "TTCC"
+                                        barcode_7 = "GTGC"
+                                        barcode_8 = "GCCA"
+                                        barcode_9 = "GATG"
+
+      --unique_mapq [int]             MAPQ threshold (inclusive) a properly-paired read must reach to be kept
+                                     for deduplication. Reads below this are treated as multi-mapping and
+                                     dropped entirely rather than deduplicated. [Default: 20]
+
+
+    Tool-specific options:
+    ======================
+
+    For all following options, please note that the format: ="your options" needs to be strictly adhered to in order to work correctly.
+
+      --fastqc_args="[str]"           This option can take any number of options that are compatible with FastQC to modify its default
+                                      behaviour. For more detailed information on available options please refer to the FastQC documentation,
+                                      or run 'fastqc --help' on the command line. As an example, to run FastQC without grouping of bases when
+                                      reads are >50bp and use a specific file with non-default adapter sequences, use:
+                                      ' --fastqc_args="--nogroup --adapters ./non_default_adapter_file.txt" '. [Default: None]
+
+      --fastq_screen_args="[str]"     This option can take any number of options that are compatible with FastQ Screen to modify its
+                                      default behaviour. For more detailed information on available options please refer to the FastQ Screen
+                                      documentation, or run 'fastq_screen --help' on the command line. For instance, to process a bisulfite
+                                      converted library with fairly relaxed parameters, you could use:
+                                      ' --fastq_screen_args="--bisulfite --score_min L,0,-0.6" '. [Default: None]
+
+      --trim_galore_args="[str]"      This option can take any number of options that are compatible with Trim Galore to modify its
+                                      default trimming behaviour. For more detailed information on available options please refer
+                                      to the Trim Galore User Guide, or run 'trim_galore --help' on the command line. As an example, to trim
+                                      off the first 10bp from the 5' of R1 and 5bp of R2, use:
+                                      ' --trim_galore_args="--clip_r1 10 --clip_r2 5" '. [Default: None]
+
+
+      --bowtie2_args="[str]"          This option can take any number of options that are compatible with Bowtie 2 to modify its
+                                      default mapping behaviour. For more detailed information on available options please refer
+                                      to the Bowtie 2 User Guide, or run 'bowtie2 --help' on the command line. As an example, to
+                                      run somewhat more stringent alignments for only 1 million sequences, use:
+                                      ' --bowtie2_args="-u 1000000 --score_min L,0,-0.4" '. [Default: None]
+
+    Other options:
+    ==============
+
+      --outdir [str]                  Path to the output directory. [Default: current working directory]
+
+      --list_genomes                  List all genome builds that are currently available to choose from. To see this list
+                                      of available genomes with more detailed information about paths and indexes, run
+                                      the command as '--list_genomes --verbose'
+
+      --verbose                       More verbose status messages. [Default: OFF]
+      --help                          Displays this help message and exits.
+
+    Workflow options:
+    =================
+
+    Please note the single '-' hyphen for the following options!
+
+      -resume                         If a pipeline workflow has been interrupted or stopped (e.g. by accidentally closing a laptop),
+                                      this option will attempt to resume the workflow at the point it got interrupted by using
+                                      Nextflow's caching mechanism. This may save a lot of time.
+
+      -bg                             Sends the entire workflow into the background, thus disconnecting it from the terminal session.
+                                      This option launches a daemon process (which will keep running on the headnode) that watches over
+                                      your workflow, and submits new jobs to the SLURM queue as required. Use this option for big pipeline
+                                      jobs, or whenever you do not want to watch the status progress yourself. Upon completion, the
+                                      pipeline will send you an email with the job details. This option is HIGHLY RECOMMENDED!
+
+      -process.executor=local         Temporarily changes where the workflow is executed to the 'local' machine. See also Nextflow config
+                                      file for more details. [Default: slurm]
+
+
+    <<
+    """.stripIndent()
+
+}

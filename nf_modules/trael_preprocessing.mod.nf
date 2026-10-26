@@ -68,6 +68,39 @@ process TRAEL_PREPROCESSING_INDEXING {
 }
 
 
+// Paired-end version of TRAEL_PREPROCESSING_INDEXING: the UMI/barcode structure this splits on is
+// only present in R1, but R2's matching mate is carried through each barcode/T-noT bucket so read
+// pairs survive demultiplexing for paired-end mapping (used by nf_traelseq_paired).
+process TRAEL_PREPROCESSING_INDEXING_PE {
+
+	tag "$name" // Adds name to job submission instead of (1), (2) etc.
+
+	publishDir { outputdir },
+		mode: "link", overwrite: true, enabled: !params.no_output
+
+    input:
+	    tuple val(name), path(reads)
+		val (outputdir)
+		val (trael_preprocessing_args)
+		val (verbose)
+
+	output:
+		path "*.txt", optional: true, emit: stats
+        path ("*UMIed*.fastq.gz"), emit: reads
+
+	script:
+		if (verbose){
+			println ("[MODULE] TrAEL-PREPROCESSING ARGS: " + trael_preprocessing_args)
+		}
+
+		"""
+		module load python
+		/bi/apps/TrAELseq/latest/TrAEL-seq/TrAELseq_preprocessing_UMIplusBarcode_PE.py ${reads[0]} ${reads[1]}
+		"""
+
+}
+
+
 /* The output from the TrAEL preprocessing scripts are a set of paths.
 We need to create new sample names for these as other nf modules e.g. bowtie2 require them.
 */

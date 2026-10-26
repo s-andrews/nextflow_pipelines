@@ -19,7 +19,14 @@ def makeFilesChannelRobust(fileList) {
         // Sort by read tag (R1 < R2 < R3 < R4, or R1_val_1 < R2_val_2) so files always end up
         // in the right order regardless of what order they arrived in on the command line.
         def orderedFiles = readMap.keySet().sort().collect { readTag -> file(readMap[readTag]) }
-        [key, orderedFiles]
+        // A key with only one file (a genuinely single-end sample -- either a bare filename with
+        // no R1/R2 tag, or an R1 with no matching R2, e.g. a Houseley run where the sequencer only
+        // produced R1 for every sample) must come out as a bare path, not a 1-element list.
+        // Downstream modules decide single-end vs paired-end with 'reads instanceof List', which a
+        // 1-element list still satisfies -- that wrongly sent single-end samples down the paired
+        // code path (e.g. Bowtie2's '-1 file -2 <nothing>'), rather than falling back to a plain
+        // single-end command.
+        [key, orderedFiles.size() == 1 ? orderedFiles[0] : orderedFiles]
     }
 
     return Channel.fromList(pairs)
